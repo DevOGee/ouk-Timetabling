@@ -68,14 +68,14 @@
 
                     <!-- Course Mapping -->
                     <li class="nav-item">
-                        <a class="text-white nav-link" href="#">
+                        <a class="text-white nav-link" href="{{ route('course_mapping.upload') }}">
                             <i class="fas fa-project-diagram"></i> Course Mapping
                         </a>
                     </li>
 
                     <!-- Scheduling -->
                     <li class="nav-item">
-                        <a class="text-white nav-link" href="#">
+                        <a class="text-white nav-link" href="{{ route('programmes.index') }}">
                             <i class="fas fa-calendar-alt"></i> Scheduling
                         </a>
                     </li>
