@@ -54,3 +54,5 @@ Route::get('course-mapping/upload', [CourseMappingController::class, 'showUpload
 Route::post('course-mapping/import', [CourseMappingController::class, 'importCourseMappings'])->name('course_mapping.import');
 Route::get('course-mapping/sample-csv', [CourseMappingController::class, 'downloadSampleCsv'])->name('course_mapping.sample');
 Route::get('/get-programmes', [ProgrammeController::class, 'getProgrammes'])->name('get.programmes');
+
+Route::get('/timetable/export-pdf', [TimetableController::class, 'exportPDF'])->name('timetable.export.pdf');

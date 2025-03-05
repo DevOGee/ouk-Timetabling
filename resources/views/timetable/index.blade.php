@@ -104,7 +104,7 @@
 <body>
 
     <div class="container mt-5">
-        <h2 class="page-header">Student Timetable</h2>
+        {{-- <h2 class="page-header">Student Timetable</h2> --}}
 
         <!-- Filtering Section -->
         <div class="filter-section">
@@ -163,14 +163,19 @@
                     </div>
                 </div>
 
-                <button type="submit" class="mt-3 btn btn-primary">View Timetable</button>
+                <div class="mt-3 d-flex justify-content-between align-items-center">
+                    <button type="submit" class="btn btn-primary">View Timetable</button>
+                    <a href="{{ route('timetable.export.pdf', request()->all()) }}" class="btn btn-danger">Export as
+                        PDF</a>
+                </div>
+
             </form>
         </div>
 
         <!-- Timetable Display -->
         @if ($timetable->isNotEmpty())
             <div class="mt-5">
-                <h3>Class Schedule</h3>
+                <h3>Teaching & Learning Schedule</h3>
                 <table class="table table-bordered" style="table-layout: fixed; width: 100%;">
                     <thead>
                         <tr>
