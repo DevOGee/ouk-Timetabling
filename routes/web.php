@@ -13,7 +13,7 @@ use App\Http\Controllers\YearOfStudyController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
-    return redirect()->route('instructors.index');
+    return redirect()->route(route: 'timetable.index');
 });
 
 Route::resource('instructors', LecturerController::class);
