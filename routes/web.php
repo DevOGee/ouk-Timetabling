@@ -53,3 +53,4 @@ Route::get('timetable', [TimetableController::class, 'index'])->name('timetable.
 Route::get('course-mapping/upload', [CourseMappingController::class, 'showUploadForm'])->name('course_mapping.upload');
 Route::post('course-mapping/import', [CourseMappingController::class, 'importCourseMappings'])->name('course_mapping.import');
 Route::get('course-mapping/sample-csv', [CourseMappingController::class, 'downloadSampleCsv'])->name('course_mapping.sample');
+Route::get('/get-programmes', [ProgrammeController::class, 'getProgrammes'])->name('get.programmes');

@@ -123,4 +123,12 @@ class ProgrammeController extends Controller
 
         return redirect()->route('programmes.show', $programme)->with('success', 'Instructor removed successfully.');
     }
+
+    public function getProgrammes(Request $request)
+    {
+        $schoolId = $request->school_id;
+        $programmes = Programme::where('school_id', $schoolId)->get(['id', 'name']);
+
+        return response()->json($programmes);
+    }
 }

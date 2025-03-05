@@ -1,9 +1,44 @@
-@extends('layouts.app')
+<!DOCTYPE html>
+<html lang="en">
 
-@section('title', 'Student Timetable')
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Timetable</title>
 
-@section('content')
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
     <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+        }
+
+        /* .container {
+            max-width: 1200px;
+            margin: auto;
+            padding: 20px;
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        } */
+
+        .page-header {
+            text-align: center;
+            margin-bottom: 30px;
+            color: #037b90;
+            font-size: 28px;
+            font-weight: bold;
+        }
+
+        .filter-section {
+            padding: 20px;
+            background: #e3f2fd;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
         .lesson-container {
             display: flex;
             flex-direction: column;
@@ -64,67 +99,75 @@
             margin-top: 5px;
         }
     </style>
+</head>
 
+<body>
 
     <div class="container mt-5">
-        <h2 class="mb-4">Student Timetable</h2>
-        <form method="GET" action="{{ route('timetable.index') }}">
-            <div class="row">
-                <div class="col-md-3">
-                    <label for="school_id" class="form-label">School</label>
-                    <select class="form-control" id="school_id" name="school_id" required>
-                        <option value="">Select School</option>
-                        @foreach ($schools as $school)
-                            <option value="{{ $school->id }}" {{ request('school_id') == $school->id ? 'selected' : '' }}>
-                                {{ $school->name }}
-                            </option>
-                        @endforeach
-                    </select>
+        <h2 class="page-header">Student Timetable</h2>
+
+        <!-- Filtering Section -->
+        <div class="filter-section">
+            <form method="GET" action="{{ route('timetable.index') }}">
+                <div class="row">
+                    <div class="col-md-3">
+                        <label for="school_id" class="form-label">School</label>
+                        <select class="form-control" id="school_id" name="school_id" required>
+                            <option value="">Select School</option>
+                            @foreach ($schools as $school)
+                                <option value="{{ $school->id }}"
+                                    {{ request('school_id') == $school->id ? 'selected' : '' }}>
+                                    {{ $school->name }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <div class="col-md-3">
+                        <label for="programme_id" class="form-label">Programme</label>
+                        <select class="form-control" id="programme_id" name="programme_id" required>
+                            <option value="">Select Programme</option>
+                            @foreach ($programmes as $programme)
+                                <option value="{{ $programme->id }}"
+                                    {{ request('programme_id') == $programme->id ? 'selected' : '' }}>
+                                    {{ $programme->name }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <div class="col-md-3">
+                        <label for="year_of_study_id" class="form-label">Year of Study</label>
+                        <select class="form-control" id="year_of_study_id" name="year_of_study_id" required>
+                            <option value="">Select Year</option>
+                            @foreach ($years as $year)
+                                <option value="{{ $year->id }}"
+                                    {{ request('year_of_study_id') == $year->id ? 'selected' : '' }}>
+                                    {{ $year->name }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <div class="col-md-3">
+                        <label for="semester_id" class="form-label">Semester</label>
+                        <select class="form-control" id="semester_id" name="semester_id" required>
+                            <option value="">Select Semester</option>
+                            @foreach ($semesters as $semester)
+                                <option value="{{ $semester->id }}"
+                                    {{ request('semester_id') == $semester->id ? 'selected' : '' }}>
+                                    {{ $semester->name }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
                 </div>
 
-                <div class="col-md-3">
-                    <label for="programme_id" class="form-label">Programme</label>
-                    <select class="form-control" id="programme_id" name="programme_id" required>
-                        <option value="">Select Programme</option>
-                        @foreach ($programmes as $programme)
-                            <option value="{{ $programme->id }}"
-                                {{ request('programme_id') == $programme->id ? 'selected' : '' }}>
-                                {{ $programme->name }}
-                            </option>
-                        @endforeach
-                    </select>
-                </div>
+                <button type="submit" class="mt-3 btn btn-primary">View Timetable</button>
+            </form>
+        </div>
 
-                <div class="col-md-3">
-                    <label for="year_of_study_id" class="form-label">Year of Study</label>
-                    <select class="form-control" id="year_of_study_id" name="year_of_study_id" required>
-                        <option value="">Select Year</option>
-                        @foreach ($years as $year)
-                            <option value="{{ $year->id }}"
-                                {{ request('year_of_study_id') == $year->id ? 'selected' : '' }}>
-                                {{ $year->name }}
-                            </option>
-                        @endforeach
-                    </select>
-                </div>
-
-                <div class="col-md-3">
-                    <label for="semester_id" class="form-label">Semester</label>
-                    <select class="form-control" id="semester_id" name="semester_id" required>
-                        <option value="">Select Semester</option>
-                        @foreach ($semesters as $semester)
-                            <option value="{{ $semester->id }}"
-                                {{ request('semester_id') == $semester->id ? 'selected' : '' }}>
-                                {{ $semester->name }}
-                            </option>
-                        @endforeach
-                    </select>
-                </div>
-            </div>
-
-            <button type="submit" class="mt-3 btn btn-primary">View Timetable</button>
-        </form>
-
+        <!-- Timetable Display -->
         @if ($timetable->isNotEmpty())
             <div class="mt-5">
                 <h3>Class Schedule</h3>
@@ -202,4 +245,7 @@
             </div>
         @endif
     </div>
-@endsection
+
+</body>
+
+</html>
