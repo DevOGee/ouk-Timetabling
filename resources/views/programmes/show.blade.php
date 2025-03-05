@@ -141,15 +141,14 @@
                                                 method="POST">
                                                 @csrf
                                                 <div class="modal-body">
-                                                    <label for="lecturer_id_{{ $courseUnit->id }}"
-                                                        class="form-label">Select Instructor</label>
-                                                    <select class="form-control select2"
-                                                        id="lecturer_id_{{ $courseUnit->id }}" name="lecturer_id" required>
-                                                        <option value="">Search & Select Instructor</option>
+                                                    <label for="lecturer_id" class="form-label">Select Instructor</label>
+                                                    <select class="form-control" id="lecturer_id" name="lecturer_id"
+                                                        required>
+                                                        <option value="">Choose Instructor</option>
                                                         @foreach ($lecturers as $lecturer)
                                                             <option value="{{ $lecturer->id }}">
-                                                                {{ $lecturer->title->name ?? '' }} {{ $lecturer->name }}
-                                                            </option>
+                                                                {{ $lecturer->title->name ?? '' }}
+                                                                {{ $lecturer->name }}</option>
                                                         @endforeach
                                                     </select>
                                                 </div>
@@ -162,6 +161,7 @@
                                         </div>
                                     </div>
                                 </div>
+
                                 {{-- Assign Slot Modal --}}
                                 <div class="modal fade" id="assignSlotModal{{ $courseUnit->id }}" tabindex="-1"
                                     aria-labelledby="assignSlotLabel" aria-hidden="true">
@@ -252,15 +252,4 @@
             @endforeach
         @endforeach
     </div>
-@section('scripts')
-    <script>
-        $(document).ready(function() {
-            $('.select2').select2({
-                width: '100%', // Makes the dropdown fit well
-                placeholder: "Search & Select Instructor",
-                allowClear: true
-            });
-        });
-    </script>
-@endsection
 @endsection
