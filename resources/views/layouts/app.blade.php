@@ -6,6 +6,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>@yield('title')</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <!-- Select2 CSS -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/css/select2.min.css" rel="stylesheet">
+
 </head>
 
 <body>
@@ -113,6 +116,45 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Include jQuery -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+    <!-- Include Select2 -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/css/select2.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/js/select2.min.js"></script>
+
+
+    <script>
+        $(document).ready(function() {
+            $('.instructor-select').select2({
+                placeholder: "Search Instructor...",
+                allowClear: true,
+                ajax: {
+                    url: "{{ route('search.instructors') }}",
+                    dataType: 'json',
+                    delay: 250, // Delay to avoid excessive server requests
+                    data: function(params) {
+                        return {
+                            q: params.term // Send the search term as "q"
+                        };
+                    },
+                    processResults: function(data) {
+                        return {
+                            results: $.map(data, function(instructor) {
+                                return {
+                                    id: instructor.id,
+                                    text: (instructor.title ? instructor.title.name + " " :
+                                        "") + instructor.name
+                                };
+                            })
+                        };
+                    },
+                    cache: true
+                }
+            });
+        });
+    </script>
 </body>
 
 </html>

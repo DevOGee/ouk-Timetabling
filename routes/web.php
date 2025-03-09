@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AcademicYearController;
+use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\CourseMappingController;
 use App\Http\Controllers\CourseUnitController;
 use App\Http\Controllers\LecturerController;
@@ -10,11 +11,16 @@ use App\Http\Controllers\SchoolController;
 use App\Http\Controllers\SemesterController;
 use App\Http\Controllers\TimetableController;
 use App\Http\Controllers\YearOfStudyController;
+use App\Models\Lecturer;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
     return redirect()->route(route: 'timetable.index');
 });
+
+Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
+Route::post('/login', [LoginController::class, 'login']);
+Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 
 Route::resource('instructors', LecturerController::class);
 Route::get('lecturers/upload', [LecturerController::class, 'showUploadForm'])->name('instructors.upload');
@@ -56,3 +62,20 @@ Route::get('course-mapping/sample-csv', [CourseMappingController::class, 'downlo
 Route::get('/get-programmes', [ProgrammeController::class, 'getProgrammes'])->name('get.programmes');
 
 Route::get('/timetable/export-pdf', [TimetableController::class, 'exportPDF'])->name('timetable.export.pdf');
+
+Route::get('/search-instructors', function (Request $request) {
+    $query = $request->input('q');
+
+    $instructors = Lecturer::where('name', 'LIKE', "%{$query}%")
+        ->orWhereHas('title', function ($q) use ($query) {
+            $q->where('name', 'LIKE', "%{$query}%");
+        })
+        ->limit(10) // Limit results
+        ->get();
+
+    return response()->json($instructors);
+})->name('search.instructors');
+
+Auth::routes();
+
+Route::get('/home', [App\Http\Controllers\HomeController::class, 'index'])->name('home');

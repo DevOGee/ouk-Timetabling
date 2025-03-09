@@ -11,6 +11,7 @@
         "guzzlehttp/guzzle": "^7.9",
         "laravel/framework": "^11.31",
         "laravel/tinker": "^2.9",
+        "laravel/ui": "^4.6",
         "maatwebsite/excel": "^3.1",
         "openai-php/laravel": "^0.10.2",
         "vlucas/phpdotenv": "^5.6"

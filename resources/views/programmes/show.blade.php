@@ -125,7 +125,7 @@
                                     </td>
                                 </tr>
 
-                                {{-- Assign Instructor Modal --}}
+                                <!-- Assign Instructor Modal -->
                                 <div class="modal fade" id="assignInstructorModal{{ $courseUnit->id }}" tabindex="-1"
                                     aria-labelledby="assignInstructorLabel" aria-hidden="true">
                                     <div class="modal-dialog">
@@ -141,15 +141,11 @@
                                                 method="POST">
                                                 @csrf
                                                 <div class="modal-body">
-                                                    <label for="lecturer_id" class="form-label">Select Instructor</label>
-                                                    <select class="form-control" id="lecturer_id" name="lecturer_id"
-                                                        required>
-                                                        <option value="">Choose Instructor</option>
-                                                        @foreach ($lecturers as $lecturer)
-                                                            <option value="{{ $lecturer->id }}">
-                                                                {{ $lecturer->title->name ?? '' }}
-                                                                {{ $lecturer->name }}</option>
-                                                        @endforeach
+                                                    <label for="lecturer_id_{{ $courseUnit->id }}"
+                                                        class="form-label">Select Instructor</label>
+                                                    <select class="form-control instructor-select"
+                                                        id="lecturer_id_{{ $courseUnit->id }}" name="lecturer_id" required>
+                                                        <option value="">Search Instructor...</option>
                                                     </select>
                                                 </div>
                                                 <div class="modal-footer">
@@ -161,6 +157,7 @@
                                         </div>
                                     </div>
                                 </div>
+
 
                                 {{-- Assign Slot Modal --}}
                                 <div class="modal fade" id="assignSlotModal{{ $courseUnit->id }}" tabindex="-1"
