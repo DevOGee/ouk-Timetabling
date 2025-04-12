@@ -13,7 +13,8 @@
             </div>
             <div class="modal-body">
                 <label for="lecturer_id_{{ $course->id }}" class="form-label">Select Instructor</label>
-                <select name="lecturer_id" id="lecturer_id_{{ $course->id }}" class="form-select" required>
+                <select name="lecturer_id" id="lecturer_id_{{ $course->id }}" class="form-select instructor-select"
+                    required>
                     <option value="">-- Select Instructor --</option>
                     @foreach ($lecturers as $lecturer)
                         <option value="{{ $lecturer->id }}">
@@ -29,3 +30,13 @@
         </form>
     </div>
 </div>
+
+<script>
+    // Initialize Select2 for the instructor dropdown
+    $(document).ready(function() {
+        $('#lecturer_id_{{ $course->id }}').select2({
+            width: '100%', // Makes the select box expand to full width
+            placeholder: 'Search for an instructor'
+        });
+    });
+</script>

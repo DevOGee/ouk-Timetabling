@@ -30,10 +30,56 @@
 
             <div class="mb-3">
                 <label for="color" class="form-label">Color (optional)</label>
-                <input type="color" class="form-control form-control-color" name="color" id="color"
-                    value="{{ old('color', '#000000') }}">
-            </div>
+                <div class="d-flex">
+                    <div class="form-check me-3">
+                        <input class="form-check-input" type="radio" name="color" id="color1" value="#3BB994">
+                        <label class="form-check-label" for="color1">
+                            <span
+                                style="background-color: #3BB994; width: 30px; height: 30px; display: inline-block; border: 1px solid #ccc;"></span>
+                        </label>
+                    </div>
 
+                    <div class="form-check me-3">
+                        <input class="form-check-input" type="radio" name="color" id="color2" value="#279EFF">
+                        <label class="form-check-label" for="color2">
+                            <span
+                                style="background-color: #279EFF; width: 30px; height: 30px; display: inline-block; border: 1px solid #ccc;"></span>
+                        </label>
+                    </div>
+
+                    <div class="form-check me-3">
+                        <input class="form-check-input" type="radio" name="color" id="color3" value="#D83F31">
+                        <label class="form-check-label" for="color3">
+                            <span
+                                style="background-color: #D83F31; width: 30px; height: 30px; display: inline-block; border: 1px solid #ccc;"></span>
+                        </label>
+                    </div>
+
+                    <div class="form-check me-3">
+                        <input class="form-check-input" type="radio" name="color" id="color4" value="#FF7F50">
+                        <label class="form-check-label" for="color4">
+                            <span
+                                style="background-color: #FF7F50; width: 30px; height: 30px; display: inline-block; border: 1px solid #ccc;"></span>
+                        </label>
+                    </div>
+
+                    <div class="form-check me-3">
+                        <input class="form-check-input" type="radio" name="color" id="color5" value="#6C3428">
+                        <label class="form-check-label" for="color5">
+                            <span
+                                style="background-color: #6C3428; width: 30px; height: 30px; display: inline-block; border: 1px solid #ccc;"></span>
+                        </label>
+                    </div>
+
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="color" id="color6" value="#940B92">
+                        <label class="form-check-label" for="color6">
+                            <span
+                                style="background-color: #940B92; width: 30px; height: 30px; display: inline-block; border: 1px solid #ccc;"></span>
+                        </label>
+                    </div>
+                </div>
+            </div>
             <button type="submit" class="btn btn-primary">Save Course Unit</button>
         </form>
     </div>

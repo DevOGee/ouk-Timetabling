@@ -55,7 +55,7 @@
                     <p class="text-muted">No programmes available in this school.</p>
                 @else
                     <ul class="list-group">
-                        @foreach ($school->programmes as $programme)
+                        @foreach ($school->programmes->sortBy('programme_code') as $programme)
                             <li class="list-group-item d-flex justify-content-between align-items-center">
                                 {{ $programme->programme_code }} - {{ $programme->name }}
                                 <a href="{{ route('curriculum.show', $programme->id) }}" class="btn btn-sm btn-primary">

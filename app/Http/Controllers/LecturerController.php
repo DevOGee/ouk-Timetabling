@@ -188,8 +188,15 @@ class LecturerController extends Controller
             'file' => 'required|mimes:csv,txt|max:2048',
         ]);
 
-        Excel::import(new LecturersImport, $request->file('file'));
+        // Create an instance of the import class
+        $import = new LecturersImport;
 
-        return redirect()->route('instructors.index')->with('success', 'Lecturers imported successfully!');
+        // Perform the import
+        Excel::import($import, $request->file('file'));
+
+        // Return a success message with the import summary
+        return redirect()->route('instructors.index')->with('success',
+            "{$import->importedCount} lecturers uploaded successfully, {$import->skippedCount} lecturers already exist."
+        );
     }
 }

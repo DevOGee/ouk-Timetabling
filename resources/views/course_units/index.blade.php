@@ -63,10 +63,9 @@
             <thead>
                 <tr>
                     <th>#</th>
+                    <th></th>
                     <th>Course Code</th>
                     <th>Course Unit Name</th>
-                    {{-- <th>Year of Study</th> --}}
-                    {{-- <th>Semester</th> --}}
                     <th>Actions</th>
                 </tr>
             </thead>
@@ -74,13 +73,18 @@
                 @foreach ($courseUnits as $index => $courseUnit)
                     <tr>
                         <td>{{ ($courseUnits->currentPage() - 1) * $courseUnits->perPage() + $index + 1 }}</td>
+                        <td
+                            style="background-color: {{ $courseUnit->color ?? '#000000' }}; color: white; text-align: center;">
+                            <!-- Color square -->
+                            <span
+                                style="display: inline-block; width: 20px; height: 20px; background-color: {{ $courseUnit->color ?? '#000000' }};"></span>
+                        </td>
                         <td>{{ $courseUnit->code }}</td>
                         <td>{{ $courseUnit->name }}</td>
-                        {{-- <td>{{ $courseUnit->yearOfStudy->name ?? 'N/A' }}</td> --}}
-                        {{-- <td>{{ $courseUnit->semester->name ?? 'N/A' }}</td> --}}
                         <td>
                             <a href="{{ route('course_units.edit', $courseUnit) }}" class="btn btn-warning btn-sm">Edit</a>
-                            <form action="{{ route('course_units.destroy', $courseUnit) }}" method="POST" class="d-inline">
+                            <form action="{{ route('course_units.destroy', $courseUnit) }}" method="POST"
+                                class="d-inline">
                                 @csrf
                                 @method('DELETE')
                                 <button type="submit" class="btn btn-danger btn-sm"
@@ -90,8 +94,8 @@
                     </tr>
                 @endforeach
             </tbody>
-
         </table>
+
         <div class="mt-3 d-flex justify-content-center">
             <nav>
                 <ul class="pagination">

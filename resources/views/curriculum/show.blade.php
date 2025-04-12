@@ -2,7 +2,7 @@
 
 @section('content')
     <div class="container">
-        <h2 class="mb-4">Curriculum for {{ $programme->name }}</h2>
+        <h2 class="mb-4">Curriculum for {{ $programme->programme_code }} - {{ $programme->name }}</h2>
 
         @if (session('success'))
             <div class="alert alert-success">{{ session('success') }}</div>
@@ -70,7 +70,14 @@
                 <tbody>
                     @foreach ($mappings->sortBy(fn($m) => $m->courseUnit->code) as $mapping)
                         <tr>
-                            <td>{{ $mapping->courseUnit->code }} - {{ $mapping->courseUnit->name }}</td>
+                            <td>
+                                <!-- Color Circle -->
+                                <span
+                                    style="display: inline-block; width: 20px; height: 20px; border-radius: 50%; 
+                        background-color: {{ $mapping->courseUnit->color ?? '#000000' }}; margin-right: 10px;">
+                                </span>
+                                {{ $mapping->courseUnit->code }} - {{ $mapping->courseUnit->name }}
+                            </td>
                             <td>
                                 <form action="{{ route('curriculum.unmap', $mapping->id) }}" method="POST">
                                     @csrf
