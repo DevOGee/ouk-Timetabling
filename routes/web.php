@@ -4,6 +4,7 @@ use App\Http\Controllers\AcademicYearController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\CourseMappingController;
 use App\Http\Controllers\CourseUnitController;
+use App\Http\Controllers\CurriculumSetupController;
 use App\Http\Controllers\LecturerController;
 use App\Http\Controllers\LessonSlotController;
 use App\Http\Controllers\ProgrammeController;
@@ -46,11 +47,8 @@ Route::resource('course_units', CourseUnitController::class);
 
 Route::post('programmes/{programme}/course-units/{courseUnit}/add-instructor', [ProgrammeController::class, 'addInstructor'])->name('programmes.add_instructor');
 Route::delete('programmes/{programme}/course-units/{courseUnit}/remove-instructor/{lecturer}', [ProgrammeController::class, 'removeInstructor'])->name('programmes.remove_instructor');
-// Route::post('programmes/{programme}/course-units/{courseUnit}/assign-slot', [LessonSlotController::class, 'store'])->name('lesson_slots.store');
 
 Route::post('programmes/{programme}/course-units/{courseUnit}/assign-slot', [LessonSlotController::class, 'store'])->name('lesson_slots.store');
-
-// Route::get('course-units/{courseUnit}/edit', [CourseUnitController::class, 'edit'])->name('course_units.edit');
 Route::put('programmes/{programme}/course-units/{courseUnit}/lesson-slots/{lessonSlot}',
     [LessonSlotController::class, 'update'])->name('lesson_slots.update');
 
@@ -79,3 +77,23 @@ Route::get('/search-instructors', function (Request $request) {
 Auth::routes();
 
 Route::get('/home', [App\Http\Controllers\HomeController::class, 'index'])->name('home');
+
+Route::prefix('curriculum')->name('curriculum.')->group(function () {
+    // Curriculum setup homepage (list all programmes)
+    Route::get('/', [CurriculumSetupController::class, 'index'])->name('index');
+
+    // View mappings for a specific programme
+    Route::get('/programme/{programme}', [CurriculumSetupController::class, 'show'])->name('show');
+
+    // Store a single course mapping
+    Route::post('/map', [CurriculumSetupController::class, 'store'])->name('map');
+
+    // Remove a course mapping
+    Route::delete('/mapping/{id}', [CurriculumSetupController::class, 'destroy'])->name('unmap');
+
+    // Bulk upload mappings
+    Route::post('/bulk-upload', [CurriculumSetupController::class, 'bulkUpload'])->name('bulk-upload');
+
+    Route::get('/sample-download', [CurriculumSetupController::class, 'downloadSample'])->name('download-sample');
+
+});

@@ -62,11 +62,11 @@
         <table class="table table-bordered">
             <thead>
                 <tr>
-                    <th>ID</th>
-                    <th>Code</th>
+                    <th>#</th>
+                    <th>Course Code</th>
                     <th>Course Unit Name</th>
-                    <th>Year of Study</th>
-                    <th>Semester</th>
+                    {{-- <th>Year of Study</th> --}}
+                    {{-- <th>Semester</th> --}}
                     <th>Actions</th>
                 </tr>
             </thead>
@@ -76,12 +76,11 @@
                         <td>{{ ($courseUnits->currentPage() - 1) * $courseUnits->perPage() + $index + 1 }}</td>
                         <td>{{ $courseUnit->code }}</td>
                         <td>{{ $courseUnit->name }}</td>
-                        <td>{{ $courseUnit->yearOfStudy->name ?? 'N/A' }}</td>
-                        <td>{{ $courseUnit->semester->name ?? 'N/A' }}</td>
+                        {{-- <td>{{ $courseUnit->yearOfStudy->name ?? 'N/A' }}</td> --}}
+                        {{-- <td>{{ $courseUnit->semester->name ?? 'N/A' }}</td> --}}
                         <td>
                             <a href="{{ route('course_units.edit', $courseUnit) }}" class="btn btn-warning btn-sm">Edit</a>
-                            <form action="{{ route('course_units.destroy', $courseUnit) }}" method="POST"
-                                class="d-inline">
+                            <form action="{{ route('course_units.destroy', $courseUnit) }}" method="POST" class="d-inline">
                                 @csrf
                                 @method('DELETE')
                                 <button type="submit" class="btn btn-danger btn-sm"

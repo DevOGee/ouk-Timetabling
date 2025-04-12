@@ -4,7 +4,7 @@
 
 @section('content')
     <div class="container mt-5">
-        <h2 class="mb-4">Programmes</h2>
+        <h2 class="mb-4">Programme Scheduling</h2>
 
         @if (session('success'))
             <div class="alert alert-success">{{ session('success') }}</div>
@@ -12,34 +12,40 @@
 
         <a href="{{ route('programmes.create') }}" class="mb-3 btn btn-primary">Add Programme</a>
 
-        <table class="table table-bordered">
-            <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>Programme Name</th>
-                    <th>School</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach ($programmes as $programme)
-                    <tr>
-                        <td>{{ $programme->id }}</td>
-                        <td>{{ $programme->programme_code }} - {{ $programme->name }}</td>
-                        <td>{{ $programme->school->name ?? 'N/A' }}</td>
-                        <td>
-                            <a href="{{ route('programmes.show', $programme) }}" class="btn btn-info btn-sm">View</a>
-                            <a href="{{ route('programmes.edit', $programme) }}" class="btn btn-warning btn-sm">Edit</a>
-                            <form action="{{ route('programmes.destroy', $programme) }}" method="POST" class="d-inline">
-                                @csrf
-                                @method('DELETE')
-                                <button type="submit" class="btn btn-danger btn-sm"
-                                    onclick="return confirm('Are you sure?')">Delete</button>
-                            </form>
-                        </td>
-                    </tr>
-                @endforeach
-            </tbody>
-        </table>
+
+        @foreach ($schools as $school)
+            <div class="mb-5">
+                <h5 class="mb-3">{{ $school->name }}</h5>
+
+                @if ($school->programmes->isEmpty())
+                    <p class="text-muted">No programmes available in this school.</p>
+                @else
+                    <ul class="list-group">
+                        @foreach ($school->programmes->sortBy('programme_code') as $programme)
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                <div>
+                                    <strong>{{ $programme->programme_code }}</strong> – {{ $programme->name }}
+                                </div>
+                                <div>
+                                    <a href="{{ route('programmes.show', $programme) }}"
+                                        class="btn btn-info btn-sm me-1">View Scheduling</a>
+                                    {{-- <a href="{{ route('programmes.edit', $programme) }}"
+                                        class="btn btn-warning btn-sm me-1">Edit</a>
+                                    <form action="{{ route('programmes.destroy', $programme) }}" method="POST"
+                                        class="d-inline">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="btn btn-danger btn-sm"
+                                            onclick="return confirm('Are you sure you want to delete this programme?')">
+                                            Delete
+                                        </button>
+                                    </form> --}}
+                                </div>
+                            </li>
+                        @endforeach
+                    </ul>
+                @endif
+            </div>
+        @endforeach
     </div>
 @endsection

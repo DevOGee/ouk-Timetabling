@@ -9,7 +9,7 @@ class CourseUnit extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['code', 'name', 'year_of_study_id', 'semester_id', 'color']; // Added 'color'
+    protected $fillable = ['code', 'name', 'color']; // Added 'color'
 
     public function yearOfStudy()
     {
@@ -21,9 +21,16 @@ class CourseUnit extends Model
         return $this->belongsTo(Semester::class);
     }
 
+    public function programmeMappings()
+    {
+        return $this->hasMany(CourseUnitProgrammeMapping::class);
+    }
+
     public function programmes()
     {
-        return $this->belongsToMany(Programme::class, 'course_unit_programme')->withTimestamps();
+        return $this->belongsToMany(Programme::class, 'course_unit_programme_mappings')
+            ->withPivot(['year_of_study_id', 'semester_id'])
+            ->withTimestamps();
     }
 
     public function instructors()

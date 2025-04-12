@@ -4,9 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Imports\CourseUnitsImport;
 use App\Models\CourseUnit;
-use App\Models\Day;
 use App\Models\Lecturer;
-use App\Models\Programme;
 use App\Models\Semester;
 use App\Models\YearOfStudy;
 use Illuminate\Http\Request;
@@ -91,8 +89,8 @@ class CourseUnitController extends Controller
         $request->validate([
             'code' => 'required|string|max:10',
             'name' => 'required|string|max:255',
-            'year_of_study_id' => 'required|exists:years_of_study,id',
-            'semester_id' => 'required|exists:semesters,id',
+            // 'year_of_study_id' => 'required|exists:years_of_study,id',
+            // 'semester_id' => 'required|exists:semesters,id',
             'color' => 'nullable|string|max:7', // Allow color input
         ]);
 
@@ -101,30 +99,24 @@ class CourseUnitController extends Controller
         return redirect()->route('course_units.index')->with('success', 'Course Unit created successfully');
     }
 
-    public function edit(CourseUnit $courseUnit)
+    // Show form for editing
+    public function edit(CourseUnit $course_unit)
     {
-        $yearsOfStudy = YearOfStudy::all();
-        $semesters = Semester::all();
-        $programmes = Programme::all();
-        $lecturers = Lecturer::all();
-        $days = Day::all(); // Ensure you have days loaded
-
-        return view('course_units.edit', compact('courseUnit', 'yearsOfStudy', 'semesters', 'programmes', 'lecturers', 'days'));
+        return view('course_units.edit', compact('course_unit'));
     }
 
-    public function update(Request $request, CourseUnit $courseUnit)
+    // Update existing course unit
+    public function update(Request $request, CourseUnit $course_unit)
     {
         $request->validate([
-            'code' => 'required|string|max:10',
-            'name' => 'required|string|max:255',
-            'year_of_study_id' => 'required|exists:years_of_study,id',
-            'semester_id' => 'required|exists:semesters,id',
-            'color' => 'nullable|string|max:7', // Validate hex color
+            'code' => 'required|unique:course_units,code,'.$course_unit->id,
+            'name' => 'required|string',
+            'color' => 'nullable|string',
         ]);
 
-        $courseUnit->update($request->all());
+        $course_unit->update($request->only('code', 'name', 'color'));
 
-        return redirect()->route('course_units.index')->with('success', 'Course Unit updated successfully');
+        return redirect()->route('course_units.index')->with('success', 'Course unit updated successfully!');
     }
 
     public function destroy(CourseUnit $courseUnit)
@@ -145,12 +137,12 @@ class CourseUnitController extends Controller
             $file = fopen('php://output', 'w');
 
             // Add CSV header row
-            fputcsv($file, ['code', 'name', 'year_of_study_id', 'semester_id', 'color']);
+            fputcsv($file, ['code', 'name', 'color']);
 
             // Add sample data
-            fputcsv($file, ['MTH101', 'Calculus I', 1, 1, '#ff0000']);
-            fputcsv($file, ['CSC201', 'Data Structures', 2, 1, '#00ff00']);
-            fputcsv($file, ['PHY301', 'Quantum Physics', 3, 2, '#0000ff']);
+            fputcsv($file, ['MTH101', 'Calculus I', '#ff0000']);
+            fputcsv($file, ['CSC201', 'Data Structures', '#00ff00']);
+            fputcsv($file, ['PHY301', 'Quantum Physics', '#0000ff']);
 
             fclose($file);
         };

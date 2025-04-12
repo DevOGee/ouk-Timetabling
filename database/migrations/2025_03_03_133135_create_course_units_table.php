@@ -12,8 +12,7 @@ return new class extends Migration
             $table->id();
             $table->string('code')->unique(); // E.g., MAT101
             $table->string('name'); // E.g., Calculus I
-            $table->foreignId('year_of_study_id')->constrained('years_of_study')->onDelete('cascade');
-            $table->foreignId('semester_id')->constrained('semesters')->onDelete('cascade');
+            $table->string('color')->nullable(); // Add color field
             $table->timestamps();
         });
     }

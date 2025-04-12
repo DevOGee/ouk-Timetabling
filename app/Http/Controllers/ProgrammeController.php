@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\CourseUnit;
+use App\Models\CourseUnitProgrammeMapping;
 use App\Models\Day;
 use App\Models\Lecturer;
 use App\Models\Programme;
@@ -13,9 +14,10 @@ class ProgrammeController extends Controller
 {
     public function index()
     {
+        $schools = School::with('programmes')->get();
         $programmes = Programme::with('school')->get();
 
-        return view('programmes.index', compact('programmes'));
+        return view('programmes.index', compact('programmes', 'schools'));
     }
 
     public function create()
@@ -65,16 +67,16 @@ class ProgrammeController extends Controller
         return redirect()->route('programmes.index')->with('success', 'Programme deleted successfully.');
     }
 
-    public function show(Programme $programme)
-    {
-        $courseUnits = CourseUnit::whereDoesntHave('programmes', function ($query) use ($programme) {
-            $query->where('programme_id', $programme->id);
-        })->get();
-        $lecturers = Lecturer::all();
-        $days = Day::all();
+    // public function show(Programme $programme)
+    // {
+    //     $courseUnits = CourseUnit::whereDoesntHave('programmes', function ($query) use ($programme) {
+    //         $query->where('programme_id', $programme->id);
+    //     })->get();
+    //     $lecturers = Lecturer::all();
+    //     $days = Day::all();
 
-        return view('programmes.show', compact('programme', 'courseUnits', 'lecturers', 'days'));
-    }
+    //     return view('programmes.show', compact('programme', 'courseUnits', 'lecturers', 'days'));
+    // }
 
     public function addCourseUnit(Request $request, Programme $programme)
     {
@@ -104,14 +106,47 @@ class ProgrammeController extends Controller
         return redirect()->route('programmes.show', $programme)->with('success', 'Course Unit removed from Programme successfully.');
     }
 
+    public function getProgrammes(Request $request)
+    {
+        $schoolId = $request->school_id;
+        $programmes = Programme::where('school_id', $schoolId)->get(['id', 'name']);
+
+        return response()->json($programmes);
+    }
+
+    public function show(Programme $programme)
+    {
+        // Fetch unmapped courses
+        $courseUnits = CourseUnit::whereDoesntHave('programmeMappings', function ($query) use ($programme) {
+            $query->where('programme_id', $programme->id);
+        })->get();
+
+        $lecturers = Lecturer::all();
+        $days = Day::all();
+
+        $groupedMappings = $programme->courseUnitMappings()
+            ->with(['courseUnit', 'lecturer', 'day'])
+            ->get()
+            ->sortBy(fn ($m) => $m->courseUnit->code)
+            ->groupBy(function ($m) {
+                return 'Year '.$m->yearOfStudy->name.' - Semester '.$m->semester->name;
+            });
+
+        return view('programmes.show', compact('programme', 'courseUnits', 'lecturers', 'days', 'groupedMappings'));
+    }
+
     public function addInstructor(Request $request, Programme $programme, CourseUnit $courseUnit)
     {
         $request->validate([
             'lecturer_id' => 'required|exists:lecturers,id',
         ]);
 
-        if (! $courseUnit->instructors()->wherePivot('programme_id', $programme->id)->where('lecturer_id', $request->lecturer_id)->exists()) {
-            $courseUnit->instructors()->attach($request->lecturer_id, ['programme_id' => $programme->id]);
+        $mapping = CourseUnitProgrammeMapping::where('programme_id', $programme->id)
+            ->where('course_unit_id', $courseUnit->id)
+            ->first();
+
+        if ($mapping) {
+            $mapping->update(['lecturer_id' => $request->lecturer_id]);
         }
 
         return redirect()->route('programmes.show', $programme)->with('success', 'Instructor assigned successfully.');
@@ -119,16 +154,15 @@ class ProgrammeController extends Controller
 
     public function removeInstructor(Programme $programme, CourseUnit $courseUnit, Lecturer $lecturer)
     {
-        $courseUnit->instructors()->wherePivot('programme_id', $programme->id)->detach($lecturer);
+        $mapping = CourseUnitProgrammeMapping::where('programme_id', $programme->id)
+            ->where('course_unit_id', $courseUnit->id)
+            ->where('lecturer_id', $lecturer->id)
+            ->first();
+
+        if ($mapping) {
+            $mapping->update(['lecturer_id' => null]);
+        }
 
         return redirect()->route('programmes.show', $programme)->with('success', 'Instructor removed successfully.');
-    }
-
-    public function getProgrammes(Request $request)
-    {
-        $schoolId = $request->school_id;
-        $programmes = Programme::where('school_id', $schoolId)->get(['id', 'name']);
-
-        return response()->json($programmes);
     }
 }

@@ -20,13 +20,13 @@ class CourseUnitsImport implements ToModel, WithHeadingRow
             return null; // Skip duplicates
         }
 
-        // Ensure foreign keys exist before inserting
-        if (
-            ! YearOfStudy::where('id', $row['year_of_study_id'])->exists() ||
-            ! Semester::where('id', $row['semester_id'])->exists()
-        ) {
-            return null;
-        }
+        // // Ensure foreign keys exist before inserting
+        // if (
+        //     ! YearOfStudy::where('id', $row['year_of_study_id'])->exists() ||
+        //     ! Semester::where('id', $row['semester_id'])->exists()
+        // ) {
+        //     return null;
+        // }
 
         // Increment successful import count
         $this->importedCount++;
@@ -34,8 +34,8 @@ class CourseUnitsImport implements ToModel, WithHeadingRow
         return new CourseUnit([
             'code' => $row['code'],
             'name' => $row['name'],
-            'year_of_study_id' => $row['year_of_study_id'],
-            'semester_id' => $row['semester_id'],
+            // 'year_of_study_id' => $row['year_of_study_id'],
+            // 'semester_id' => $row['semester_id'],
             'color' => $row['color'] ?? '#ff7f50', // Default color
         ]);
     }

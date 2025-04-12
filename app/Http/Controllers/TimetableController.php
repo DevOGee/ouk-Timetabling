@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\CourseUnitProgrammeMapping;
 use App\Models\Day;
-use App\Models\LessonSlot;
 use App\Models\Programme;
 use App\Models\School;
 use App\Models\Semester;
@@ -19,22 +19,26 @@ class TimetableController extends Controller
         $programmes = Programme::all();
         $years = YearOfStudy::all();
         $semesters = Semester::all();
-        // $days = Day::all();
         $days = Day::where('id', '<=', 5)->get();
 
         $timetable = collect();
 
-        if ($request->has(['school_id', 'programme_id', 'year_of_study_id', 'semester_id'])) {
-            $timetable = LessonSlot::whereHas('courseUnit', function ($query) use ($request) {
-                $query->where('year_of_study_id', $request->year_of_study_id)
-                    ->where('semester_id', $request->semester_id)
-                    ->whereHas('programmes', function ($query) use ($request) {
-                        $query->where('programme_id', $request->programme_id);
-                    });
-            })->with(['courseUnit', 'courseUnit.instructors', 'day'])->get();
+        if ($request->filled(['school_id', 'programme_id', 'year_of_study_id', 'semester_id'])) {
+            $timetable = CourseUnitProgrammeMapping::where('programme_id', $request->programme_id)
+                ->where('year_of_study_id', $request->year_of_study_id)
+                ->where('semester_id', $request->semester_id)
+                ->with(['courseUnit', 'lecturer', 'day'])
+                ->get();
         }
 
-        return view('timetable.index', compact('schools', 'programmes', 'years', 'semesters', 'days', 'timetable'));
+        return view('timetable.index', compact(
+            'schools',
+            'programmes',
+            'years',
+            'semesters',
+            'days',
+            'timetable'
+        ));
     }
 
     public function exportPDF(Request $request)
@@ -47,16 +51,21 @@ class TimetableController extends Controller
 
         $programme = Programme::findOrFail($request->programme_id);
 
-        $timetable = LessonSlot::whereHas('courseUnit', function ($query) use ($request) {
-            $query->where('year_of_study_id', $request->year_of_study_id)
-                ->where('semester_id', $request->semester_id)
-                ->whereHas('programmes', function ($query) use ($request) {
-                    $query->where('programme_id', $request->programme_id);
-                });
-        })->with(['courseUnit', 'courseUnit.instructors', 'day'])->get();
+        $timetable = CourseUnitProgrammeMapping::where('programme_id', $request->programme_id)
+            ->where('year_of_study_id', $request->year_of_study_id)
+            ->where('semester_id', $request->semester_id)
+            ->with(['courseUnit', 'lecturer', 'day'])
+            ->get();
 
-        $pdf = Pdf::loadView('timetable.pdf', compact('schools', 'programmes', 'years', 'semesters', 'days', 'timetable', 'programme'))
-            ->setPaper('A4', orientation: 'portrait');
+        $pdf = Pdf::loadView('timetable.pdf', compact(
+            'schools',
+            'programmes',
+            'years',
+            'semesters',
+            'days',
+            'timetable',
+            'programme'
+        ))->setPaper('A4', 'portrait');
 
         return $pdf->download('timetable.pdf');
     }

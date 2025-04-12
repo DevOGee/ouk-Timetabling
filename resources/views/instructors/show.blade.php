@@ -72,7 +72,7 @@
         <div class="mt-5">
             <h3 class="text-primary">Assigned Courses</h3>
 
-            @if ($lecturer->courseUnits->isEmpty())
+            @if ($lecturer->courseUnitProgrammeMappings->isEmpty())
                 <div class="text-center alert alert-warning">
                     <i class="fas fa-exclamation-triangle"></i> No courses assigned.
                 </div>
@@ -84,23 +84,30 @@
                                 <th>Course Code</th>
                                 <th>Course Name</th>
                                 <th>Programme</th>
+                                <th>Year & Semester</th>
                                 <th>Day(s) Scheduled</th>
                             </tr>
                         </thead>
                         <tbody>
-                            @foreach ($lecturer->courseUnits as $courseUnit)
+                            @foreach ($lecturer->courseUnitProgrammeMappings as $mapping)
                                 <tr>
-                                    <td class="fw-bold">{{ $courseUnit->code }}</td>
-                                    <td>{{ $courseUnit->name }}</td>
+                                    <td class="fw-bold">{{ $mapping->courseUnit?->code ?? '-' }}</td>
+                                    <td>{{ $mapping->courseUnit?->name ?? '-' }}</td>
                                     <td>
-                                        @foreach ($courseUnit->programmes as $programme)
-                                            <span class="badge bg-info text-dark">{{ $programme->name }}</span><br>
-                                        @endforeach
+                                        <span class="badge bg-info text-dark">
+                                            {{ $mapping->programme?->name ?? 'N/A' }}
+                                        </span>
                                     </td>
                                     <td>
-                                        @foreach ($courseUnit->lessonSlots as $lesson)
-                                            <span class="badge bg-success">{{ $lesson->day->name }}</span><br>
-                                        @endforeach
+                                        <span class="badge bg-secondary">
+                                            {{ $mapping->yearOfStudy?->name ?? '-' }} -
+                                            {{ $mapping->semester?->name ?? '-' }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-success">
+                                            {{ $mapping->day?->name ?? 'Not Assigned' }}
+                                        </span>
                                     </td>
                                 </tr>
                             @endforeach

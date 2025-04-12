@@ -38,18 +38,18 @@ namespace App\Models{
  * @property string $code
  * @property string $name
  * @property string|null $color
- * @property int $year_of_study_id
- * @property int $semester_id
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Lecturer> $instructors
  * @property-read int|null $instructors_count
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\LessonSlot> $lessonSlots
  * @property-read int|null $lesson_slots_count
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\CourseUnitProgrammeMapping> $programmeMappings
+ * @property-read int|null $programme_mappings_count
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Programme> $programmes
  * @property-read int|null $programmes_count
- * @property-read \App\Models\Semester $semester
- * @property-read \App\Models\YearOfStudy $yearOfStudy
+ * @property-read \App\Models\Semester|null $semester
+ * @property-read \App\Models\YearOfStudy|null $yearOfStudy
  * @method static \Illuminate\Database\Eloquent\Builder<static>|CourseUnit newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|CourseUnit newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|CourseUnit query()
@@ -58,11 +58,54 @@ namespace App\Models{
  * @method static \Illuminate\Database\Eloquent\Builder<static>|CourseUnit whereCreatedAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|CourseUnit whereId($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|CourseUnit whereName($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|CourseUnit whereSemesterId($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|CourseUnit whereUpdatedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|CourseUnit whereYearOfStudyId($value)
  */
 	class CourseUnit extends \Eloquent {}
+}
+
+namespace App\Models{
+/**
+ * 
+ *
+ * @property int $id
+ * @property int $course_unit_id
+ * @property int $programme_id
+ * @property int $year_of_study_id
+ * @property int $semester_id
+ * @property int|null $lecturer_id
+ * @property int|null $day_id
+ * @property string|null $morning_start_time
+ * @property int|null $morning_duration
+ * @property string|null $evening_start_time
+ * @property int|null $evening_duration
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property-read \App\Models\CourseUnit $courseUnit
+ * @property-read \App\Models\Day|null $day
+ * @property-read \App\Models\LessonSlot|null $eveningSlot
+ * @property-read \App\Models\Lecturer|null $lecturer
+ * @property-read \App\Models\LessonSlot|null $morningSlot
+ * @property-read \App\Models\Programme $programme
+ * @property-read \App\Models\Semester $semester
+ * @property-read \App\Models\YearOfStudy $yearOfStudy
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|CourseUnitProgrammeMapping newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|CourseUnitProgrammeMapping newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|CourseUnitProgrammeMapping query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|CourseUnitProgrammeMapping whereCourseUnitId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|CourseUnitProgrammeMapping whereCreatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|CourseUnitProgrammeMapping whereDayId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|CourseUnitProgrammeMapping whereEveningDuration($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|CourseUnitProgrammeMapping whereEveningStartTime($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|CourseUnitProgrammeMapping whereId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|CourseUnitProgrammeMapping whereLecturerId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|CourseUnitProgrammeMapping whereMorningDuration($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|CourseUnitProgrammeMapping whereMorningStartTime($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|CourseUnitProgrammeMapping whereProgrammeId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|CourseUnitProgrammeMapping whereSemesterId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|CourseUnitProgrammeMapping whereUpdatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|CourseUnitProgrammeMapping whereYearOfStudyId($value)
+ */
+	class CourseUnitProgrammeMapping extends \Eloquent {}
 }
 
 namespace App\Models{
@@ -95,6 +138,8 @@ namespace App\Models{
  * @property string|null $image_path
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\CourseUnitProgrammeMapping> $courseUnitProgrammeMappings
+ * @property-read int|null $course_unit_programme_mappings_count
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\CourseUnit> $courseUnits
  * @property-read int|null $course_units_count
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\CourseUnit> $courses
@@ -118,28 +163,12 @@ namespace App\Models{
 /**
  * 
  *
- * @property int $id
- * @property int $course_unit_id
- * @property int $programme_id
- * @property int $day_id
- * @property string $start_time
- * @property int $duration
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read \App\Models\CourseUnit $courseUnit
- * @property-read \App\Models\Day $day
- * @property-read \App\Models\Programme $programme
+ * @property-read \App\Models\CourseUnit|null $courseUnit
+ * @property-read \App\Models\Day|null $day
+ * @property-read \App\Models\Programme|null $programme
  * @method static \Illuminate\Database\Eloquent\Builder<static>|LessonSlot newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|LessonSlot newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|LessonSlot query()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|LessonSlot whereCourseUnitId($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|LessonSlot whereCreatedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|LessonSlot whereDayId($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|LessonSlot whereDuration($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|LessonSlot whereId($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|LessonSlot whereProgrammeId($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|LessonSlot whereStartTime($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|LessonSlot whereUpdatedAt($value)
  */
 	class LessonSlot extends \Eloquent {}
 }
@@ -154,6 +183,8 @@ namespace App\Models{
  * @property string $programme_code
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\CourseUnitProgrammeMapping> $courseUnitMappings
+ * @property-read int|null $course_unit_mappings_count
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\CourseUnit> $courseUnits
  * @property-read int|null $course_units_count
  * @property-read \App\Models\School $school

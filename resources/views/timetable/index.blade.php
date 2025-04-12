@@ -102,17 +102,20 @@
 </head>
 
 <body>
-
     <div class="container mt-5">
-        {{-- <h2 class="page-header">Student Timetable</h2> --}}
-
-        <!-- Filtering Section -->
         <div class="filter-section">
+            @php
+                // Group programmes by school and sort by programme_code
+                $groupedProgrammes = $programmes->sortBy('programme_code')->groupBy('school_id');
+            @endphp
+
             <form method="GET" action="{{ route('timetable.index') }}">
                 <div class="row">
+                    {{-- School Dropdown --}}
                     <div class="col-md-3">
                         <label for="school_id" class="form-label">School</label>
-                        <select class="form-control" id="school_id" name="school_id" required>
+                        <select class="form-control" id="school_id" name="school_id" required
+                            onchange="filterProgrammes()">
                             <option value="">Select School</option>
                             @foreach ($schools as $school)
                                 <option value="{{ $school->id }}"
@@ -123,19 +126,23 @@
                         </select>
                     </div>
 
+                    {{-- Programme Dropdown (Filtered by school) --}}
                     <div class="col-md-3">
                         <label for="programme_id" class="form-label">Programme</label>
                         <select class="form-control" id="programme_id" name="programme_id" required>
                             <option value="">Select Programme</option>
-                            @foreach ($programmes as $programme)
-                                <option value="{{ $programme->id }}"
-                                    {{ request('programme_id') == $programme->id ? 'selected' : '' }}>
-                                    {{ $programme->name }}
-                                </option>
+                            @foreach ($groupedProgrammes as $schoolId => $schoolProgrammes)
+                                @foreach ($schoolProgrammes as $programme)
+                                    <option value="{{ $programme->id }}" data-school="{{ $schoolId }}"
+                                        {{ request('programme_id') == $programme->id ? 'selected' : '' }}>
+                                        {{ $programme->programme_code }} - {{ $programme->name }}
+                                    </option>
+                                @endforeach
                             @endforeach
                         </select>
                     </div>
 
+                    {{-- Year of Study --}}
                     <div class="col-md-3">
                         <label for="year_of_study_id" class="form-label">Year of Study</label>
                         <select class="form-control" id="year_of_study_id" name="year_of_study_id" required>
@@ -149,6 +156,7 @@
                         </select>
                     </div>
 
+                    {{-- Semester --}}
                     <div class="col-md-3">
                         <label for="semester_id" class="form-label">Semester</label>
                         <select class="form-control" id="semester_id" name="semester_id" required>
@@ -156,8 +164,7 @@
                             @foreach ($semesters as $semester)
                                 <option value="{{ $semester->id }}"
                                     {{ request('semester_id') == $semester->id ? 'selected' : '' }}>
-                                    {{ $semester->name }}
-                                </option>
+                                    {{ $semester->name }}</option>
                             @endforeach
                         </select>
                     </div>
@@ -168,11 +175,9 @@
                     <a href="{{ route('timetable.export.pdf', request()->all()) }}" class="btn btn-danger">Export as
                         PDF</a>
                 </div>
-
             </form>
         </div>
 
-        <!-- Timetable Display -->
         @if ($timetable->isNotEmpty())
             <div class="mt-5">
                 <h3>Teaching & Learning Schedule</h3>
@@ -198,48 +203,48 @@
                                     @php
                                         $lesson = $timetable
                                             ->where('day_id', $day->id)
-                                            ->first(function ($lesson) use ($minute) {
-                                                $lessonStart =
-                                                    (int) date('H', strtotime($lesson->start_time)) * 60 +
-                                                    (int) date('i', strtotime($lesson->start_time));
-                                                $lessonEnd = $lessonStart + $lesson->duration;
-                                                return $minute >= $lessonStart && $minute < $lessonEnd;
+                                            ->first(function ($mapping) use ($minute) {
+                                                if ($mapping->morning_start_time && $mapping->morning_duration) {
+                                                    $morningStart =
+                                                        \Carbon\Carbon::parse($mapping->morning_start_time)->hour * 60 +
+                                                        \Carbon\Carbon::parse($mapping->morning_start_time)->minute;
+                                                    $morningEnd = $morningStart + $mapping->morning_duration;
+
+                                                    if ($minute >= $morningStart && $minute < $morningEnd) {
+                                                        $mapping->start_time = $mapping->morning_start_time;
+                                                        $mapping->duration = $mapping->morning_duration;
+                                                        $mapping->session = 'Morning';
+                                                        return true;
+                                                    }
+                                                }
+
+                                                if ($mapping->evening_start_time && $mapping->evening_duration) {
+                                                    $eveningStart =
+                                                        \Carbon\Carbon::parse($mapping->evening_start_time)->hour * 60 +
+                                                        \Carbon\Carbon::parse($mapping->evening_start_time)->minute;
+                                                    $eveningEnd = $eveningStart + $mapping->evening_duration;
+
+                                                    if ($minute >= $eveningStart && $minute < $eveningEnd) {
+                                                        $mapping->start_time = $mapping->evening_start_time;
+                                                        $mapping->duration = $mapping->evening_duration;
+                                                        $mapping->session = 'Evening';
+                                                        return true;
+                                                    }
+                                                }
+
+                                                return false;
                                             });
                                     @endphp
 
                                     @if (
                                         $lesson &&
-                                            (int) date('H', strtotime($lesson->start_time)) * 60 + (int) date('i', strtotime($lesson->start_time)) ==
+                                            \Carbon\Carbon::parse($lesson->start_time)->hour * 60 + \Carbon\Carbon::parse($lesson->start_time)->minute ==
                                                 $minute)
-                                        <td rowspan="{{ ceil($lesson->duration / 30) }}"
-                                            style="background-color: {{ $lesson->courseUnit ? $lesson->courseUnit->color : '#ff7f50' }}; color: white; vertical-align: middle; padding: 10px;">
-                                            <div class="lesson-container">
-                                                <div class="instructor-img-container">
-                                                    <img class="instructor-image"
-                                                        src="{{ optional($lesson->courseUnit->instructors->first())->image_path
-                                                            ? asset('storage/' . optional($lesson->courseUnit->instructors->first())->image_path)
-                                                            : 'https://ouk.ac.ke/sites/default/files/Facilitators/alt.png' }}"
-                                                        alt="Instructor Image">
-                                                </div>
-                                                <div class="lesson-details">
-                                                    <p class="instructor-name">
-                                                        {{ $lesson->courseUnit->instructors->first()->title->name ?? '' }}
-                                                        {{ $lesson->courseUnit->instructors->first()->name ?? '' }}
-                                                    </p>
-                                                    <div class="course-code">
-                                                        {{ $lesson->courseUnit->code }}:
-                                                        <span class="course-title">
-                                                            {{ $lesson->courseUnit->name }}
-                                                        </span>
-                                                    </div>
-                                                    <p class="mode">Mode: Synchronous online</p>
-                                                    <div class="session">
-                                                        {{ $lesson->session }}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </td>
-                                    @elseif (!$lesson)
+                                        {{-- <td rowspan="{{ ceil($lesson->duration / 30) }}"> --}}
+                                        @include('partials.timetable.slot', ['lesson' => $lesson])
+                                        {{-- <pre>{{ print_r($lesson->toArray(), true) }}</pre> --}}
+                                        {{-- </td> --}}
+                                    @else
                                         <td></td>
                                     @endif
                                 @endforeach
@@ -250,7 +255,27 @@
             </div>
         @endif
     </div>
-
 </body>
+
+<script>
+    function filterProgrammes() {
+        const schoolId = document.getElementById('school_id').value;
+        const programmeSelect = document.getElementById('programme_id');
+
+        for (let option of programmeSelect.options) {
+            const matches = !schoolId || option.dataset.school === schoolId;
+            option.style.display = matches ? 'block' : 'none';
+        }
+
+        // If current selection doesn't match, reset it
+        if (programmeSelect.selectedOptions.length &&
+            programmeSelect.selectedOptions[0].style.display === 'none') {
+            programmeSelect.value = '';
+        }
+    }
+
+    // Run on page load in case of validation redirect
+    document.addEventListener('DOMContentLoaded', filterProgrammes);
+</script>
 
 </html>

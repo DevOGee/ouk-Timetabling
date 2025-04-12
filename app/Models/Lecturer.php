@@ -27,4 +27,9 @@ class Lecturer extends Model
     {
         return $this->belongsToMany(CourseUnit::class, 'course_unit_instructor')->withTimestamps();
     }
+
+    public function courseUnitProgrammeMappings()
+    {
+        return $this->hasMany(CourseUnitProgrammeMapping::class);
+    }
 }

@@ -73,10 +73,14 @@ class LecturerController extends Controller
      */
     public function show($id)
     {
-        // Find the lecturer by ID
-        $lecturer = Lecturer::with(['courseUnits.programmes', 'courseUnits.lessonSlots.day'])->find($id);
+        $lecturer = Lecturer::with([
+            'courseUnitProgrammeMappings.courseUnit',
+            'courseUnitProgrammeMappings.programme',
+            'courseUnitProgrammeMappings.day',
+            'courseUnitProgrammeMappings.yearOfStudy',
+            'courseUnitProgrammeMappings.semester',
+        ])->find($id);
 
-        // If lecturer is not found, return 404
         if (! $lecturer) {
             abort(404, 'Lecturer not found');
         }

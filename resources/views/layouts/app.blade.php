@@ -8,7 +8,8 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
     <!-- Select2 CSS -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/css/select2.min.css" rel="stylesheet">
-
+    <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.10.5/font/bootstrap-icons.min.css">
 </head>
 
 <body>
@@ -71,8 +72,8 @@
 
                     <!-- Course Mapping -->
                     <li class="nav-item">
-                        <a class="text-white nav-link" href="{{ route('course_mapping.upload') }}">
-                            <i class="fas fa-project-diagram"></i> Course Mapping
+                        <a class="text-white nav-link" href="{{ route('curriculum.index') }}">
+                            <i class="fas fa-project-diagram"></i> Curriculum Setup
                         </a>
                     </li>
 

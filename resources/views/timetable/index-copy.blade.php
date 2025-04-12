@@ -1,119 +1,181 @@
-@extends('layouts.app')
+<!DOCTYPE html>
+<html lang="en">
 
-@section('title', 'Student Timetable')
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Timetable</title>
 
-@section('content')
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
     <style>
-        .ouk-timetable-days {
-            font-size: 20px;
-            text-transform: uppercase;
-            color: #037b90;
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
         }
 
-        .ouk-course-code {
-            color: rgba(255, 255, 255, 0.6);
-            font-size: large;
-            width: 90%;
-            border-bottom: solid 1pt rgba(255, 255, 255, 0.2);
-        }
+        /* .container {
+            max-width: 1200px;
+            margin: auto;
+            padding: 20px;
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        } */
 
-        .ouk-course-title {
-            margin-top: -10px;
-            color: rgba(255, 255, 255, 0.6);
-            font-size: x-small;
-        }
-
-        .ouk-timetable-mode {
-            padding-top: 10px;
-            font-size: smaller;
-        }
-
-        .ouk-instructor {
-            margin-top: 10px;
-        }
-
-        .ouk-mode-a {
-            color: rgba(247, 57, 250, 0.8);
-        }
-
-        .ouk-mode-s {
-            color: rgba(80, 247, 25, 0.8);
-        }
-
-        .ouk-time-row {
-            border-bottom: solid 1.5px rgba(3, 123, 144, .4);
-            height: 20px;
-        }
-
-        .ouk-timetable-title {
+        .page-header {
             text-align: center;
-            font-size: x-large;
-            color: #ff7f50;
+            margin-bottom: 30px;
+            color: #037b90;
+            font-size: 28px;
+            font-weight: bold;
+        }
+
+        .filter-section {
+            padding: 20px;
+            background: #e3f2fd;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        .lesson-container {
+            display: flex;
+            flex-direction: column;
+            align-items: left;
+            /* Centers content */
+            text-align: left;
+            gap: 8px;
+        }
+
+        .instructor-img-container {
+            margin-bottom: 5px;
+            /* Moves image slightly up */
+        }
+
+        .instructor-image {
+            width: 80px;
+            /* Adjust size */
+            height: 80px;
+            object-fit: cover;
+            /* Ensures the image fully fills the space */
+            border-radius: 50%;
+            /* Makes the image circular */
+        }
+
+        .lesson-details {
+            width: 100%;
+        }
+
+        .instructor-name {
+            font-weight: bold;
+            color: white;
+            margin-bottom: 5px;
+            font-size: 16px;
+        }
+
+        .course-code {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.8);
+            font-weight: bold;
+        }
+
+        .course-title {
+            font-style: italic;
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .mode {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.8);
+            margin-top: 5px;
+        }
+
+        .session {
+            font-size: 14px;
+            font-weight: bold;
+            color: white;
+            margin-top: 5px;
         }
     </style>
+</head>
+
+<body>
 
     <div class="container mt-5">
-        <h2 class="mb-4">Student Timetable</h2>
-        <form method="GET" action="{{ route('timetable.index') }}">
-            <div class="row">
-                <div class="col-md-3">
-                    <label for="school_id" class="form-label">School</label>
-                    <select class="form-control" id="school_id" name="school_id" required>
-                        <option value="">Select School</option>
-                        @foreach ($schools as $school)
-                            <option value="{{ $school->id }}" {{ request('school_id') == $school->id ? 'selected' : '' }}>
-                                {{ $school->name }}
-                            </option>
-                        @endforeach
-                    </select>
+        {{-- <h2 class="page-header">Student Timetable</h2> --}}
+
+        <!-- Filtering Section -->
+        <div class="filter-section">
+            <form method="GET" action="{{ route('timetable.index') }}">
+                <div class="row">
+                    <div class="col-md-3">
+                        <label for="school_id" class="form-label">School</label>
+                        <select class="form-control" id="school_id" name="school_id" required>
+                            <option value="">Select School</option>
+                            @foreach ($schools as $school)
+                                <option value="{{ $school->id }}"
+                                    {{ request('school_id') == $school->id ? 'selected' : '' }}>
+                                    {{ $school->name }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <div class="col-md-3">
+                        <label for="programme_id" class="form-label">Programme</label>
+                        <select class="form-control" id="programme_id" name="programme_id" required>
+                            <option value="">Select Programme</option>
+                            @foreach ($programmes as $programme)
+                                <option value="{{ $programme->id }}"
+                                    {{ request('programme_id') == $programme->id ? 'selected' : '' }}>
+                                    {{ $programme->name }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <div class="col-md-3">
+                        <label for="year_of_study_id" class="form-label">Year of Study</label>
+                        <select class="form-control" id="year_of_study_id" name="year_of_study_id" required>
+                            <option value="">Select Year</option>
+                            @foreach ($years as $year)
+                                <option value="{{ $year->id }}"
+                                    {{ request('year_of_study_id') == $year->id ? 'selected' : '' }}>
+                                    {{ $year->name }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <div class="col-md-3">
+                        <label for="semester_id" class="form-label">Semester</label>
+                        <select class="form-control" id="semester_id" name="semester_id" required>
+                            <option value="">Select Semester</option>
+                            @foreach ($semesters as $semester)
+                                <option value="{{ $semester->id }}"
+                                    {{ request('semester_id') == $semester->id ? 'selected' : '' }}>
+                                    {{ $semester->name }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
                 </div>
 
-                <div class="col-md-3">
-                    <label for="programme_id" class="form-label">Programme</label>
-                    <select class="form-control" id="programme_id" name="programme_id" required>
-                        <option value="">Select Programme</option>
-                        @foreach ($programmes as $programme)
-                            <option value="{{ $programme->id }}"
-                                {{ request('programme_id') == $programme->id ? 'selected' : '' }}>
-                                {{ $programme->name }}
-                            </option>
-                        @endforeach
-                    </select>
+                <div class="mt-3 d-flex justify-content-between align-items-center">
+                    <button type="submit" class="btn btn-primary">View Timetable</button>
+                    <a href="{{ route('timetable.export.pdf', request()->all()) }}" class="btn btn-danger">Export as
+                        PDF</a>
                 </div>
 
-                <div class="col-md-3">
-                    <label for="year_of_study_id" class="form-label">Year of Study</label>
-                    <select class="form-control" id="year_of_study_id" name="year_of_study_id" required>
-                        <option value="">Select Year</option>
-                        @foreach ($years as $year)
-                            <option value="{{ $year->id }}"
-                                {{ request('year_of_study_id') == $year->id ? 'selected' : '' }}>
-                                {{ $year->name }}
-                            </option>
-                        @endforeach
-                    </select>
-                </div>
+            </form>
+        </div>
 
-                <div class="col-md-3">
-                    <label for="semester_id" class="form-label">Semester</label>
-                    <select class="form-control" id="semester_id" name="semester_id" required>
-                        <option value="">Select Semester</option>
-                        @foreach ($semesters as $semester)
-                            <option value="{{ $semester->id }}"
-                                {{ request('semester_id') == $semester->id ? 'selected' : '' }}>
-                                {{ $semester->name }}
-                            </option>
-                        @endforeach
-                    </select>
-                </div>
-            </div>
-
-            <button type="submit" class="mt-3 btn btn-primary">View Timetable</button>
-        </form>
-
+        <!-- Timetable Display -->
         @if ($timetable->isNotEmpty())
             <div class="mt-5">
-                <h3>Class Schedule</h3>
+                <h3>Teaching & Learning Schedule</h3>
                 <table class="table table-bordered" style="table-layout: fixed; width: 100%;">
                     <thead>
                         <tr>
@@ -150,26 +212,30 @@
                                             (int) date('H', strtotime($lesson->start_time)) * 60 + (int) date('i', strtotime($lesson->start_time)) ==
                                                 $minute)
                                         <td rowspan="{{ ceil($lesson->duration / 30) }}"
-                                            style="background-color: {{ $lesson->courseUnit->color ?? '#ff7f50' }}; color: white; vertical-align: middle; text-align: center;">
-                                            <div>
-                                                <img class="img-responsive img-circle"
-                                                    src="{{ asset('storage/' . ($lesson->courseUnit->instructors->first()->image_path ?? 'default.png')) }}"
-                                                    width="50" height="50" alt="Instructor Image">
-                                                <p class="text-white font-weight-bold ouk-instructor">
-                                                    {{ $lesson->courseUnit->instructors->first()->title->name ?? '' }}
-                                                    {{ $lesson->courseUnit->instructors->first()->name ?? '' }}
-                                                </p>
-                                                <div class="ouk-course-code">
-                                                    {{ $lesson->courseUnit->code }}:
-                                                    <span class="font-italic ouk-course-title">
-                                                        {{ $lesson->courseUnit->name }}
-                                                    </span>
+                                            style="background-color: {{ $lesson->courseUnit ? $lesson->courseUnit->color : '#ff7f50' }}; color: white; vertical-align: middle; padding: 10px;">
+                                            <div class="lesson-container">
+                                                <div class="instructor-img-container">
+                                                    <img class="instructor-image"
+                                                        src="{{ optional($lesson->courseUnit->instructors->first())->image_path
+                                                            ? asset('storage/' . optional($lesson->courseUnit->instructors->first())->image_path)
+                                                            : 'https://ouk.ac.ke/sites/default/files/Facilitators/alt.png' }}"
+                                                        alt="Instructor Image">
                                                 </div>
-                                                <p class="ouk-timetable-mode" style="font-size: 12px; color: #000;">
-                                                    Mode: Synchronous online
-                                                </p>
-                                                <div class="ouk-timetable-mode">
-                                                    {{ $lesson->session }}
+                                                <div class="lesson-details">
+                                                    <p class="instructor-name">
+                                                        {{ $lesson->courseUnit->instructors->first()->title->name ?? '' }}
+                                                        {{ $lesson->courseUnit->instructors->first()->name ?? '' }}
+                                                    </p>
+                                                    <div class="course-code">
+                                                        {{ $lesson->courseUnit->code }}:
+                                                        <span class="course-title">
+                                                            {{ $lesson->courseUnit->name }}
+                                                        </span>
+                                                    </div>
+                                                    <p class="mode">Mode: Synchronous online</p>
+                                                    <div class="session">
+                                                        {{ $lesson->session }}
+                                                    </div>
                                                 </div>
                                             </div>
                                         </td>
@@ -184,4 +250,7 @@
             </div>
         @endif
     </div>
-@endsection
+
+</body>
+
+</html>

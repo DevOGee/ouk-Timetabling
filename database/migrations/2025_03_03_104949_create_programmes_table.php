@@ -15,6 +15,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('school_id')->constrained()->onDelete('cascade');
             $table->string('name');
+            $table->string('programme_code')->unique(); // Add unique programme_code
             $table->timestamps();
         });
     }
