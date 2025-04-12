@@ -283,6 +283,11 @@
 
     // Run on page load in case of validation redirect
     document.addEventListener('DOMContentLoaded', filterProgrammes);
+
+    // Block right-click for the entire page
+    document.addEventListener('contextmenu', function(e) {
+        e.preventDefault();
+    });
 </script>
 
 </html>
