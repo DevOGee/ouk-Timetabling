@@ -1,10 +1,10 @@
 @extends('layouts.app')
 
-@section('title', "Programme: $programme->name")
+@section('title', "Scheduling: $programme->programme_code")
 
 @section('content')
     <div class="container mt-5">
-        <h2 class="mb-4">{{ $programme->name }} - Scheduling</h2>
+        <h2 class="mb-4">{{ $programme->name }} ({{ $programme->programme_code }}) - Scheduling</h2>
 
 
         @if ($errors->any())

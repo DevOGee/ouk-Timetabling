@@ -69,13 +69,30 @@
             font-weight: bold;
             color: white;
         }
+
+        .logo {
+            max-width: 100px;
+            display: block;
+            margin: 0 auto;
+        }
     </style>
 </head>
 
 <body>
 
-    <h2 class="header">Teaching & Learning Schedule for</h2>
-    <p class="sub-header">{{ $programme->name }}</p>
+    <!-- Logo in Header -->
+    <div class="header">
+        <img src="{{ public_path('ouk-logo.png') }}" style="width: 200px;" alt="OUK Logo">
+    </div>
+
+    <h2 class="header">Teaching & Learning Schedule for {{ $programme->name }}</h2>
+    {{-- <p class="sub-header">{{ $programme->programme_code }} - {{ $programme->name }}</p> --}}
+    <p class="sub-header">
+        {{-- Programme: {{ $programme->programme_code }} - {{ $programme->name }} <br> --}}
+        Year of Study: Level {{ $yearOfStudy->name }} <br>
+        Semester: {{ $semester->name }} <br>
+        Academic Year: {{ $academicYear->year }}
+    </p>
 
     @if ($timetable->isNotEmpty())
         <table class="timetable">
@@ -114,16 +131,15 @@
                                     (int) date('H', strtotime($lesson->start_time)) * 60 + (int) date('i', strtotime($lesson->start_time)) ==
                                         $minute)
                                 <td rowspan="{{ ceil($lesson->duration / 30) }}" class="lesson">
-                                    <p>
-                                        <strong>{{ optional($lesson->courseUnit->instructors->first())->title->name ?? '' }}
+                                    <p><strong>{{ optional($lesson->courseUnit->instructors->first())->title->name ?? '' }}
                                             {{ optional($lesson->courseUnit->instructors->first())->name ?? '' }}</strong>
                                     </p>
                                     <p>{{ $lesson->courseUnit->code }}</p>
                                     <p class="course-title">{{ $lesson->courseUnit->name }}</p>
                                     <p class="mode">Mode: Synchronous online</p>
-                                    <p class="session">{{ $lesson->session }}</p>
+                                    <p class="session">{{ $lesson->session ?? 'N/A' }}</p>
                                 </td>
-                            @elseif (!$lesson)
+                            @else
                                 <td></td>
                             @endif
                         @endforeach
@@ -133,6 +149,9 @@
         </table>
     @endif
 
+    <div class="footer">
+        Exported on: {{ now()->format('Y-m-d H:i:s') }}
+    </div>
 </body>
 
 </html>

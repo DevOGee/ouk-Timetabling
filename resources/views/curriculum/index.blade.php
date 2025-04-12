@@ -1,5 +1,7 @@
 @extends('layouts.app')
 
+@section('title', 'Curriculum Setup')
+
 @section('content')
     <div class="container">
         <h2 class="mb-4">Curriculum Setup</h2>

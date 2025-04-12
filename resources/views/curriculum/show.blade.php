@@ -1,5 +1,7 @@
 @extends('layouts.app')
 
+@section('title', 'Curriculum for ' . $programme->programme_code)
+
 @section('content')
     <div class="container">
         <h2 class="mb-4">Curriculum for {{ $programme->programme_code }} - {{ $programme->name }}</h2>
