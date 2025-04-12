@@ -169,11 +169,11 @@
                 </div>
             </div>
 
-            {{-- <div class="mt-3 d-flex justify-content-between align-items-center">
+            <div class="mt-3 d-flex justify-content-between align-items-center">
                 <button type="submit" class="btn btn-primary">View Timetable</button>
-                <a href="{{ route('timetable.export.pdf', request()->all()) }}" class="btn btn-danger">Export as
-                    PDF</a>
-            </div> --}}
+                {{-- <a href="{{ route('timetable.export.pdf', request()->all()) }}" class="btn btn-danger">Export as
+                    PDF</a> --}}
+            </div>
         </form>
     </div>
 
