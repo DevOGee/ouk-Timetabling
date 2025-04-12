@@ -21,14 +21,20 @@ class TimetableController extends Controller
         $semesters = Semester::all();
         $days = Day::where('id', '<=', 5)->get();
 
-        $timetable = collect();
+        $programme = null;  // Default to null, in case no programme is selected
 
         if ($request->filled(['school_id', 'programme_id', 'year_of_study_id', 'semester_id'])) {
+            // Find the selected programme
+            $programme = Programme::find($request->programme_id);
+
+            // Get the filtered timetable
             $timetable = CourseUnitProgrammeMapping::where('programme_id', $request->programme_id)
                 ->where('year_of_study_id', $request->year_of_study_id)
                 ->where('semester_id', $request->semester_id)
                 ->with(['courseUnit', 'lecturer', 'day'])
                 ->get();
+        } else {
+            $timetable = collect();  // Empty timetable when no filters are applied
         }
 
         return view('timetable.index', compact(
@@ -37,7 +43,8 @@ class TimetableController extends Controller
             'years',
             'semesters',
             'days',
-            'timetable'
+            'timetable',
+            'programme'  // Pass the selected programme to the view
         ));
     }
 
