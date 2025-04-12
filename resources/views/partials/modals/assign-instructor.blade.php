@@ -16,7 +16,7 @@
                 <select name="lecturer_id" id="lecturer_id_{{ $course->id }}" class="form-control select2"
                     style="width: 100%" required>
                     <option value="">-- Select Instructor --</option>
-                    @foreach ($lecturers as $lecturer)
+                    @foreach ($lecturers->sortBy('name') as $lecturer)
                         <option value="{{ $lecturer->id }}">
                             {{ $lecturer->title->name ?? '' }} {{ $lecturer->name }}
                         </option>
