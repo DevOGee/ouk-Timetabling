@@ -5,8 +5,9 @@ namespace App\Imports;
 use App\Models\Lecturer;
 use App\Models\Title;
 use Maatwebsite\Excel\Concerns\ToModel;
+use Maatwebsite\Excel\Concerns\WithHeadingRow;
 
-class LecturersImport implements ToModel
+class LecturersImport implements ToModel, WithHeadingRow
 {
     public $importedCount = 0;
 
@@ -14,14 +15,11 @@ class LecturersImport implements ToModel
 
     public function model(array $row)
     {
-        // Check if the email exists in the row
-        if (! isset($row['email'])) {
-            // Log the error or handle missing email
-            return null;  // Skip this row if email is missing
-        }
+        // Debugging: Inspect the $row before checking the database
+        // dd($row);  // This will show you the contents of the row before checking the database
 
-        // Check if the lecturer already exists based on the email (or another unique identifier)
-        $existingLecturer = Lecturer::where('email', $row['email'])->first();
+        // Check if the lecturer already exists based on the email
+        $existingLecturer = Lecturer::where('email', operator: $row['email'])->exists();
 
         // If the lecturer doesn't exist, create a new one
         if (! $existingLecturer) {
@@ -33,7 +31,7 @@ class LecturersImport implements ToModel
                 'title_id' => $title->id,
                 'name' => $row['name'],
                 'email' => $row['email'],
-                'image_path' => null, // Bulk upload does not handle images
+                'image_path' => $row['image_path'] ?? null, // Bulk upload does not handle images
             ]);
 
             // Increment the count of newly imported lecturers
@@ -46,5 +44,13 @@ class LecturersImport implements ToModel
 
             return null; // Skip this row if the lecturer exists
         }
+    }
+
+    // This method is required to return the column headings
+    public function headings(): array
+    {
+        return [
+            'email', 'title', 'name', 'image_path',
+        ];
     }
 }
