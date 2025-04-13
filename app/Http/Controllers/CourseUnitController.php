@@ -25,7 +25,7 @@ class CourseUnitController extends Controller
                 ->orWhere('name', 'LIKE', "%{$search}%");
         }
 
-        $courseUnits = $query->paginate(10)->appends(['search' => $search]);
+        $courseUnits = $query->orderBy('code')->paginate(10)->appends(['search' => $search]);
 
         return view('course_units.index', compact('courseUnits', 'search'));
     }
