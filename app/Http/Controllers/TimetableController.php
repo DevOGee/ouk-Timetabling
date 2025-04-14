@@ -52,35 +52,66 @@ class TimetableController extends Controller
         ));
     }
 
+    // public function exportPDF(Request $request)
+    // {
+    //     // Retrieve the selected Programme, Year of Study, Semester, and Academic Year based on the request
+    //     $programme = Programme::find($request->programme_id);
+    //     $yearOfStudy = YearOfStudy::find($request->year_of_study_id);
+    //     $semester = Semester::find($request->semester_id);
+    //     $academicYear = AcademicYear::first();
+
+    //     // Retrieve timetable data based on filters
+    //     $timetable = CourseUnitProgrammeMapping::where('programme_id', $request->programme_id)
+    //         ->where('year_of_study_id', $request->year_of_study_id)
+    //         ->where('semester_id', $request->semester_id)
+    //         ->with(['courseUnit', 'lecturer', 'day'])
+    //         ->get();
+
+    //     // Retrieve days for the timetable (assuming the days are predefined)
+    //     $days = Day::where('id', '<=', 5)->get();
+
+    //     // Generate the PDF
+    //     $pdf = Pdf::loadView('timetable.pdf', compact(
+    //         'programme',
+    //         'timetable',
+    //         'days',
+    //         'yearOfStudy',
+    //         'semester',
+    //         'academicYear'
+    //     ));
+
+    //     // Export as a downloadable PDF
+    //     return $pdf->download('timetable.pdf');
+    // }
+
     public function exportPDF(Request $request)
     {
-        // Retrieve the selected Programme, Year of Study, Semester, and Academic Year based on the request
         $programme = Programme::find($request->programme_id);
-        $yearOfStudy = YearOfStudy::find($request->year_of_study_id);
-        $semester = Semester::find($request->semester_id);
-        $academicYear = AcademicYear::first();
+        $days = Day::orderBy('id')->get();
+        $timetable = collect();
 
-        // Retrieve timetable data based on filters
-        $timetable = CourseUnitProgrammeMapping::where('programme_id', $request->programme_id)
-            ->where('year_of_study_id', $request->year_of_study_id)
-            ->where('semester_id', $request->semester_id)
-            ->with(['courseUnit', 'lecturer', 'day'])
-            ->get();
+        if ($request->filled(['school_id', 'programme_id', 'year_of_study_id', 'semester_id'])) {
+            $timetable = CourseUnitProgrammeMapping::where('programme_id', $request->programme_id)
+                ->where('year_of_study_id', $request->year_of_study_id)
+                ->where('semester_id', $request->semester_id)
+                ->with(['courseUnit', 'lecturer', 'day'])
+                ->get();
+        }
 
-        // Retrieve days for the timetable (assuming the days are predefined)
-        $days = Day::where('id', '<=', 5)->get();
+        // Sort the timetable by day
+        $timetable = $timetable->sortBy(function ($lesson) {
+            return $lesson->day->name;
+        });
 
-        // Generate the PDF
-        $pdf = Pdf::loadView('timetable.pdf', compact(
-            'programme',
-            'timetable',
-            'days',
-            'yearOfStudy',
-            'semester',
-            'academicYear'
-        ));
+        // Group and sort lessons by day
+        $groupedLessons = $timetable->groupBy('day_id')->sortBy(function ($day) {
+            return $day->first()->day->name;  // Sorting days alphabetically
+        });
 
-        // Export as a downloadable PDF
+        // Return the PDF view
+        $pdf = Pdf::loadView('timetable.pdf', compact('programme', 'days', 'timetable', 'groupedLessons'))
+            ->setPaper('A4', 'portrait');
+
         return $pdf->download('timetable.pdf');
     }
 }

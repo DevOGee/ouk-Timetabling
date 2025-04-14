@@ -39,13 +39,19 @@ class CurriculumSetupController extends Controller
 
         $courseUnits = CourseUnit::whereNotIn('id', $mappedCourseIds)->get();
 
-        // $courseUnits = CourseUnit::all();
         $years = YearOfStudy::all();
         $semesters = Semester::all();
 
-        $groupedMappings = $programme->courseUnitMappings->groupBy(function ($item) {
-            return 'Year '.$item->yearOfStudy->name.' - Semester '.$item->semester->name;
-        });
+        // Sort mappings by Year and Semester IDs
+        $groupedMappings = $programme->courseUnitMappings
+            ->sortBy([
+                fn ($item) => $item->yearOfStudy->id, // First, sort by Year (ascending order)
+                fn ($item) => $item->semester->id,   // Then, sort by Semester (ascending order)
+            ])
+            ->groupBy(function ($item) {
+                // Group by Year and Semester
+                return 'Year '.$item->yearOfStudy->name.' - Semester '.$item->semester->name;
+            });
 
         return view('curriculum.show', compact('programme', 'courseUnits', 'years', 'semesters', 'groupedMappings'));
     }

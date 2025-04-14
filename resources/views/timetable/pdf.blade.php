@@ -86,13 +86,148 @@
     </div>
 
     <h2 class="header">Teaching & Learning Schedule for {{ $programme->name }}</h2>
-    {{-- <p class="sub-header">{{ $programme->programme_code }} - {{ $programme->name }}</p> --}}
-    <p class="sub-header">
-        {{-- Programme: {{ $programme->programme_code }} - {{ $programme->name }} <br> --}}
-        Year of Study: Level {{ $yearOfStudy->name }} <br>
-        Semester: {{ $semester->name }} <br>
-        Academic Year: {{ $academicYear->year }}
-    </p>
+    <p class="sub-header">{{ $programme->programme_code }} - {{ $programme->name }}</p>
+
+    <h3>Teaching & Learning Schedule for {{ $programme->name }}</h3>
+
+    @if ($timetable->isNotEmpty())
+        <table class="table table-bordered">
+            <thead>
+                <tr>
+                    <th>Course Code</th>
+                    <th>Course Name</th>
+                    <th>Start Time</th>
+                    <th>End Time</th>
+                    <th>Day</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach ($timetable as $lesson)
+                    <tr>
+                        <td>{{ $lesson->courseUnit->code }}</td>
+                        <td>{{ $lesson->courseUnit->name }}</td>
+                        <td>{{ \Carbon\Carbon::parse($lesson->morning_start_time ?? $lesson->evening_start_time)->format('h:i A') }}
+                        </td>
+                        <td>
+                            @if ($lesson->morning_start_time)
+                                {{ \Carbon\Carbon::parse($lesson->morning_start_time)->addMinutes($lesson->morning_duration)->format('h:i A') }}
+                            @elseif ($lesson->evening_start_time)
+                                {{ \Carbon\Carbon::parse($lesson->evening_start_time)->addMinutes($lesson->evening_duration)->format('h:i A') }}
+                            @endif
+                        </td>
+                        <td>{{ $lesson->day->name ?? 'N/A' }}</td>
+                    </tr>
+                @endforeach
+            </tbody>
+        </table>
+    @else
+        <p>No timetable data available for the selected filters.</p>
+    @endif
+
+
+
+    @if ($timetable->isNotEmpty())
+        <table class="timetable">
+            <thead>
+                <tr>
+                    <th style="width: 10%;">Time (EAT)</th>
+                    @foreach ($days as $day)
+                        <th style="width: 18%;">{{ $day->name }}</th>
+                    @endforeach
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (range(8 * 60, 20 * 60 - 30, 30) as $minute)
+                    @php
+                        $hour = intdiv($minute, 60);
+                        $min = $minute % 60;
+                        $timeLabel = $min == 0 ? sprintf('%02d:00', $hour) : '';
+                    @endphp
+                    <tr>
+                        <td>{{ $timeLabel }}</td>
+                        @foreach ($days as $day)
+                            @php
+                                // Retrieve the lesson for the specific day and time slot
+                                $lesson = $timetable->first(function ($lesson) use ($day, $minute) {
+                                    $lessonStart =
+                                        \Carbon\Carbon::parse($lesson->start_time)->hour * 60 +
+                                        \Carbon\Carbon::parse($lesson->start_time)->minute;
+                                    $lessonEnd = $lessonStart + $lesson->duration;
+
+                                    // Check if the lesson's time overlaps with the current time slot
+                                    return $lesson->day_id === $day->id &&
+                                        $minute >= $lessonStart &&
+                                        $minute < $lessonEnd;
+                                });
+                            @endphp
+
+                            @if ($lesson)
+                                <td rowspan="{{ ceil($lesson->duration / 30) }}" class="lesson">
+                                    <p><strong>{{ $lesson->courseUnit->instructors->first()->name ?? 'N/A' }}</strong>
+                                    </p>
+                                    <p>{{ $lesson->courseUnit->code }}</p>
+                                    <p class="course-title">{{ $lesson->courseUnit->name }}</p>
+                                    <p class="mode">Mode: Synchronous online</p>
+                                    <p class="session">{{ $lesson->session ?? 'N/A' }}</p>
+                                </td>
+                            @else
+                                <td></td>
+                            @endif
+                        @endforeach
+                    </tr>
+                @endforeach
+            </tbody>
+        </table>
+    @endif
+
+
+    <table class="timetable">
+        <thead>
+            <tr>
+                <th>Time (EAT)</th>
+                @foreach ($groupedLessons as $dayId => $lessons)
+                    <th>{{ $lessons->first()->day->name }}</th>
+                @endforeach
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (range(8 * 60, 20 * 60 - 30, 30) as $minute)
+                @php
+                    $hour = intdiv($minute, 60);
+                    $min = $minute % 60;
+                    $timeLabel = $min == 0 ? sprintf('%02d:00', $hour) : ''; // Display full hours only
+                @endphp
+                <tr>
+                    <td>{{ $timeLabel }}</td>
+                    @foreach ($groupedLessons as $dayId => $lessons)
+                        @php
+                            $lesson = $lessons->first(function ($lesson) use ($minute) {
+                                $lessonStart =
+                                    \Carbon\Carbon::parse($lesson->start_time)->hour * 60 +
+                                    \Carbon\Carbon::parse($lesson->start_time)->minute;
+                                $lessonEnd = $lessonStart + $lesson->duration;
+                                return $minute >= $lessonStart && $minute < $lessonEnd;
+                            });
+                        @endphp
+
+                        @if ($lesson)
+                            <td rowspan="{{ ceil($lesson->duration / 30) }}" class="lesson">
+                                <strong>{{ $lesson->courseUnit->code }} - {{ $lesson->courseUnit->name }}</strong>
+                                <br>
+                                <span class="course-title">{{ optional($lesson->lecturer)->name }}</span>
+                                <br>
+                                {{ \Carbon\Carbon::parse($lesson->start_time)->format('g:i A') }} -
+                                {{ \Carbon\Carbon::parse($lesson->start_time)->addMinutes($lesson->duration)->format('g:i A') }}
+                            </td>
+                        @else
+                            <td></td>
+                        @endif
+                    @endforeach
+                </tr>
+            @endforeach
+        </tbody>
+    </table>
+
 
     @if ($timetable->isNotEmpty())
         <table class="timetable">
@@ -149,9 +284,6 @@
         </table>
     @endif
 
-    <div class="footer">
-        Exported on: {{ now()->format('Y-m-d H:i:s') }}
-    </div>
 </body>
 
 </html>

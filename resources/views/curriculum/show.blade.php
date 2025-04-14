@@ -76,7 +76,7 @@
                                 <!-- Color Circle -->
                                 <span
                                     style="display: inline-block; width: 20px; height: 20px; border-radius: 50%; 
-                        background-color: {{ $mapping->courseUnit->color ?? '#000000' }}; margin-right: 10px;">
+                            background-color: {{ $mapping->courseUnit->color ?? '#000000' }}; margin-right: 10px;">
                                 </span>
                                 {{ $mapping->courseUnit->code }} - {{ $mapping->courseUnit->name }}
                             </td>
@@ -94,6 +94,7 @@
         @empty
             <p>No course units mapped yet.</p>
         @endforelse
+
         <div class="mb-3 d-flex justify-content-between align-items-center">
             <a href="{{ route('curriculum.index') }}" class="btn btn-secondary">
                 <i class="bi bi-arrow-left"></i> Back to Curriculum
