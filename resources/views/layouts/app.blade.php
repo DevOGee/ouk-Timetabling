@@ -49,6 +49,10 @@
             padding: 10px 15px;
             font-size: 14px;
         }
+
+        a {
+            text-decoration: none;
+        }
     </style>
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
         <div class="container">
@@ -116,6 +120,56 @@
 
     <div class="container mt-4">
         @yield('content')
+    </div>
+
+    <!-- resources/views/components/footer.blade.php -->
+    <footer class="py-4 text-white bg-dark">
+        <div class="container">
+            <div class="row">
+                <!-- About Section -->
+                <div class="col-md-4">
+                    <img src="https://somasold.ouk.ac.ke/ouk_logo.png" alt="Open University of Kenya Logo"
+                        class="img-fluid" style="max-width: 300px;">
+                </div>
+
+                <!-- Quick Links Section -->
+                <div class="col-md-4">
+                    <h5>Quick Links</h5>
+                    <ul class="list-unstyled">
+                        <li><a href="{{ url('/') }}" class="text-white">Home</a></li>
+                        <li><a href="https://ouk.ac.ke/ouk-programmes" class="text-white">Programmes</a></li>
+                        <li><a href="https://ouk.ac.ke/timetable" class="text-white">Timetables</a></li>
+                        <li><a href="https://ouk.ac.ke/application-process" class="text-white">How to Apply</a></li>
+                        <li><a href="https://ouk.ac.ke/contact-us" class="text-white">Contact Us</a></li>
+                    </ul>
+                </div>
+
+                <!-- Contact Information Section -->
+                <div class="col-md-4">
+                    <h5>Contact Information</h5>
+                    <p>The Cradle, Silicon Savanna, Konza Technopolis, P.O. Box 2440-00606,
+                        Nairobi, Kenya</p>
+                    <p><strong>Email:</strong> <a href="mailto:info@ouk.ac.ke" class="text-white">info@ouk.ac.ke</a></p>
+                    <p><strong>Phone:</strong> +254 (020) 2000211 / 212</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Footer Bottom (White Background) -->
+    <div class="mt-4 bg-white">
+        <div class="container">
+            <div class="row">
+                <div class="text-center col">
+                    <p>&copy; 2025 Open University of Kenya. All rights reserved.</p>
+                    <p>
+                        <a href="#" class="text-dark">Privacy Policy</a> |
+                        <a href="#" class="text-dark">Terms of Service</a> |
+                        <a href="#" class="text-dark">Cookie Policy</a>
+                    </p>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>

@@ -33,6 +33,39 @@
             color: #aaa;
             cursor: not-allowed;
         }
+
+        table {
+            width: 100%;
+            border-spacing: 0;
+            border-top: 1px solid #ddd;
+        }
+
+        th,
+        td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        tr {
+            border: none;
+        }
+
+        /* Alternating row colors */
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+
+        tr:nth-child(odd) {
+            background-color: white;
+        }
+
+        /* Remove vertical borders */
+        td,
+        th {
+            border-left: none;
+            border-right: none;
+        }
     </style>
     <div class="container mt-5">
         <h2 class="mb-4">Lecturers</h2>
@@ -56,31 +89,32 @@
         </div>
 
 
-        <table class="table table-bordered">
+        <table class="table" style="border-collapse: collapse;">
             <thead>
                 <tr>
-                    <th>ID</th>
                     <th>Name</th>
                     <th>Email</th>
-                    <th>Image</th>
                     <th>Actions</th>
                 </tr>
             </thead>
             <tbody>
                 @foreach ($lecturers as $lecturer)
-                    <tr>
-                        <td>{{ ($lecturers->currentPage() - 1) * $lecturers->perPage() + $loop->iteration }}</td>
-                        <td>{{ $lecturer->title->name }} {{ $lecturer->name }}</td>
-                        <td>{{ $lecturer->email }}</td>
-                        <td>
-                            @if ($lecturer->image_path)
-                                <img src="{{ asset('storage/' . $lecturer->image_path) }}" alt="{{ $lecturer->name }}"
-                                    width="50">
-                            @else
-                                No Image
-                            @endif
+                    <tr style="background-color: {{ $loop->iteration % 2 == 0 ? '#f9f9f9' : 'white' }};">
+                        <td style="">
+                            <div style="display: flex; align-items: center;">
+                                @if ($lecturer->image_path)
+                                    <img src="{{ asset('storage/' . $lecturer->image_path) }}" alt="{{ $lecturer->name }}"
+                                        style="border-radius: 50%; width: 50px; height: 50px; margin-right: 10px;">
+                                @else
+                                    <div
+                                        style="border-radius: 50%; width: 50px; height: 50px; background-color: #ddd; margin-right: 10px;">
+                                    </div>
+                                @endif
+                                {{ $lecturer->title->name }} {{ $lecturer->name }}
+                            </div>
                         </td>
-                        <td>
+                        <td style="">{{ $lecturer->email }}</td>
+                        <td style="">
                             <a href="{{ route('instructors.show', $lecturer) }}" class="btn btn-info btn-sm">View</a>
                             <a href="{{ route('instructors.edit', $lecturer) }}" class="btn btn-warning btn-sm">Edit</a>
                             <form action="{{ route('instructors.destroy', $lecturer) }}" method="POST" class="d-inline">
@@ -94,6 +128,10 @@
                 @endforeach
             </tbody>
         </table>
+
+
+
+
 
         <div class="mt-3 d-flex justify-content-center">
             <nav>
