@@ -106,9 +106,9 @@
                                     <img src="{{ asset('storage/' . $lecturer->image_path) }}" alt="{{ $lecturer->name }}"
                                         style="border-radius: 50%; width: 50px; height: 50px; margin-right: 10px;">
                                 @else
-                                    <div
-                                        style="border-radius: 50%; width: 50px; height: 50px; background-color: #ddd; margin-right: 10px;">
-                                    </div>
+                                    <img src="https://ouk.ac.ke/sites/default/files/Facilitators/alt.png"
+                                        alt="Default Image"
+                                        style="border-radius: 50%; width: 50px; height: 50px; margin-right: 10px;">
                                 @endif
                                 {{ $lecturer->title->name }} {{ $lecturer->name }}
                             </div>
