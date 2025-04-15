@@ -118,9 +118,9 @@
 
 
 
-    <div class="container mt-4">
-        @yield('content')
-    </div>
+    {{-- <div class="container mt-4"> --}}
+    @yield('content')
+    {{-- </div> --}}
 
     <!-- resources/views/components/footer.blade.php -->
     <footer class="py-4 text-white bg-dark">
