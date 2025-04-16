@@ -30,13 +30,15 @@ class CourseUnitController extends Controller
         return view('course_units.index', compact('courseUnits', 'search'));
     }
 
-    public function show(CourseUnit $courseUnit)
+    public function show($id)
     {
-        $lecturers = Lecturer::whereDoesntHave('courses', function ($query) use ($courseUnit) {
-            $query->where('course_unit_id', $courseUnit->id);
-        })->get();
+        // $lecturers = Lecturer::whereDoesntHave('courses', function ($query) use ($courseUnit) {
+        //     $query->where('course_unit_id', $courseUnit->id);
+        // })->get();
 
-        return view('course_units.show', compact('courseUnit', 'lecturers'));
+        $courseUnit = CourseUnit::with('programmes.lecturers')->findOrFail($id);
+
+        return view('course_units.show', compact('courseUnit'));
     }
 
     // public function create()
