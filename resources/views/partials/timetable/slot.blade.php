@@ -6,7 +6,7 @@
             <img class="instructor-image"
                 src="{{ $lesson->lecturer?->image_path ? asset('storage/' . $lesson->lecturer->image_path) : 'https://ouk.ac.ke/sites/default/files/Facilitators/alt.png' }}"
                 alt="Instructor"
-                style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover; border: 2px solid white;">
+                style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover; border: 2px solid white;">
         </div>
 
         <!-- Course and Instructor Info -->
