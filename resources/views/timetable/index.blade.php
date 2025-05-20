@@ -10,9 +10,14 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
+        
         body {
-            font-family: Arial, sans-serif;
-            background-color: #fff;
+            font-family: 'Poppins', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f8f9fa;
+            color: #fff;
+            margin: 0;
+            padding: 0;
         }
 
         /* .container {
@@ -33,10 +38,203 @@
         }
 
         .filter-section {
-            padding: 20px;
-            background: #e3f2fd;
-            border-radius: 10px;
-            margin-bottom: 20px;
+            padding: 3rem 2rem;
+            background: linear-gradient(rgba(0, 0, 0, 0.8), rgba(0, 0, 0, 0.8)), 
+                        url('https://events.snap.co.ke/images/hero-bg.jpg');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            border-radius: 0;
+            margin: 0 0 2rem 0;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .filter-section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #4361ee, #f72585);
+        }
+
+        .form-group {
+            margin-bottom: 0;
+            position: relative;
+        }
+
+        .form-label {
+            display: none; /* Hide the labels as we'll use placeholders */
+        }
+
+        .form-control {
+            height: 3.5rem;
+            border-radius: 50px;
+            padding: 0 1.5rem;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            font-size: 0.95rem;
+            font-weight: 500;
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            background-color: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            color: #fff;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .form-control::placeholder {
+            color: rgba(255, 255, 255, 0.7);
+            font-weight: 400;
+        }
+
+        .form-control:focus {
+            border-color: rgba(255, 255, 255, 0.3);
+            box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.1);
+            transform: translateY(-1px);
+            background-color: rgba(255, 255, 255, 0.15);
+        }
+
+        .form-control:hover {
+            border-color: rgba(255, 255, 255, 0.2);
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.15);
+            background-color: rgba(255, 255, 255, 0.15);
+        }
+
+        .form-control::placeholder {
+            color: #adb5bd;
+            font-weight: 400;
+        }
+
+        .btn {
+            border-radius: 50px;
+            padding: 0.75rem 1.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            border: none;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .btn-primary {
+            background: linear-gradient(45deg, #4361ee, #3a0ca3);
+        }
+
+        .btn-danger {
+            background: linear-gradient(45deg, #f72585, #b5179e);
+            display: none; /* Hidden by default */
+            margin-top: 1.5rem;
+            padding: 0.85rem 2rem;
+            font-size: 0.95rem;
+            letter-spacing: 1px;
+        }
+        
+        .timetable-loaded .btn-danger {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            animation: fadeInUp 0.5s ease-out forwards;
+        }
+        
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        select.form-control {
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='rgba(255,255,255,0.7)' viewBox='0 0 16 16'%3E%3Cpath fill-rule='evenodd' d='M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 1.25rem center;
+            background-size: 14px 10px;
+            padding-right: 3rem;
+            cursor: pointer;
+        }
+
+        /* Add a subtle animation to the dropdown arrow */
+        select.form-control:focus {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%23ffffff' viewBox='0 0 16 16'%3E%3Cpath fill-rule='evenodd' d='M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z'/%3E%3C/svg%3E");
+        }
+
+        /* Add a subtle focus ring for better accessibility */
+        *:focus {
+            outline: none;
+        }
+
+        /* Add a subtle scale effect on form focus */
+        .form-group {
+            transition: transform 0.3s ease;
+        }
+
+        .form-group:focus-within {
+            transform: scale(1.005);
+        }
+
+        /* Style the select dropdown options */
+        select option {
+            padding: 0.75rem 1.25rem;
+            border-radius: 0.5rem;
+            margin: 0.25rem 0;
+            transition: all 0.2s ease;
+            background-color: #2a2a2a;
+            color: #fff;
+        }
+
+        select option:hover {
+            background-color: #4361ee;
+        }
+
+        select option:checked {
+            background-color: #4361ee;
+            color: white;
+        }
+        
+        /* Add a title to the filter section */
+        .filter-title {
+            color: #fff;
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            text-align: center;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        
+        /* Add a subtle animation to the form */
+        .filter-form {
+            animation: fadeIn 0.6s ease-out;
+        }
+        
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         .lesson-container {
@@ -109,72 +307,71 @@
             $groupedProgrammes = $programmes->sortBy('programme_code')->groupBy('school_id');
         @endphp
 
-        <form method="GET" action="{{ route('timetable.index') }}">
-            <div class="row">
-                {{-- School Dropdown --}}
-                <div class="col-md-3">
-                    <label for="school_id" class="form-label">School</label>
-                    <select class="form-control" id="school_id" name="school_id" required onchange="filterProgrammes()">
-                        <option value="">Select School</option>
-                        @foreach ($schools as $school)
-                            <option value="{{ $school->id }}"
-                                {{ request('school_id') == $school->id ? 'selected' : '' }}>
-                                {{ $school->name }}
-                            </option>
-                        @endforeach
-                    </select>
-                </div>
+        <div class="container">
+            <h1 class="filter-title">Timetable Viewer</h1>
+            
+            <form method="GET" action="{{ route('timetable.index') }}" class="filter-form">
+                <div class="row g-4">
+                    {{-- School Dropdown --}}
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <select class="form-control form-control-lg" id="school_id" name="school_id" required onchange="filterProgrammes()">
+                                <option value="">Select School</option>
+                                @foreach ($schools as $school)
+                                    <option value="{{ $school->id }}"
+                                        {{ request('school_id') == $school->id ? 'selected' : '' }}>
+                                        {{ $school->name }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+                    </div>
 
-                {{-- Programme Dropdown (Filtered by school) --}}
-                <div class="col-md-3">
-                    <label for="programme_id" class="form-label">Programme</label>
-                    <select class="form-control" id="programme_id" name="programme_id" required>
-                        <option value="">Select Programme</option>
-                        @foreach ($groupedProgrammes as $schoolId => $schoolProgrammes)
-                            @foreach ($schoolProgrammes as $programme)
-                                <option value="{{ $programme->id }}" data-school="{{ $schoolId }}"
-                                    {{ request('programme_id') == $programme->id ? 'selected' : '' }}>
-                                    {{ $programme->programme_code }} - {{ $programme->name }}
-                                </option>
-                            @endforeach
-                        @endforeach
-                    </select>
-                </div>
+                    {{-- Programme Dropdown (Filtered by school) --}}
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <select class="form-control form-control-lg" id="programme_id" name="programme_id" required>
+                                <option value="">Select Programme</option>
+                                @foreach ($groupedProgrammes as $schoolId => $schoolProgrammes)
+                                    @foreach ($schoolProgrammes as $programme)
+                                        <option value="{{ $programme->id }}" data-school="{{ $schoolId }}"
+                                            {{ request('programme_id') == $programme->id ? 'selected' : '' }}>
+                                            {{ $programme->programme_code }} - {{ $programme->name }}
+                                        </option>
+                                    @endforeach
+                                @endforeach
+                            </select>
+                        </div>
+                    </div>
 
-                {{-- Year of Study --}}
-                <div class="col-md-3">
-                    <label for="year_of_study_id" class="form-label">Year of Study</label>
-                    <select class="form-control" id="year_of_study_id" name="year_of_study_id" required>
-                        <option value="">Select Year</option>
-                        @foreach ($years as $year)
-                            <option value="{{ $year->id }}"
-                                {{ request('year_of_study_id') == $year->id ? 'selected' : '' }}>
-                                {{ $year->name }}
-                            </option>
-                        @endforeach
-                    </select>
+                    {{-- Level of Study --}}
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <select class="form-control form-control-lg" id="level" name="level" required>
+                                <option value="">Select Level</option>
+                                @foreach ($levels as $level)
+                                    <option value="{{ $level->id }}"
+                                        {{ request('level') == $level->id ? 'selected' : '' }}>
+                                        {{ $level->name }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+                    </div>
                 </div>
-
-                {{-- Semester --}}
-                <div class="col-md-3">
-                    <label for="semester_id" class="form-label">Semester</label>
-                    <select class="form-control" id="semester_id" name="semester_id" required>
-                        <option value="">Select Semester</option>
-                        @foreach ($semesters as $semester)
-                            <option value="{{ $semester->id }}"
-                                {{ request('semester_id') == $semester->id ? 'selected' : '' }}>
-                                {{ $semester->name }}</option>
-                        @endforeach
-                    </select>
+                
+                {{-- Export Button (initially hidden) --}}
+                <div class="row mt-4">
+                    <div class="col-12 text-center">
+                        <a href="{{ route('timetable.export.pdf', request()->all()) }}" 
+                           class="btn btn-danger" 
+                           id="exportPdfBtn">
+                            <i class="fas fa-file-pdf me-2"></i> Export Timetable as PDF
+                        </a>
+                    </div>
                 </div>
-            </div>
-
-            <div class="mt-3 d-flex justify-content-between align-items-center">
-                <button type="submit" class="btn btn-primary">View Timetable</button>
-                {{-- <a href="{{ route('timetable.export.pdf', request()->all()) }}" class="btn btn-danger">Export as
-                    PDF</a> --}}
-            </div>
-        </form>
+            </form>
+        </div>
     </div>
 
     @if ($timetable->isNotEmpty())
@@ -376,29 +573,71 @@
 </body>
 
 <script>
+    // Auto-submit form when any selection changes
+    document.addEventListener('DOMContentLoaded', function() {
+        const form = document.querySelector('form');
+        const selects = form.querySelectorAll('select');
+        
+        selects.forEach(select => {
+            select.addEventListener('change', function() {
+                // Only submit if all required fields are filled
+                const allFilled = Array.from(selects).every(s => !s.required || s.value);
+                if (allFilled) {
+                    form.submit();
+                }
+            });
+        });
+    });
+    
+    function checkTimetableLoaded() {
+        const schoolId = document.getElementById('school_id').value;
+        const programmeId = document.getElementById('programme_id').value;
+        const level = document.getElementById('level').value;
+        const exportBtn = document.getElementById('exportPdfBtn');
+        
+        if (schoolId && programmeId && level) {
+            // Update export button href with current parameters
+            const url = new URL(exportBtn.href);
+            url.searchParams.set('school_id', schoolId);
+            url.searchParams.set('programme_id', programmeId);
+            url.searchParams.set('level', level);
+            exportBtn.href = url.toString();
+            
+            // Show export button with animation
+            document.body.classList.add('timetable-loaded');
+        } else {
+            // Hide export button
+            document.body.classList.remove('timetable-loaded');
+        }
+    }
+    
     function filterProgrammes() {
         const schoolId = document.getElementById('school_id').value;
         const programmeSelect = document.getElementById('programme_id');
+        const options = programmeSelect.getElementsByTagName('option');
 
-        for (let option of programmeSelect.options) {
-            const matches = !schoolId || option.dataset.school === schoolId;
-            option.style.display = matches ? 'block' : 'none';
+        // Show all options first
+        for (let i = 0; i < options.length; i++) {
+            options[i].style.display = '';
         }
 
-        // If current selection doesn't match, reset it
-        if (programmeSelect.selectedOptions.length &&
-            programmeSelect.selectedOptions[0].style.display === 'none') {
-            programmeSelect.value = '';
+        // Hide options that don't belong to the selected school
+        if (schoolId) {
+            for (let i = 1; i < options.length; i++) {
+                const optionSchoolId = options[i].getAttribute('data-school');
+                if (optionSchoolId && optionSchoolId !== schoolId) {
+                    options[i].style.display = 'none';
+                }
+            }
+            // Reset the selected value if it's now hidden
+            if (programmeSelect.value) {
+                const selectedOption = programmeSelect.options[programmeSelect.selectedIndex];
+                if (selectedOption.style.display === 'none') {
+                    programmeSelect.value = '';
+                }
+            }
         }
     }
-
-    // Run on page load in case of validation redirect
-    document.addEventListener('DOMContentLoaded', filterProgrammes);
-
-    // Block right-click for the entire page
-    document.addEventListener('contextmenu', function(e) {
-        e.preventDefault();
-    });
 </script>
 
 </html>

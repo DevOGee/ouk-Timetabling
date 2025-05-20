@@ -57,7 +57,7 @@
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
         <div class="container">
             <!-- Brand Logo -->
-            <a class="text-white navbar-brand fw-bold" href="{{ route('timetable.index') }}">
+            <a class="text-white navbar-brand fw-bold" href="{{ route('dashboard') }}">
                 <i class="fas fa-clock"></i> University Timetable
             </a>
 
@@ -111,7 +111,36 @@
                                         class="fas fa-school"></i> Schools</a></li>
                         </ul>
                     </li>
+
+                    <!-- Profile Dropdown -->
+                    @auth
+                        <li class="nav-item dropdown">
+                            <a class="text-white nav-link dropdown-toggle" href="#" id="profileDropdown"
+                                role="button" data-bs-toggle="dropdown">
+                                <i class="fas fa-user"></i> Profile
+                            </a>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" href="{{ route('profile.edit') }}"><i
+                                            class="fas fa-user-edit"></i> Edit Profile</a></li>
+                                <li><a class="dropdown-item" href="{{ route('profile.notifications') }}"><i
+                                            class="fas fa-bell"></i> Notifications</a></li>
+                                <li>
+                                    <hr class="dropdown-divider">
+                                </li>
+                                <li>
+                                    <form method="POST" action="{{ route('logout') }}">
+                                        @csrf
+                                        <button type="submit" class="dropdown-item">
+                                            <i class="fas fa-sign-out-alt"></i> Logout
+                                        </button>
+                                    </form>
+                                </li>
+                            </ul>
+                        </li>
+                    @endauth
                 </ul>
+            </div>
+        </div>
             </div>
         </div>
     </nav>
@@ -149,7 +178,8 @@
                     <h5>Contact Information</h5>
                     <p>The Cradle, Silicon Savanna, Konza Technopolis, P.O. Box 2440-00606,
                         Nairobi, Kenya</p>
-                    <p><strong>Email:</strong> <a href="mailto:info@ouk.ac.ke" class="text-white">info@ouk.ac.ke</a></p>
+                    <p><strong>Email:</strong> <a href="mailto:info@ouk.ac.ke" class="text-white">info@ouk.ac.ke</a>
+                    </p>
                     <p><strong>Phone:</strong> +254 (020) 2000211 / 212</p>
                 </div>
             </div>

@@ -18,23 +18,33 @@ class TimetableController extends Controller
     {
         $schools = School::all();
         $programmes = Programme::all();
-        $years = YearOfStudy::all();
-        $semesters = Semester::all();
         $days = Day::where('id', '<=', 5)->get();
 
-        // Fetch the Year of Study, Semester, and Academic Year from the request
-        $yearOfStudy = YearOfStudy::find($request->year_of_study_id);
-        $semester = Semester::find($request->semester_id);
-        $academicYear = AcademicYear::find($request->academic_year_id);
+        // Create combined levels (e.g., 1.1, 1.2, 2.1, 2.2, etc.)
+        $levels = [];
+        $years = YearOfStudy::orderBy('name')->get();
+        $semesters = Semester::orderBy('name')->get();
+        
+        foreach ($years as $year) {
+            foreach ($semesters as $semester) {
+                $levels[] = (object)[
+                    'id' => $year->id . '.' . $semester->id,
+                    'name' => $year->name . '.' . $semester->name,
+                    'year_id' => $year->id,
+                    'semester_id' => $semester->id
+                ];
+            }
+        }
 
         // Default empty collection if no filters are applied
         $timetable = collect();
 
-        if ($request->filled(['school_id', 'programme_id', 'year_of_study_id', 'semester_id'])) {
+        if ($request->filled(['school_id', 'programme_id', 'level'])) {
+            list($yearId, $semesterId) = explode('.', $request->level);
             // Get the filtered timetable
             $timetable = CourseUnitProgrammeMapping::where('programme_id', $request->programme_id)
-                ->where('year_of_study_id', $request->year_of_study_id)
-                ->where('semester_id', $request->semester_id)
+                ->where('year_of_study_id', $yearId)
+                ->where('semester_id', $semesterId)
                 ->with(['courseUnit', 'lecturer', 'day'])
                 ->get();
         }
@@ -42,13 +52,9 @@ class TimetableController extends Controller
         return view('timetable.index', compact(
             'schools',
             'programmes',
-            'years',
-            'semesters',
             'days',
             'timetable',
-            'yearOfStudy',       // Pass Year of Study to view
-            'semester',          // Pass Semester to view
-            'academicYear'       // Pass Academic Year to view
+            'levels'
         ));
     }
 
@@ -90,10 +96,11 @@ class TimetableController extends Controller
         $days = Day::orderBy('id')->get();
         $timetable = collect();
 
-        if ($request->filled(['school_id', 'programme_id', 'year_of_study_id', 'semester_id'])) {
+        if ($request->filled(['school_id', 'programme_id', 'level'])) {
+            list($yearId, $semesterId) = explode('.', $request->level);
             $timetable = CourseUnitProgrammeMapping::where('programme_id', $request->programme_id)
-                ->where('year_of_study_id', $request->year_of_study_id)
-                ->where('semester_id', $request->semester_id)
+                ->where('year_of_study_id', $yearId)
+                ->where('semester_id', $semesterId)
                 ->with(['courseUnit', 'lecturer', 'day'])
                 ->get();
         }

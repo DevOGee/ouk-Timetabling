@@ -42,7 +42,7 @@
             <div class="instructor-img-container">
                 <img class="instructor-image"
                     src="{{ $lesson->lecturer?->image_path
-                        ? asset('storage/' . $lesson->lecturer->image_path)
+                        ? asset('https://planner.ouk.ac.ke/storage/' . $lesson->lecturer->image_path)
                         : 'https://ouk.ac.ke/sites/default/files/Facilitators/alt.png' }}"
                     alt="Instructor Image">
             </div>

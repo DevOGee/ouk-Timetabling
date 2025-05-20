@@ -9,10 +9,43 @@ class School extends Model
 {
     use HasFactory;
 
-    public function programmes()
+    protected $fillable = ['name'];
+
+    /**
+     * Get all users associated with this school.
+     */
+    public function users()
     {
-        return $this->hasMany(Programme::class);
+        return $this->hasMany(User::class);
     }
 
-    protected $fillable = ['name'];
+    /**
+     * Get all deans associated with this school.
+     */
+    public function deans()
+    {
+        return $this->hasMany(User::class)->whereHas('roles', function ($query) {
+            $query->where('name', 'dean');
+        });
+    }
+
+    /**
+     * Get all timetablers associated with this school.
+     */
+    public function timetablers()
+    {
+        return $this->hasMany(User::class)->whereHas('roles', function ($query) {
+            $query->where('name', 'school_timetabler');
+        });
+    }
+
+    /**
+     * Get all instructors associated with this school.
+     */
+    public function instructors()
+    {
+        return $this->hasMany(User::class)->whereHas('roles', function ($query) {
+            $query->where('name', 'instructor');
+        });
+    }
 }
