@@ -48,4 +48,12 @@ class School extends Model
             $query->where('name', 'instructor');
         });
     }
+
+    /**
+     * Get all programmes associated with this school.
+     */
+    public function programmes()
+    {
+        return $this->hasMany(Programme::class);
+    }
 }

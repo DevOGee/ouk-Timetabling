@@ -76,11 +76,31 @@
                         </a>
                     </li>
 
-                    <!-- Course Mapping -->
+                    <!-- Active Session Indicator -->
+                    @if(isset($activeSession))
                     <li class="nav-item">
-                        <a class="text-white nav-link" href="{{ route('curriculum.index') }}">
-                            <i class="fas fa-project-diagram"></i> Curriculum Setup
+                        <span class="nav-link text-white-50" style="cursor: default">
+                            <i class="bi bi-calendar-check"></i> {{ $activeSession->name }}
+                        </span>
+                    </li>
+                    @endif
+
+                    <!-- Curriculum Management -->
+                    <li class="nav-item dropdown">
+                        <a class="text-white nav-link dropdown-toggle" href="#" id="curriculumDropdown" role="button" data-bs-toggle="dropdown">
+                            <i class="bi bi-journal-bookmark"></i> Curriculum
                         </a>
+                        <ul class="dropdown-menu">
+                            @if(isset($activeSession))
+                                <li><a class="dropdown-item" href="{{ route('admin.academic-sessions.curricula.index', $activeSession) }}">
+                                    <i class="bi bi-list-ul me-2"></i>Manage Curricula
+                                </a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><span class="dropdown-item-text small text-muted">Active: {{ $activeSession->activeCurriculum->name ?? 'None' }}</span></li>
+                            @else
+                                <li><span class="dropdown-item-text text-muted">No active session</span></li>
+                            @endif
+                        </ul>
                     </li>
 
                     <!-- Scheduling -->
@@ -97,6 +117,10 @@
                             <i class="fas fa-cogs"></i> Setup
                         </a>
                         <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="{{ route('admin.academic-sessions.index') }}">
+                                    <i class="fas fa-calendar-week me-2"></i>Academic Sessions
+                                </a></li>
+                            <li><hr class="dropdown-divider"></li>
                             <li><a class="dropdown-item" href="{{ route('course_units.index') }}"><i
                                         class="fas fa-book"></i> Courses</a></li>
                             <li><a class="dropdown-item" href="{{ route('instructors.index') }}"><i
@@ -242,6 +266,8 @@
             });
         });
     </script>
+    
+    @stack('scripts')
 </body>
 
 </html>

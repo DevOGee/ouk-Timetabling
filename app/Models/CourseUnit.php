@@ -29,7 +29,7 @@ class CourseUnit extends Model
     public function programmes()
     {
         return $this->belongsToMany(Programme::class, 'course_unit_programme_mappings')
-            ->withPivot(['year_of_study_id', 'semester_id'])
+            ->withPivot(['academic_session_id', 'year_of_study_id', 'semester_id'])
             ->withTimestamps();
     }
 
@@ -43,5 +43,29 @@ class CourseUnit extends Model
     public function lessonSlots()
     {
         return $this->hasMany(LessonSlot::class, 'course_unit_id');
+    }
+    
+    /**
+     * Get all academic sessions that include this course unit.
+     */
+    public function academicSessions()
+    {
+        return $this->belongsToMany(AcademicSession::class, 'course_unit_programme_mappings', 'course_unit_id', 'academic_session_id')
+            ->withPivot(['programme_id', 'year_of_study_id', 'semester_id'])
+            ->withTimestamps();
+    }
+    
+    /**
+     * Get course unit mappings for a specific academic session.
+     */
+    public function sessionMappings($academicSessionId = null)
+    {
+        $query = $this->hasMany(CourseUnitProgrammeMapping::class);
+        
+        if ($academicSessionId) {
+            $query->where('academic_session_id', $academicSessionId);
+        }
+        
+        return $query;
     }
 }

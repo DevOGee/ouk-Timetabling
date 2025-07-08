@@ -2,8 +2,13 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 
 class Programme extends Model
 {
@@ -11,46 +16,137 @@ class Programme extends Model
 
     protected $fillable = ['name', 'school_id', 'programme_code'];
 
-    public function courseUnitMappings()
+    /**
+     * Get all course unit mappings for this programme.
+     */
+    public function courseUnitMappings(): HasMany
     {
         return $this->hasMany(CourseUnitProgrammeMapping::class);
     }
 
-    public function courseUnits()
+    /**
+     * Get all course units for this programme across all academic sessions.
+     */
+    public function courseUnits(): BelongsToMany
     {
         return $this->belongsToMany(CourseUnit::class, 'course_unit_programme_mappings')
-            ->withPivot(['year_of_study_id', 'semester_id'])
+            ->withPivot(['academic_session_id', 'year_of_study_id', 'semester_id'])
             ->withTimestamps();
     }
 
-    public function school()
+    /**
+     * Get course units for a specific academic session.
+     */
+    public function sessionCourseUnits($academicSessionId = null)
+    {
+        $query = $this->belongsToMany(CourseUnit::class, 'course_unit_programme_mappings', 'programme_id', 'course_unit_id')
+            ->withPivot(['academic_session_id', 'year_of_study_id', 'semester_id']);
+            
+        if ($academicSessionId) {
+            $query->wherePivot('academic_session_id', $academicSessionId);
+        }
+        
+        return $query;
+    }
+
+    /**
+     * Get course unit mappings for a specific academic session.
+     */
+    public function sessionMappings($academicSessionId = null): HasMany
+    {
+        $query = $this->hasMany(CourseUnitProgrammeMapping::class);
+        
+        if ($academicSessionId) {
+            $query->where('academic_session_id', $academicSessionId);
+        }
+        
+        return $query;
+    }
+    
+    /**
+     * Get all academic sessions this programme is associated with.
+     */
+    public function academicSessions()
+    {
+        return $this->belongsToMany(AcademicSession::class, 'academic_session_programme')
+            ->withTimestamps();
+    }
+
+    /**
+     * Get the school that owns the programme.
+     */
+    public function school(): BelongsTo
     {
         return $this->belongsTo(School::class);
     }
 
-    public function lecturers()
+    /**
+     * Get all lecturers teaching in this programme.
+     */
+    public function lecturers(): HasManyThrough
     {
         return $this->hasManyThrough(
-            Lecturer::class, // Related model
-            CourseUnitProgrammeMapping::class, // The through model
-            'programme_id', // Foreign key on the 'course_unit_programme_mappings' table (points to the related 'programme')
-            'id', // Foreign key on the 'lecturers' table (points to 'lecturer_id')
-            'id', // Local key on the 'programmes' table
-            'lecturer_id' // Local key on the 'course_unit_programme_mappings' table (points to 'lecturer_id')
+            Lecturer::class,
+            CourseUnitProgrammeMapping::class,
+            'programme_id',
+            'id',
+            'id',
+            'lecturer_id'
         );
     }
-
-    // Get lecturers teaching this specific CourseUnit
-    public function lecturersForCourseUnit($courseUnitId)
+    
+    /**
+     * Get lecturers teaching in this programme for a specific academic session.
+     */
+    public function sessionLecturers($academicSessionId): HasManyThrough
     {
         return $this->hasManyThrough(
-            Lecturer::class, // Related model (lecturer)
-            CourseUnitProgrammeMapping::class, // The "through" model
-            'programme_id', // Foreign key on the `course_unit_programme_mappings` table
-            'id', // Foreign key on the `lecturers` table (points to `lecturer_id`)
-            'id', // Local key on the `programmes` table
-            'lecturer_id' // Local key on the `course_unit_programme_mappings` table (points to `lecturer_id`)
-        )
-            ->where('course_unit_programme_mappings.course_unit_id', $courseUnitId); // Filter by specific course unit
+            Lecturer::class,
+            CourseUnitProgrammeMapping::class,
+            'programme_id',
+            'id',
+            'id',
+            'lecturer_id'
+        )->where('course_unit_programme_mappings.academic_session_id', $academicSessionId);
+    }
+
+    /**
+     * Get lecturers teaching a specific course unit in this programme.
+     */
+    public function lecturersForCourseUnit($courseUnitId, $curriculumId = null)
+    {
+        $query = $this->hasManyThrough(
+            Lecturer::class,
+            CourseUnitProgrammeMapping::class,
+            'programme_id',
+            'id',
+            'id',
+            'lecturer_id'
+        )->where('course_unit_programme_mappings.course_unit_id', $courseUnitId);
+        
+        if ($curriculumId) {
+            $query->where('course_unit_programme_mappings.curriculum_id', $curriculumId);
+        }
+        
+        return $query;
+    }
+    
+    /**
+     * Get the number of course units in a specific curriculum.
+     */
+    public function countCourseUnitsInCurriculum($curriculumId): int
+    {
+        return $this->curriculumMappings($curriculumId)->count();
+    }
+    
+    /**
+     * Get course units by year and semester for a specific curriculum.
+     */
+    public function getCurriculumStructure($curriculumId)
+    {
+        return $this->curriculumMappings($curriculumId)
+            ->with(['courseUnit', 'yearOfStudy', 'semester', 'lecturer'])
+            ->get()
+            ->groupBy(['year_of_study_id', 'semester_id']);
     }
 }
