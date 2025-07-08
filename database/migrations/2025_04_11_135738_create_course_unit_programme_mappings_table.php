@@ -22,7 +22,7 @@ return new class extends Migration
             $table->foreignId('semester_id')->constrained()->onDelete('cascade');
 
             // Instructor and scheduling
-            $table->foreignId('lecturer_id')->nullable()->constrained('lecturers')->onDelete('set null');
+            $table->foreignId('user_id')->nullable()->constrained('users')->onDelete('set null');
             $table->foreignId('day_id')->nullable()->constrained('days')->onDelete('set null');
             // Morning slot
             $table->time('morning_start_time')->nullable();

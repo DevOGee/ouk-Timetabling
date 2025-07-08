@@ -6,8 +6,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class CourseUnitProgrammeMapping extends Model
 {
@@ -21,7 +20,7 @@ class CourseUnitProgrammeMapping extends Model
         'academic_session_id',
         'year_of_study_id',
         'semester_id',
-        'lecturer_id',
+        'user_id', // Instructor (user with role 'instructor')
         'day_id',
         'morning_start_time',
         'morning_duration',
@@ -34,135 +33,158 @@ class CourseUnitProgrammeMapping extends Model
     protected $casts = [
         'morning_start_time' => 'datetime',
         'evening_start_time' => 'datetime',
+        'morning_duration' => 'integer',
+        'evening_duration' => 'integer',
     ];
+    
+    protected $appends = ['display_name'];
+
+    /**
+     * The "booting" method of the model.
+     */
+    protected static function booted()
+    {
+        static::creating(function ($model) {
+            if (auth()->check()) {
+                $model->created_by = auth()->id();
+                $model->updated_by = auth()->id();
+            }
+        });
+
+        static::updating(function ($model) {
+            if (auth()->check()) {
+                $model->updated_by = auth()->id();
+            }
+        });
+    }
 
     // Relationships
 
-    /**
-     * Get the course unit that owns the mapping.
-     */
     public function courseUnit(): BelongsTo
     {
-        return $this->belongsTo(CourseUnit::class);
+        return $this->belongsTo(CourseUnit::class)->withDefault();
     }
 
-    /**
-     * Get the programme that owns the mapping.
-     */
     public function programme(): BelongsTo
     {
-        return $this->belongsTo(Programme::class);
+        return $this->belongsTo(Programme::class)->withDefault();
     }
 
-    /**
-     * Get the academic session that owns the mapping.
-     */
     public function academicSession(): BelongsTo
     {
-        return $this->belongsTo(AcademicSession::class);
+        return $this->belongsTo(AcademicSession::class)->withDefault();
     }
 
-    /**
-     * Get the year of study for the mapping.
-     */
     public function yearOfStudy(): BelongsTo
     {
-        return $this->belongsTo(YearOfStudy::class);
+        return $this->belongsTo(YearOfStudy::class)->withDefault();
     }
 
-    /**
-     * Get the semester for the mapping.
-     */
     public function semester(): BelongsTo
     {
-        return $this->belongsTo(Semester::class);
+        return $this->belongsTo(Semester::class)->withDefault();
+    }
+    
+    public function day(): BelongsTo
+    {
+        return $this->belongsTo(Day::class)->withDefault();
     }
 
+    public function instructor(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'user_id')->withDefault();
+    }
+    
     /**
-     * Get the lecturer assigned to teach this course unit.
+     * @deprecated Use instructor() instead
      */
     public function lecturer(): BelongsTo
     {
-        return $this->belongsTo(Lecturer::class);
+        return $this->instructor();
     }
 
-    /**
-     * Get the user who created this mapping.
-     */
     public function creator(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'created_by');
+        return $this->belongsTo(User::class, 'created_by')->withDefault();
     }
 
-    /**
-     * Get the user who last updated this mapping.
-     */
     public function updater(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'updated_by');
+        return $this->belongsTo(User::class, 'updated_by')->withDefault();
+    }
+    
+    public function morningSlot(): HasOne
+    {
+        return $this->hasOne(LessonSlot::class, 'mapping_id')
+            ->where('time_slot_type', 'morning');
+    }
+    
+    public function eveningSlot(): HasOne
+    {
+        return $this->hasOne(LessonSlot::class, 'mapping_id')
+            ->where('time_slot_type', 'evening');
     }
 
     // Scopes
 
-    /**
-     * Scope a query to only include mappings for a specific curriculum.
-     */
     public function scopeForCurriculum(Builder $query, $curriculumId): Builder
     {
-        return $query->where('curriculum_id', $curriculumId);
+        return $query->whereHas('programme', function($q) use ($curriculumId) {
+            $q->where('curriculum_id', $curriculumId);
+        });
     }
 
-    /**
-     * Scope a query to only include mappings for a specific programme.
-     */
     public function scopeForProgramme(Builder $query, $programmeId): Builder
     {
         return $query->where('programme_id', $programmeId);
     }
 
-    /**
-     * Scope a query to only include mappings for a specific year of study.
-     */
     public function scopeForYearOfStudy(Builder $query, $yearId): Builder
     {
         return $query->where('year_of_study_id', $yearId);
     }
 
-    /**
-     * Scope a query to only include mappings for a specific semester.
-     */
     public function scopeForSemester(Builder $query, $semesterId): Builder
     {
         return $query->where('semester_id', $semesterId);
     }
 
-    /**
-     * Scope a query to only include mappings for a specific course unit.
-     */
     public function scopeForCourseUnit(Builder $query, $courseUnitId): Builder
     {
         return $query->where('course_unit_id', $courseUnitId);
     }
-
-    // Helper Methods
-
-    /**
-     * Get the display name for the mapping.
-     */
-    public function getDisplayNameAttribute(): string
+    
+    public function scopeWithInstructors(Builder $query): Builder
     {
-        $name = "{$this->courseUnit->code} - {$this->courseUnit->name}";
-        
-        if ($this->lecturer) {
-            $name .= " (Taught by: {$this->lecturer->name})";
-        }
-        
-        return $name;
+        return $query->whereNotNull('user_id');
+    }
+    
+    public function scopeForInstructor(Builder $query, $userId): Builder
+    {
+        return $query->where('user_id', $userId);
     }
 
-    /**
-     * Check if this mapping has scheduling information.
-     */
+    // Methods
+
+    public function getDisplayNameAttribute(): string
+    {
+        $parts = [];
+        
+        if ($this->courseUnit) {
+            $parts[] = $this->courseUnit->code . ' - ' . $this->courseUnit->name;
+        }
+        
+        if ($this->yearOfStudy && $this->semester) {
+            $parts[] = '(' . $this->yearOfStudy->name . ' - ' . $this->semester->name . ')';
+        }
+        
+        if ($this->instructor) {
+            $parts[] = 'Instructor: ' . $this->instructor->name;
+        }
+        
+        return implode(' | ', $parts);
+    }
+
     public function hasScheduling(): bool
     {
         return !is_null($this->day_id) || 
@@ -170,13 +192,10 @@ class CourseUnitProgrammeMapping extends Model
                !is_null($this->evening_start_time);
     }
 
-    /**
-     * Duplicate this mapping for a new curriculum.
-     */
-    public function duplicateForCurriculum($newCurriculumId, $clearScheduling = true)
+    public function duplicateForCurriculum($newCurriculumId, bool $clearScheduling = true): self
     {
         $newMapping = $this->replicate();
-        $newMapping->curriculum_id = $newCurriculumId;
+        $newMapping->programme_id = $newCurriculumId;
         
         if ($clearScheduling) {
             $newMapping->day_id = null;
@@ -186,7 +205,6 @@ class CourseUnitProgrammeMapping extends Model
             $newMapping->evening_duration = null;
         }
         
-        $newMapping->created_by = auth()->id();
         $newMapping->save();
         
         return $newMapping;
@@ -194,70 +212,31 @@ class CourseUnitProgrammeMapping extends Model
 
     // Static Methods
 
-    /**
-     * Get all mappings for a programme in a curriculum, grouped by year and semester.
-     */
-    public static function getByProgrammeAndCurriculum($programmeId, $curriculumId)
+    public static function getByProgrammeAndCurriculum($programmeId, $curriculumId = null)
     {
-        return self::with(['courseUnit', 'yearOfStudy', 'semester', 'lecturer'])
-            ->where('programme_id', $programmeId)
-            ->where('curriculum_id', $curriculumId)
-            ->get()
+        $query = self::with(['courseUnit', 'instructor', 'yearOfStudy', 'semester', 'day'])
+            ->where('programme_id', $programmeId);
+            
+        if ($curriculumId) {
+            $query->whereHas('programme', function($q) use ($curriculumId) {
+                $q->where('curriculum_id', $curriculumId);
+            });
+        }
+        
+        return $query->get()
             ->groupBy(['year_of_study_id', 'semester_id']);
     }
 
-    /**
-     * Count the number of course units in a programme's curriculum.
-     */
     public static function countForProgramme($programmeId, $curriculumId = null): int
     {
         $query = self::where('programme_id', $programmeId);
         
         if ($curriculumId) {
-            $query->where('curriculum_id', $curriculumId);
+            $query->whereHas('programme', function($q) use ($curriculumId) {
+                $q->where('curriculum_id', $curriculumId);
+            });
         }
         
         return $query->count();
-    }
-
-    // Events
-
-    protected static function booted()
-    {
-        static::creating(function ($mapping) {
-            if (auth()->check()) {
-                $mapping->created_by = auth()->id();
-            }
-        });
-
-        static::updating(function ($mapping) {
-            if (auth()->check()) {
-                $mapping->updated_by = auth()->id();
-            }
-        });
-    }
-
-    /**
-     * Get the day for the mapping.
-     */
-    public function day(): BelongsTo
-    {
-        return $this->belongsTo(Day::class);
-    }
-
-    /**
-     * Get the morning lesson slot for the mapping.
-     */
-    public function morningSlot(): BelongsTo
-    {
-        return $this->belongsTo(LessonSlot::class, 'morning_slot_id');
-    }
-
-    /**
-     * Get the evening lesson slot for the mapping.
-     */
-    public function eveningSlot(): BelongsTo
-    {
-        return $this->belongsTo(LessonSlot::class, 'evening_slot_id');
     }
 }

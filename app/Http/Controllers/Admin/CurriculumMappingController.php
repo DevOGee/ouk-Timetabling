@@ -7,7 +7,7 @@ use App\Models\AcademicSession;
 use App\Models\CourseUnit;
 use App\Models\CourseUnitProgrammeMapping;
 use App\Models\Curriculum;
-use App\Models\Lecturer;
+use App\Models\User;
 use App\Models\Programme;
 use App\Models\Semester;
 use App\Models\YearOfStudy;
@@ -48,7 +48,7 @@ class CurriculumMappingController extends Controller
         
         // Build the query
         $query = $curriculum->courseUnitProgrammeMappings()
-            ->with(['courseUnit', 'programme', 'yearOfStudy', 'semester', 'lecturer']);
+            ->with(['courseUnit', 'programme', 'yearOfStudy', 'semester', 'instructor']);
         
         // Apply filters
         if ($filters['programme_id']) {
@@ -83,7 +83,7 @@ class CurriculumMappingController extends Controller
         $programmes = $curriculum->programmes()->orderBy('name')->get();
         $years = YearOfStudy::orderBy('id')->get();
         $semesters = Semester::orderBy('id')->get();
-        $lecturers = Lecturer::orderBy('name')->get();
+        $instructors = User::role('instructor')->orderBy('name')->get();
         
         return view('admin.curricula.mappings.index', [
             'academicSession' => $academicSession,
@@ -92,7 +92,7 @@ class CurriculumMappingController extends Controller
             'programmes' => $programmes,
             'years' => $years,
             'semesters' => $semesters,
-            'lecturers' => $lecturers,
+            'instructors' => $instructors,
             'filters' => $filters,
         ]);
     }
@@ -128,7 +128,7 @@ class CurriculumMappingController extends Controller
             'courseUnits' => $courseUnits,
             'years' => YearOfStudy::orderBy('id')->get(),
             'semesters' => Semester::orderBy('id')->get(),
-            'lecturers' => Lecturer::orderBy('name')->get(),
+            'instructors' => User::role('instructor')->orderBy('name')->get(),
         ]);
     }
 
@@ -162,7 +162,15 @@ class CurriculumMappingController extends Controller
             ],
             'year_of_study_id' => 'required|exists:years_of_study,id',
             'semester_id' => 'required|exists:semesters,id',
-            'lecturer_id' => 'nullable|exists:lecturers,id',
+            'user_id' => [
+                'nullable',
+                'exists:users,id',
+                function ($attribute, $value, $fail) {
+                    if ($value && !User::find($value)->hasRole('instructor')) {
+                        $fail('The selected user is not an instructor.');
+                    }
+                },
+            ],
             'is_elective' => 'boolean',
             'max_students' => 'nullable|integer|min:1',
             'notes' => 'nullable|string|max:500',
@@ -213,7 +221,7 @@ class CurriculumMappingController extends Controller
             'courseUnits' => $courseUnits,
             'years' => YearOfStudy::orderBy('id')->get(),
             'semesters' => Semester::orderBy('id')->get(),
-            'lecturers' => Lecturer::orderBy('name')->get(),
+            'instructors' => User::role('instructor')->orderBy('name')->get(),
         ]);
     }
 
@@ -253,7 +261,15 @@ class CurriculumMappingController extends Controller
             ],
             'year_of_study_id' => 'required|exists:years_of_study,id',
             'semester_id' => 'required|exists:semesters,id',
-            'lecturer_id' => 'nullable|exists:lecturers,id',
+            'user_id' => [
+                'nullable',
+                'exists:users,id',
+                function ($attribute, $value, $fail) {
+                    if ($value && !User::find($value)->hasRole('instructor')) {
+                        $fail('The selected user is not an instructor.');
+                    }
+                },
+            ],
             'is_elective' => 'boolean',
             'max_students' => 'nullable|integer|min:1',
             'notes' => 'nullable|string|max:500',

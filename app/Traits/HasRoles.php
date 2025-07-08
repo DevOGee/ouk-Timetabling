@@ -2,6 +2,7 @@
 
 namespace App\Traits;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use App\Models\Role;
 
@@ -16,26 +17,58 @@ trait HasRoles
     }
 
     /**
-     * Check if user has a specific role.
+     * Scope the user query to only include users with a given role.
      */
-    public function hasRole(string $role): bool
+    public function scopeRole(Builder $query, $roles, $guard = null): Builder
     {
-        return $this->roles->contains('name', $role);
+        if ($roles === '') {
+            return $query;
+        }
+
+        $roles = is_array($roles) ? $roles : [$roles];
+        
+        return $query->whereHas('roles', function ($query) use ($roles) {
+            $query->whereIn('name', $roles);
+        });
     }
 
     /**
-     * Check if user has any of the specified roles.
+     * Check if user has a specific role.
      */
-    public function hasAnyRole(array $roles): bool
+    public function hasRole($roles, string $guard = null): bool
     {
-        return $this->roles->whereIn('name', $roles)->count() > 0;
+        if (is_string($roles)) {
+            return $this->roles->contains('name', $roles);
+        }
+
+        if (is_array($roles)) {
+            return $this->roles->whereIn('name', $roles)->count() > 0;
+        }
+
+        return false;
+    }
+
+    /**
+     * Alias for hasRole for Spatie compatibility
+     */
+    public function hasAnyRole($roles, string $guard = null): bool
+    {
+        return $this->hasRole($roles, $guard);
     }
 
     /**
      * Check if user has all of the specified roles.
      */
-    public function hasAllRoles(array $roles): bool
+    public function hasAllRoles($roles, string $guard = null): bool
     {
-        return $this->roles->whereIn('name', $roles)->count() === count($roles);
+        if (is_string($roles)) {
+            return $this->roles->contains('name', $roles);
+        }
+
+        if (is_array($roles)) {
+            return $this->roles->whereIn('name', $roles)->count() === count($roles);
+        }
+
+        return false;
     }
 }

@@ -81,27 +81,37 @@ class Programme extends Model
     }
 
     /**
-     * Get all lecturers teaching in this programme.
+     * Get all instructors teaching in this programme.
      */
-    public function lecturers(): HasManyThrough
+    public function instructors(): HasManyThrough
     {
         return $this->hasManyThrough(
-            Lecturer::class,
+            User::class,
             CourseUnitProgrammeMapping::class,
             'programme_id',
             'id',
             'id',
-            'lecturer_id'
-        );
+            'user_id'
+        )->whereHas('roles', function($q) {
+            $q->where('name', 'instructor');
+        });
     }
     
     /**
-     * Get lecturers teaching in this programme for a specific academic session.
+     * @deprecated Use instructors() instead
      */
-    public function sessionLecturers($academicSessionId): HasManyThrough
+    public function lecturers(): HasManyThrough
+    {
+        return $this->instructors();
+    }
+    
+    /**
+     * Get instructors teaching in this programme for a specific academic session.
+     */
+    public function sessionInstructors($academicSessionId): HasManyThrough
     {
         return $this->hasManyThrough(
-            Lecturer::class,
+            User::class,
             CourseUnitProgrammeMapping::class,
             'programme_id',
             'id',
@@ -111,18 +121,21 @@ class Programme extends Model
     }
 
     /**
-     * Get lecturers teaching a specific course unit in this programme.
+     * Get instructors teaching a specific course unit in this programme.
      */
     public function lecturersForCourseUnit($courseUnitId, $curriculumId = null)
     {
         $query = $this->hasManyThrough(
-            Lecturer::class,
+            User::class,
             CourseUnitProgrammeMapping::class,
             'programme_id',
             'id',
             'id',
-            'lecturer_id'
-        )->where('course_unit_programme_mappings.course_unit_id', $courseUnitId);
+            'user_id'
+        )->where('course_unit_programme_mappings.course_unit_id', $courseUnitId)
+         ->whereHas('roles', function($q) {
+             $q->where('name', 'instructor');
+         });
         
         if ($curriculumId) {
             $query->where('course_unit_programme_mappings.curriculum_id', $curriculumId);

@@ -37,14 +37,14 @@
                         @foreach ($mappings as $mapping)
                             @php
                                 $course = $mapping->courseUnit;
-                                $instructor = $mapping->lecturer;
+                                $instructor = $mapping->instructor;
                             @endphp
                             <tr>
                                 <td>{{ $course->code }}</td>
                                 <td>{{ $course->name }}</td>
                                 <td>
                                     @if ($instructor)
-                                        {{ $instructor->title->name ?? '' }} {{ $instructor->name }}
+                                        {{ $instructor->title ? $instructor->title->abbreviation . ' ' : '' }}{{ $instructor->name }}
                                     @else
                                         <span class="text-muted">No Instructor Assigned</span>
                                     @endif
@@ -76,12 +76,23 @@
                                             data-bs-target="#assignInstructorModal{{ $course->id }}">Assign
                                             Instructor</button>
                                     @else
-                                        <form
-                                            action="{{ route('programmes.remove_instructor', [$programme, $course, $instructor]) }}"
-                                            method="POST" class="d-inline">
-                                            @csrf @method('DELETE')
-                                            <button class="btn btn-warning btn-sm">Unassign</button>
-                                        </form>
+                                        @php
+                                            // Debug information
+                                            // dd($mapping);
+                                        @endphp
+                                        {{-- <form
+                                            action="{{ route('admin.programmes.remove_instructor', [
+                                                'programme' => $programme->id, 
+                                                'courseUnit' => $course->id, 
+                                                'user' => $mapping->user_id
+                                            ]) }}"
+                                            method="POST" 
+                                            class="d-inline"
+                                        >
+                                            @csrf 
+                                            @method('DELETE')
+                                            <button type="submit" class="btn btn-warning btn-sm">Unassign</button>
+                                        </form> --}}
                                     @endif
 
                                     {{-- Assign/Edit Slot --}}
@@ -114,12 +125,17 @@
             </div>
         @endforeach
 
-        <a href="{{ route('programmes.index') }}" class="mb-3 btn btn-secondary">
+        <a href="{{ route('admin.programmes.index') }}" class="mb-3 btn btn-secondary">
             <i class="bi bi-arrow-left"></i> Back to Programmes
         </a>
 
-        <a href="{{ route('curriculum.show', $programme->id) }}" class="mb-3 btn btn-outline-primary float-end">
-            <i class="bi bi-pencil-square"></i> Edit Curriculum
+        @php
+            // Get the current academic session ID or use a default value
+            $academicSessionId = session('current_academic_session_id') ?? 1;
+            $academicSession = \App\Models\AcademicSession::find($academicSessionId);
+        @endphp
+        <a href="{{ route('admin.academic-sessions.programmes.scheduling.show', [$academicSession, $programme]) }}" class="mb-3 btn btn-outline-primary float-end">
+            <i class="bi bi-calendar-plus"></i> Manage Schedule
         </a>
     </div>
 @endsection

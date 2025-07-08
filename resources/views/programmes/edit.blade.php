@@ -16,7 +16,7 @@
             </div>
         @endif
 
-        <form action="{{ route('programmes.update', $programme) }}" method="POST">
+        <form action="{{ route('admin.programmes.update', $programme) }}" method="POST">
             @csrf
             @method('PUT')
 
@@ -45,7 +45,7 @@
             </div>
 
             <button type="submit" class="btn btn-primary">Update</button>
-            <a href="{{ route('programmes.index') }}" class="btn btn-secondary">Cancel</a>
+            <a href="{{ route('admin.programmes.index') }}" class="btn btn-secondary">Cancel</a>
         </form>
     </div>
 @endsection

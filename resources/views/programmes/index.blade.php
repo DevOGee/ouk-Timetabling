@@ -10,7 +10,7 @@
             <div class="alert alert-success">{{ session('success') }}</div>
         @endif
 
-        <a href="{{ route('programmes.create') }}" class="mb-3 btn btn-primary">Add Programme</a>
+        <a href="{{ route('admin.programmes.create') }}" class="mb-3 btn btn-primary">Add Programme</a>
 
 
         @foreach ($schools as $school)
@@ -27,11 +27,11 @@
                                     <strong>{{ $programme->programme_code }}</strong> – {{ $programme->name }}
                                 </div>
                                 <div>
-                                    <a href="{{ route('programmes.show', $programme) }}"
+                                    <a href="{{ route('admin.programmes.show', $programme) }}"
                                         class="btn btn-info btn-sm me-1">View Scheduling</a>
-                                    {{-- <a href="{{ route('programmes.edit', $programme) }}"
+                                    {{-- <a href="{{ route('admin.programmes.edit', $programme) }}"
                                         class="btn btn-warning btn-sm me-1">Edit</a>
-                                    <form action="{{ route('programmes.destroy', $programme) }}" method="POST"
+                                    <form action="{{ route('admin.programmes.destroy', $programme) }}" method="POST"
                                         class="d-inline">
                                         @csrf
                                         @method('DELETE')

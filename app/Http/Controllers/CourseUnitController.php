@@ -32,11 +32,11 @@ class CourseUnitController extends Controller
 
     public function show($id)
     {
-        // $lecturers = Lecturer::whereDoesntHave('courses', function ($query) use ($courseUnit) {
-        //     $query->where('course_unit_id', $courseUnit->id);
-        // })->get();
-
-        $courseUnit = CourseUnit::with('programmes.lecturers')->findOrFail($id);
+        $courseUnit = CourseUnit::with(['programmes' => function($query) {
+            $query->with(['users' => function($q) {
+                $q->role('instructor');
+            }]);
+        }])->findOrFail($id);
 
         return view('course_units.show', compact('courseUnit'));
     }

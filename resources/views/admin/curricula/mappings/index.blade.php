@@ -96,7 +96,7 @@
                                 <th>Programme</th>
                                 <th>Year</th>
                                 <th>Semester</th>
-                                <th>Lecturer</th>
+                                <th>Instructor</th>
                                 <th>Type</th>
                                 <th class="text-end">Actions</th>
                             </tr>
@@ -112,8 +112,8 @@
                                     <td>{{ $mapping->yearOfStudy->name }}</td>
                                     <td>{{ $mapping->semester->name }}</td>
                                     <td>
-                                        @if($mapping->lecturer)
-                                            {{ $mapping->lecturer->name }}
+                                        @if($mapping->instructor)
+                                            {{ $mapping->instructor->name }}
                                         @else
                                             <span class="text-muted">Not assigned</span>
                                         @endif

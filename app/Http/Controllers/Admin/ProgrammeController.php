@@ -96,6 +96,46 @@ class ProgrammeController extends Controller
     /**
      * Remove the specified programme from storage.
      */
+    public function show(Programme $programme)
+    {
+        // Load the programme with related data
+        $programme->load([
+            'school',
+            'courseUnits' => function($query) {
+                $query->withPivot('semester_id', 'year_of_study_id', 'user_id')
+                    ->with(['semester', 'yearOfStudy', 'instructor']);
+            },
+            'courseUnitMappings.instructor',
+            'courseUnitMappings.courseUnit',
+            'courseUnitMappings.semester',
+            'courseUnitMappings.yearOfStudy'
+        ]);
+
+        // Get all instructors for the assign instructor dropdown
+        $instructors = User::role('instructor')->with('title')->orderBy('name')->get();
+        
+        // Get all course units for the add course unit dropdown
+        $availableCourseUnits = CourseUnit::whereDoesntHave('programmes', function($query) use ($programme) {
+            $query->where('programme_id', $programme->id);
+        })->orderBy('name')->get();
+
+        // Group course unit mappings by year and semester
+        $groupedMappings = $programme->courseUnitMappings
+            ->groupBy(function($mapping) {
+                return 'Year ' . $mapping->yearOfStudy->name . ' - Semester ' . $mapping->semester->name;
+            });
+
+        return view('admin.programmes.show', [
+            'programme' => $programme,
+            'instructors' => $instructors,
+            'availableCourseUnits' => $availableCourseUnits,
+            'groupedMappings' => $groupedMappings
+        ]);
+    }
+
+    /**
+     * Remove the specified programme from storage.
+     */
     public function destroy(Programme $programme)
     {
         // Check if the programme has any course unit mappings

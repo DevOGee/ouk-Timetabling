@@ -2,7 +2,7 @@
 <div class="modal fade" id="assignSlotModal{{ $mapping->id }}" tabindex="-1"
     aria-labelledby="assignSlotLabel{{ $mapping->id }}" aria-hidden="true">
     <div class="modal-dialog">
-        <form action="{{ route('lesson_slots.store', [$programme->id, $course->id]) }}" method="POST"
+        <form action="{{ route('admin.lesson_slots.store', [$programme->id, $course->id]) }}" method="POST"
             class="modal-content">
             @csrf
             <div class="modal-header">

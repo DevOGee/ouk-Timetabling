@@ -2,7 +2,7 @@
 <div class="modal fade" id="editSlotModal{{ $mapping->id }}" tabindex="-1"
     aria-labelledby="editSlotLabel{{ $mapping->id }}" aria-hidden="true">
     <div class="modal-dialog">
-        <form action="{{ route('lesson_slots.update', [$programme->id, $course->id, $mapping->id]) }}" method="POST"
+        <form action="{{ route('admin.lesson_slots.update', [$programme->id, $course->id, $mapping->id]) }}" method="POST"
             class="modal-content">
             @csrf
             @method('PUT')

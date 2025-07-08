@@ -70,7 +70,7 @@ class TimetableController extends Controller
     //     $timetable = CourseUnitProgrammeMapping::where('programme_id', $request->programme_id)
     //         ->where('year_of_study_id', $request->year_of_study_id)
     //         ->where('semester_id', $request->semester_id)
-    //         ->with(['courseUnit', 'lecturer', 'day'])
+    //         ->with(['courseUnit', 'instructor', 'day'])
     //         ->get();
 
     //     // Retrieve days for the timetable (assuming the days are predefined)

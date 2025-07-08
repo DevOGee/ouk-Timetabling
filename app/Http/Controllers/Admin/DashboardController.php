@@ -6,7 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\AcademicSession;
 use App\Models\Programme;
 use App\Models\CourseUnit;
-use App\Models\Lecturer;
+use App\Models\User;
 use App\Models\Room;
 use Illuminate\Http\Request;
 
@@ -23,7 +23,7 @@ class DashboardController extends Controller
             'academicSessions' => AcademicSession::count(),
             'programmes' => Programme::count(),
             'courseUnits' => CourseUnit::count(),
-            'lecturers' => Lecturer::count(),
+            'instructors' => User::role('instructor')->count(),
             'rooms' => Room::count(),
         ];
 

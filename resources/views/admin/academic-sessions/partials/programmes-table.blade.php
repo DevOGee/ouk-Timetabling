@@ -14,27 +14,37 @@
                 @foreach($programmes as $programme)
                     <tr>
                         <td>{{ $programme->programme_code ?? $programme->code ?? 'N/A' }}</td>
-                        <td>
-                            <a href="{{ route('admin.programmes.show', $programme) }}">
-                                {{ $programme->name }}
-                            </a>
-                        </td>
+                        <td>{{ $programme->name }}</td>
                         <td>{{ $programme->school->name ?? 'N/A' }}</td>
                         <td>
                             {{ $programme->course_units_count ?? 0 }}
                         </td>
                         <td>
                             <div class="btn-group" role="group">
-                                <a href="{{ route('admin.academic-sessions.programmes.map-course-units', ['academicSession' => $academicSession->id, 'programme' => $programme->id]) }}" class="btn btn-sm btn-outline-primary" title="Map Course Units">
+                                <a href="{{ route('admin.academic-sessions.programmes.scheduling.show', ['academicSession' => $academicSession->id, 'programme' => $programme->id]) }}" 
+                                   class="btn btn-sm btn-outline-primary" 
+                                   title="Manage Schedule">
+                                    <i class="bi bi-calendar-plus"></i>
+                                </a>
+                                <a href="{{ route('admin.academic-sessions.programmes.map-course-units', ['academicSession' => $academicSession->id, 'programme' => $programme->id]) }}" 
+                                   class="btn btn-sm btn-outline-secondary" 
+                                   title="Map Course Units">
                                     <i class="bi bi-list-check"></i>
                                 </a>
-                                <a href="{{ route('admin.programmes.show', $programme) }}" class="btn btn-sm btn-outline-secondary" title="View Programme">
+                                <button class="btn btn-sm btn-outline-secondary" 
+                                        disabled 
+                                        title="View Programme (Disabled)">
                                     <i class="bi bi-eye"></i>
-                                </a>
-                                <form action="{{ route('admin.academic-sessions.programmes.detach', ['academicSession' => $academicSession, 'programme' => $programme]) }}" method="POST" class="d-inline">
+                                </button>
+                                <form action="{{ route('admin.academic-sessions.programmes.detach', ['academicSession' => $academicSession, 'programme' => $programme]) }}" 
+                                      method="POST" 
+                                      class="d-inline">
                                     @csrf
                                     @method('DELETE')
-                                    <button type="submit" class="btn btn-sm btn-outline-danger" title="Remove from Session" onclick="return confirm('Are you sure you want to remove this programme from the session?')">
+                                    <button type="submit" 
+                                            class="btn btn-sm btn-outline-danger" 
+                                            title="Remove from Session" 
+                                            onclick="return confirm('Are you sure you want to remove this programme from the session?')">
                                         <i class="bi bi-trash"></i>
                                     </button>
                                 </form>

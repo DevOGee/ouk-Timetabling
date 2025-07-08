@@ -270,12 +270,12 @@
                         </div>
                         
                         <div class="mb-3">
-                            <label for="lecturer_id" class="form-label">Lecturer (Optional)</label>
-                            <select class="form-select" id="lecturer_id" name="lecturer_id">
-                                <option value="">Select a lecturer (optional)</option>
-                                @foreach($lecturers as $lecturer)
-                                    <option value="{{ $lecturer->id }}">
-                                        {{ $lecturer->name }} ({{ $lecturer->code ?? 'N/A' }})
+                            <label for="user_id" class="form-label">Instructor (Optional)</label>
+                            <select class="form-select" id="user_id" name="user_id">
+                                <option value="">Select an instructor (optional)</option>
+                                @foreach($instructors as $instructor)
+                                    <option value="{{ $instructor->id }}">
+                                        {{ $instructor->name }}
                                     </option>
                                 @endforeach
                             </select>

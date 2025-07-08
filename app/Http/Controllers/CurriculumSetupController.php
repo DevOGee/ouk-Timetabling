@@ -101,12 +101,12 @@ class CurriculumSetupController extends Controller
         // Get all course units that are already mapped to this programme in the active curriculum
         $mappedCourseUnits = $programme->courseUnitMappings()
             ->where('curriculum_id', $this->activeCurriculum->id)
-            ->with(['courseUnit', 'yearOfStudy', 'semester', 'lecturer'])
+            ->with(['courseUnit', 'yearOfStudy', 'semester', 'instructor'])
             ->get()
             ->groupBy('year_of_study_id');
         
-        // Get all lecturers for the lecturer dropdown
-        $lecturers = \App\Models\Lecturer::orderBy('name')->get();
+        // Get all instructors for the instructor dropdown
+        $instructors = \App\Models\User::role('instructor')->orderBy('name')->get();
         
         return view('curriculum.show', compact(
             'programme', 
@@ -114,7 +114,7 @@ class CurriculumSetupController extends Controller
             'semesters', 
             'availableCourseUnits',
             'mappedCourseUnits',
-            'lecturers'
+            'instructors'
         ));
     }
 
@@ -125,7 +125,7 @@ class CurriculumSetupController extends Controller
             'course_unit_id' => 'required|exists:course_units,id',
             'year_of_study_id' => 'required|exists:years_of_study,id',
             'semester_id' => 'required|exists:semesters,id',
-            'lecturer_id' => 'nullable|exists:lecturers,id',
+            'user_id' => 'nullable|exists:users,id|exists:model_has_roles,model_id,role_id,' . \Spatie\Permission\Models\Role::where('name', 'instructor')->first()->id,
         ]);
         
         try {
@@ -149,7 +149,7 @@ class CurriculumSetupController extends Controller
                 'year_of_study_id' => $validated['year_of_study_id'],
                 'semester_id' => $validated['semester_id'],
                 'curriculum_id' => $this->activeCurriculum->id,
-                'lecturer_id' => $validated['lecturer_id'] ?? null,
+                'user_id' => $validated['user_id'] ?? null,
                 'created_by' => Auth::id(),
             ]);
             
@@ -159,7 +159,7 @@ class CurriculumSetupController extends Controller
                 return response()->json([
                     'success' => true,
                     'message' => 'Course unit added to programme successfully.',
-                    'mapping' => $mapping->load(['courseUnit', 'yearOfStudy', 'semester', 'lecturer'])
+                    'mapping' => $mapping->load(['courseUnit', 'yearOfStudy', 'semester', 'instructor'])
                 ]);
             }
             

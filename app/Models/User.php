@@ -7,6 +7,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 use App\Traits\HasRoles;
+use Illuminate\Database\Eloquent\Builder;
 
 class User extends Authenticatable
 {
@@ -28,9 +29,14 @@ class User extends Authenticatable
      */
     protected $fillable = [
         'name',
+        'title_id',
         'email',
         'password',
         'school_id',
+        'image_path',
+        'status',
+        'phone',
+        'last_login_at'
     ];
 
     /**
@@ -42,6 +48,8 @@ class User extends Authenticatable
         'password',
         'remember_token',
     ];
+    
+    protected $with = ['title'];
 
     /**
      * The attributes that should be cast.
@@ -50,7 +58,51 @@ class User extends Authenticatable
      */
     protected $casts = [
         'email_verified_at' => 'datetime',
+        'password' => 'hashed',
+        'last_login_at' => 'datetime',
     ];
+    
+    /**
+     * Get the user's full name with title.
+     */
+    public function getFullNameAttribute(): string
+    {
+        $title = $this->title ? $this->title->abbreviation ?? $this->title->name : '';
+        return $title ? "{$title} {$this->name}" : $this->name;
+    }
+
+    /**
+     * Get the user's title.
+     */
+    public function title()
+    {
+        return $this->belongsTo(Title::class);
+    }
+
+    /**
+     * Scope a query to only include active users.
+     */
+    public function scopeActive($query)
+    {
+        return $query->where('status', 'active');
+    }
+
+    /**
+     * Check if the user is active.
+     */
+    public function isActive(): bool
+    {
+        return $this->status === 'active';
+    }
+
+    /**
+     * Update the last login timestamp.
+     */
+    public function updateLastLogin()
+    {
+        $this->last_login_at = now();
+        $this->save();
+    }
 
     /**
      * Get all roles associated with the user.
@@ -59,12 +111,22 @@ class User extends Authenticatable
     {
         return $this->belongsToMany(Role::class);
     }
+    
+    /**
+     * Scope a query to only include users with the instructor role.
+     */
+    public function scopeInstructors(Builder $query): Builder
+    {
+        return $query->whereHas('roles', function($q) {
+            $q->where('name', 'instructor');
+        });
+    }
 
     /**
-     * Check if user has a specific role
+     * Check if the user is an instructor.
      */
-    public function hasRole(string $role): bool
+    public function isInstructor(): bool
     {
-        return $this->roles->contains('name', $role);
+        return $this->hasRole('instructor');
     }
 }

@@ -121,19 +121,19 @@
                     </div>
                     
                     <div class="col-md-4">
-                        <label for="lecturer_id" class="form-label">Lecturer</label>
-                        <select class="form-select @error('lecturer_id') is-invalid @enderror" 
-                                id="lecturer_id" 
-                                name="lecturer_id">
-                            <option value="">Select Lecturer (Optional)</option>
-                            @foreach($lecturers as $lecturer)
-                                <option value="{{ $lecturer->id }}" 
-                                    {{ old('lecturer_id') == $lecturer->id ? 'selected' : '' }}>
-                                    {{ $lecturer->name }}
+                        <label for="user_id" class="form-label">Instructor</label>
+                        <select class="form-select @error('user_id') is-invalid @enderror" 
+                                id="user_id" 
+                                name="user_id">
+                            <option value="">Select Instructor (Optional)</option>
+                            @foreach($instructors as $instructor)
+                                <option value="{{ $instructor->id }}" 
+                                    {{ old('user_id') == $instructor->id ? 'selected' : '' }}>
+                                    {{ $instructor->name }}
                                 </option>
                             @endforeach
                         </select>
-                        @error('lecturer_id')
+                        @error('user_id')
                             <div class="invalid-feedback">{{ $message }}</div>
                         @enderror
                     </div>

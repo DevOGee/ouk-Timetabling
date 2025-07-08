@@ -6,7 +6,7 @@ use App\Http\Controllers\CourseMappingController;
 use App\Http\Controllers\CourseUnitController;
 use App\Http\Controllers\CurriculumSetupController;
 use App\Http\Controllers\HomeController;
-use App\Http\Controllers\LecturerController;
+use App\Http\Controllers\InstructorController;
 use App\Http\Controllers\LessonSlotController;
 use App\Http\Controllers\ProgrammeController;
 use App\Http\Controllers\ProfileController;
@@ -19,7 +19,7 @@ use App\Http\Controllers\Admin\CurriculumMappingController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\Admin\AcademicSessionController;
 use App\Http\Controllers\Admin\DashboardController;
-use App\Models\Lecturer;
+use App\Models\User;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -31,9 +31,10 @@ Route::get('/welcome', function () {
     return view('welcome');
 })->name('welcome');
 
-Route::get('/dashboard', function () {
-    return view('dashboard');
-})->middleware(['auth', 'verified'])->name('dashboard');
+// Main dashboard route
+Route::get('/dashboard', [\App\Http\Controllers\DashboardController::class, 'index'])
+    ->middleware(['auth', 'verified'])
+    ->name('dashboard');
 
 Route::middleware('auth')->group(function () {
     // Profile Management
@@ -58,9 +59,10 @@ Route::middleware('auth')->group(function () {
 Route::get('timetable', [TimetableController::class, 'index'])->name('timetable.index');
 
 // Instructor routes
-Route::resource('instructors', LecturerController::class);
-Route::get('lecturers/upload', [LecturerController::class, 'showUploadForm'])->name('instructors.upload');
-Route::post('lecturers/import', [LecturerController::class, 'importLecturers'])->name('instructors.import');
+// Instructor Management
+Route::resource('instructors', InstructorController::class);
+Route::get('instructors/upload', [InstructorController::class, 'showUploadForm'])->name('instructors.upload');
+Route::post('instructors/import', [InstructorController::class, 'importInstructors'])->name('instructors.import');
 
 // Academic Year routes
 Route::resource('academic_years', AcademicYearController::class);
@@ -68,11 +70,7 @@ Route::resource('academic_years', AcademicYearController::class);
 // School routes
 Route::resource('schools', SchoolController::class);
 
-// Programme routes
-Route::resource('programmes', ProgrammeController::class);
-Route::get('programmes/{programme}', [ProgrammeController::class, 'show'])->name('programmes.show');
-Route::post('programmes/{programme}/add-course-unit', [ProgrammeController::class, 'addCourseUnit'])->name('programmes.add_course_unit');
-Route::delete('programmes/{programme}/remove-course-unit/{courseUnit}', [ProgrammeController::class, 'removeCourseUnit'])->name('programmes.remove_course_unit');
+// Programme routes are now under the admin prefix below
 
 // Semester routes
 Route::resource('semesters', SemesterController::class);
@@ -105,6 +103,10 @@ Route::prefix('admin')->middleware(['auth'])->group(function () {
             'destroy' => 'admin.programmes.destroy',
         ]
     ]);
+    
+    // Additional programme routes
+    Route::post('programmes/{programme}/add-course-unit', [ProgrammeController::class, 'addCourseUnit'])->name('admin.programmes.add_course_unit');
+    Route::delete('programmes/{programme}/remove-course-unit/{courseUnit}', [ProgrammeController::class, 'removeCourseUnit'])->name('admin.programmes.remove_course_unit');
     Route::get('programmes/bulk-upload', [ProgrammeController::class, 'showBulkUploadForm'])->name('admin.programmes.bulk-upload');
     Route::post('programmes/process-bulk-upload', [ProgrammeController::class, 'processBulkUpload'])->name('admin.programmes.process-bulk-upload');
     Route::get('programmes/download-template', [ProgrammeController::class, 'downloadTemplate'])->name('admin.programmes.download-template');
@@ -180,31 +182,51 @@ Route::prefix('admin')->middleware(['auth'])->group(function () {
             ->name('set-current');
         Route::patch('archive', [AcademicSessionController::class, 'archive'])
             ->name('archive');
-    })->withoutMiddleware(['auth']);
-});
+        })->withoutMiddleware(['auth']);
+    });
 
-// Programme Course Unit Instructor routes
-Route::post('programmes/{programme}/course-units/{courseUnit}/add-instructor', [ProgrammeController::class, 'addInstructor'])->name('programmes.add_instructor');
-Route::delete('programmes/{programme}/course-units/{courseUnit}/remove-instructor/{lecturer}', [ProgrammeController::class, 'removeInstructor'])->name('programmes.remove_instructor');
+    // Programme routes
+    Route::resource('programmes', ProgrammeController::class);
+    Route::get('programmes/upload', [ProgrammeController::class, 'showUploadForm'])->name('admin.programmes.upload');
+    Route::post('programmes/import', [ProgrammeController::class, 'importProgrammes'])->name('admin.programmes.import');
+    
+    // Programme scheduling routes (scoped to academic session)
+    Route::prefix('academic-sessions/{academicSession}/programmes/{programme}')->name('admin.academic-sessions.programmes.')->group(function () {
+        // View schedules
+        Route::get('scheduling', [\App\Http\Controllers\Admin\ProgrammeSchedulingController::class, 'show'])->name('scheduling.show');
+        
+        // Instructor management
+        Route::post('add-instructor', [\App\Http\Controllers\Admin\ProgrammeSchedulingController::class, 'addInstructor'])->name('scheduling.add-instructor');
+        Route::delete('remove-instructor', [\App\Http\Controllers\Admin\ProgrammeSchedulingController::class, 'removeInstructor'])->name('scheduling.remove-instructor');
+        
+        // Schedule management
+        Route::post('assign-slot', [\App\Http\Controllers\Admin\ProgrammeSchedulingController::class, 'assignSlot'])->name('scheduling.assign-slot');
+        Route::put('update-slot/{mapping}', [\App\Http\Controllers\Admin\ProgrammeSchedulingController::class, 'updateSlot'])->name('scheduling.update-slot');
+        Route::delete('delete-slot/{mapping}', [\App\Http\Controllers\Admin\ProgrammeSchedulingController::class, 'deleteSlot'])->name('scheduling.delete-slot');
+    });
 
-// Lesson Slot routes
-Route::post('programmes/{programme}/course-units/{courseUnit}/assign-slot', [LessonSlotController::class, 'store'])->name('lesson_slots.store');
-Route::put('programmes/{programme}/course-units/{courseUnit}/lesson-slots/{lessonSlot}',
-    [LessonSlotController::class, 'update'])->name('lesson_slots.update');
+    // Programme Course Unit Instructor routes
+    Route::post('programmes/{programme}/course-units/{courseUnit}/add-instructor', [ProgrammeController::class, 'addInstructor'])->name('admin.programmes.add_instructor');
+    Route::delete('programmes/{programme}/course-units/{courseUnit}/remove-instructor/{user}', [ProgrammeController::class, 'removeInstructor'])->name('admin.programmes.remove_instructor');
 
-// Course Mapping routes
-Route::get('course-mapping/upload', [CourseMappingController::class, 'showUploadForm'])->name('course_mapping.upload');
-Route::post('course-mapping/import', [CourseMappingController::class, 'importCourseMappings'])->name('course_mapping.import');
-Route::get('course-mapping/sample-csv', [CourseMappingController::class, 'downloadSampleCsv'])->name('course_mapping.sample');
-Route::get('/get-programmes', [ProgrammeController::class, 'getProgrammes'])->name('get.programmes');
+    // Lesson Slot routes
+    Route::post('programmes/{programme}/course-units/{courseUnit}/assign-slot', [LessonSlotController::class, 'store'])->name('admin.lesson_slots.store');
+    Route::put('programmes/{programme}/course-units/{courseUnit}/lesson-slots/{lessonSlot}',
+        [LessonSlotController::class, 'update'])->name('admin.lesson_slots.update');
 
-// Timetable Export
-Route::get('/timetable/export-pdf', [TimetableController::class, 'exportPDF'])->name('timetable.export.pdf');
+    // Course Mapping routes
+    Route::get('course-mapping/upload', [CourseMappingController::class, 'showUploadForm'])->name('admin.course_mapping.upload');
+    Route::post('course-mapping/import', [CourseMappingController::class, 'importCourseMappings'])->name('admin.course_mapping.import');
+    Route::get('course-mapping/sample-csv', [CourseMappingController::class, 'downloadSampleCsv'])->name('admin.course_mapping.sample');
+    Route::get('get-programmes', [ProgrammeController::class, 'getProgrammes'])->name('admin.get.programmes');
+
+    // Timetable Export
+    Route::get('timetable/export-pdf', [TimetableController::class, 'exportPDF'])->name('timetable.export.pdf');
 
 // Instructor Search
 Route::get('/search-instructors', function (Request $request) {
     $query = $request->input('q');
-    $instructors = Lecturer::where('name', 'LIKE', "%{$query}%")
+    $instructors = User::role('instructor')->where('name', 'LIKE', "%{$query}%")
         ->orWhereHas('title', function ($q) use ($query) {
             $q->where('name', 'LIKE', "%{$query}%");
         })

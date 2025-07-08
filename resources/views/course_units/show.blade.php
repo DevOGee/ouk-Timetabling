@@ -58,11 +58,11 @@
                                     <td>
                                         <!-- Debugging: Check if lecturers are returned -->
                                         @php
-                                            $lecturers = $programme->lecturersForCourseUnit($courseUnit->id);
+                                            $instructors = $programme->lecturersForCourseUnit($courseUnit->id);
                                         @endphp
-                                        @if ($lecturers->count() > 0)
+                                        @if ($instructors->count() > 0)
                                             <ul class="list-unstyled">
-                                                @foreach ($lecturers as $instructor)
+                                                @foreach ($instructors as $instructor)
                                                     <li>{{ $instructor->name }}</li>
                                                 @endforeach
                                             </ul>

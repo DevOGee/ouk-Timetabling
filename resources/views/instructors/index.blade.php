@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Lecturers')
+@section('title', 'Instructors')
 
 @section('content')
     <style>
@@ -68,7 +68,7 @@
         }
     </style>
     <div class="container mt-5">
-        <h2 class="mb-4">Lecturers</h2>
+        <h2 class="mb-4">Instructors</h2>
 
         @if (session('success'))
             <div class="alert alert-success">
@@ -98,26 +98,26 @@
                 </tr>
             </thead>
             <tbody>
-                @foreach ($lecturers as $lecturer)
+                @foreach ($instructors as $instructor)
                     <tr style="background-color: {{ $loop->iteration % 2 == 0 ? '#f9f9f9' : 'white' }};">
                         <td style="">
                             <div style="display: flex; align-items: center;">
-                                @if ($lecturer->image_path)
-                                    <img src="{{ asset('storage/' . $lecturer->image_path) }}" alt="{{ $lecturer->name }}"
+                                @if ($instructor->image_path)
+                                    <img src="{{ asset('storage/' . $instructor->image_path) }}" alt="{{ $instructor->name }}"
                                         style="border-radius: 50%; width: 50px; height: 50px; margin-right: 10px;">
                                 @else
                                     <img src="https://ouk.ac.ke/sites/default/files/Facilitators/alt.png"
                                         alt="Default Image"
                                         style="border-radius: 50%; width: 50px; height: 50px; margin-right: 10px;">
                                 @endif
-                                {{ $lecturer->title->name }} {{ $lecturer->name }}
+                                {{ $instructor->title->name }} {{ $instructor->name }}
                             </div>
                         </td>
-                        <td style="">{{ $lecturer->email }}</td>
+                        <td style="">{{ $instructor->email }}</td>
                         <td style="">
-                            <a href="{{ route('instructors.show', $lecturer) }}" class="btn btn-info btn-sm">View</a>
-                            <a href="{{ route('instructors.edit', $lecturer) }}" class="btn btn-warning btn-sm">Edit</a>
-                            <form action="{{ route('instructors.destroy', $lecturer) }}" method="POST" class="d-inline">
+                            <a href="{{ route('instructors.show', $instructor) }}" class="btn btn-info btn-sm">View</a>
+                            <a href="{{ route('instructors.edit', $instructor) }}" class="btn btn-warning btn-sm">Edit</a>
+                            <form action="{{ route('instructors.destroy', $instructor) }}" method="POST" class="d-inline">
                                 @csrf
                                 @method('DELETE')
                                 <button type="submit" class="btn btn-danger btn-sm"
@@ -137,29 +137,29 @@
             <nav>
                 <ul class="pagination">
                     {{-- Previous Page Link --}}
-                    @if ($lecturers->onFirstPage())
+                    @if ($instructors->onFirstPage())
                         <li class="page-item disabled">
                             <span class="page-link">« Prev</span>
                         </li>
                     @else
                         <li class="page-item">
-                            <a class="page-link" href="{{ $lecturers->previousPageUrl() }}&search={{ request('search') }}"
+                            <a class="page-link" href="{{ $instructors->previousPageUrl() }}&search={{ request('search') }}"
                                 rel="prev">« Prev</a>
                         </li>
                     @endif
 
                     {{-- Page Number Links --}}
-                    @for ($page = 1; $page <= $lecturers->lastPage(); $page++)
-                        <li class="page-item {{ $page == $lecturers->currentPage() ? 'active' : '' }}">
+                    @for ($page = 1; $page <= $instructors->lastPage(); $page++)
+                        <li class="page-item {{ $page == $instructors->currentPage() ? 'active' : '' }}">
                             <a class="page-link"
-                                href="{{ $lecturers->url($page) }}&search={{ request('search') }}">{{ $page }}</a>
+                                href="{{ $instructors->url($page) }}&search={{ request('search') }}">{{ $page }}</a>
                         </li>
                     @endfor
 
                     {{-- Next Page Link --}}
-                    @if ($lecturers->hasMorePages())
+                    @if ($instructors->hasMorePages())
                         <li class="page-item">
-                            <a class="page-link" href="{{ $lecturers->nextPageUrl() }}&search={{ request('search') }}"
+                            <a class="page-link" href="{{ $instructors->nextPageUrl() }}&search={{ request('search') }}"
                                 rel="next">Next »</a>
                         </li>
                     @else

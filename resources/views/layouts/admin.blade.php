@@ -49,6 +49,13 @@
                             Rooms (Coming Soon)
                         </a>
                     </li>
+                    <li class="nav-item mt-3">
+                        <a class="nav-link text-white bg-primary rounded" 
+                           href="{{ route('admin.academic-sessions.programmes.scheduling.show', [session('current_academic_session_id') ?? 1, 1]) }}">
+                            <i class="bi bi-calendar-plus me-2"></i>
+                            Timetable Scheduling
+                        </a>
+                    </li>
                 </ul>
             </div>
         </nav>

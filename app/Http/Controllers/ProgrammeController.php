@@ -5,7 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\CourseUnit;
 use App\Models\CourseUnitProgrammeMapping;
 use App\Models\Day;
-use App\Models\Lecturer;
+use App\Models\User;
 use App\Models\Programme;
 use App\Models\School;
 use Illuminate\Http\Request;
@@ -114,55 +114,86 @@ class ProgrammeController extends Controller
         return response()->json($programmes);
     }
 
-    public function show(Programme $programme)
+    public function show(Programme $programme, CourseUnit $courseUnit = null, User $user = null)
     {
         // Fetch unmapped courses
         $courseUnits = CourseUnit::whereDoesntHave('programmeMappings', function ($query) use ($programme) {
             $query->where('programme_id', $programme->id);
         })->get();
 
-        $lecturers = Lecturer::all();
+        // Get all users with instructor role
+        $instructors = User::role('instructor')->with('title')->get();
         $days = Day::all();
 
         $groupedMappings = $programme->courseUnitMappings()
-            ->with(['courseUnit', 'lecturer', 'day'])
+            ->with(['courseUnit', 'instructor', 'day', 'yearOfStudy', 'semester'])
             ->get()
             ->sortBy(fn ($m) => $m->courseUnit->code)
             ->groupBy(function ($m) {
                 return 'Year '.$m->yearOfStudy->name.' - Semester '.$m->semester->name;
             });
 
-        return view('programmes.show', compact('programme', 'courseUnits', 'lecturers', 'days', 'groupedMappings'));
+        return view('programmes.show', [
+            'programme' => $programme, 
+            'courseUnits' => $courseUnits, 
+            'instructors' => $instructors, 
+            'days' => $days, 
+            'groupedMappings' => $groupedMappings,
+            'selectedCourseUnit' => $courseUnit,
+            'selectedUser' => $user
+        ]);
     }
 
+    /**
+     * Assign an instructor to a course unit in a programme.
+     */
     public function addInstructor(Request $request, Programme $programme, CourseUnit $courseUnit)
     {
         $request->validate([
-            'lecturer_id' => 'required|exists:lecturers,id',
+            'user_id' => 'required|exists:users,id',
         ]);
+
+        // Verify the user has the instructor role
+        $user = User::findOrFail($request->user_id);
+        if (!$user->hasRole('instructor')) {
+            return redirect()->back()->with('error', 'Selected user is not an instructor.');
+        }
 
         $mapping = CourseUnitProgrammeMapping::where('programme_id', $programme->id)
             ->where('course_unit_id', $courseUnit->id)
             ->first();
 
         if ($mapping) {
-            $mapping->update(['lecturer_id' => $request->lecturer_id]);
+            $mapping->update(['user_id' => $user->id]);
+        } else {
+            // Create a new mapping if one doesn't exist
+            CourseUnitProgrammeMapping::create([
+                'programme_id' => $programme->id,
+                'course_unit_id' => $courseUnit->id,
+                'user_id' => $user->id,
+                'created_by' => auth()->id(),
+                'updated_by' => auth()->id(),
+            ]);
         }
 
         return redirect()->route('programmes.show', $programme)->with('success', 'Instructor assigned successfully.');
     }
 
-    public function removeInstructor(Programme $programme, CourseUnit $courseUnit, Lecturer $lecturer)
+    /**
+     * Remove an instructor from a course unit in a programme.
+     */
+    public function removeInstructor(Programme $programme, CourseUnit $courseUnit, User $user)
     {
         $mapping = CourseUnitProgrammeMapping::where('programme_id', $programme->id)
             ->where('course_unit_id', $courseUnit->id)
-            ->where('lecturer_id', $lecturer->id)
+            ->where('user_id', $user->id)
             ->first();
 
         if ($mapping) {
-            $mapping->update(['lecturer_id' => null]);
+            $mapping->update(['user_id' => null]);
         }
 
-        return redirect()->route('programmes.show', $programme)->with('success', 'Instructor removed successfully.');
+        // Redirect back to the admin programme show page
+    return redirect()->route('admin.programmes.show', $programme)->with('success', 'Instructor removed successfully.');
     }
 }
