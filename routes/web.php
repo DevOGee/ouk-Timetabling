@@ -97,7 +97,9 @@ Route::get('/debug/timetable-status/{academicSessionId?}', function($academicSes
 Route::resource('semesters', SemesterController::class);
 
 // Year of Study routes
-Route::resource('years_of_study', YearOfStudyController::class);
+Route::resource('years_of_study', YearOfStudyController::class)->parameters([
+    'years_of_study' => 'yearOfStudy'
+]);
 
 // Course Unit routes
 Route::controller(CourseUnitController::class)->group(function () {
@@ -189,6 +191,16 @@ Route::prefix('admin')->middleware(['auth'])->group(function () {
             ->name('select-programmes');
         Route::post('programmes', [\App\Http\Controllers\Admin\ProgrammeMappingController::class, 'storeProgrammes'])
             ->name('programmes.store');
+            
+        // Bulk upload course unit mappings
+        Route::get('bulk-upload', [\App\Http\Controllers\Admin\ProgrammeMappingController::class, 'showBulkUploadForm'])
+            ->name('bulk-upload');
+        Route::post('bulk-upload', [\App\Http\Controllers\Admin\ProgrammeMappingController::class, 'processBulkUpload'])
+            ->name('bulk-upload.process');
+            
+        // Download bulk upload report
+        Route::get('bulk-upload/report/{filename}', [\App\Http\Controllers\Admin\ProgrammeMappingController::class, 'downloadReport'])
+            ->name('bulk-upload.report');
             
         // Course unit mappings for programmes
         Route::prefix('programmes/{programme}')->name('programmes.')->group(function () {

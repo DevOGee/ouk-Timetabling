@@ -10,6 +10,9 @@ use App\Models\YearOfStudy;
 use App\Models\Semester;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+use League\Csv\Reader;
+use League\Csv\Statement;
 
 class ProgrammeMappingController extends Controller
 {
@@ -88,6 +91,229 @@ class ProgrammeMappingController extends Controller
         return view('admin.academic-sessions.map-course-units', 
             compact('academicSession', 'programme', 'courseUnits', 'yearsOfStudy', 'semesters', 'mappings')
         );
+    }
+
+    /**
+     * Show the bulk upload form.
+     */
+    public function showBulkUploadForm(AcademicSession $academicSession)
+    {
+        return view('admin.academic-sessions.bulk-upload', compact('academicSession'));
+    }
+    
+    /**
+     * Process bulk upload of course unit mappings.
+     */
+    public function processBulkUpload(Request $request, AcademicSession $academicSession)
+    {
+        $request->validate([
+            'mapping_file' => 'required|file|mimes:csv,txt|max:1024'
+        ]);
+
+        try {
+            $file = $request->file('mapping_file');
+            $csv = Reader::createFromPath($file->getPathname(), 'r');
+            $csv->setHeaderOffset(0);
+            
+            $requiredHeaders = ['programme_code', 'course_unit_code', 'year_of_study', 'semester'];
+            $headers = array_map('strtolower', $csv->getHeader());
+            
+            // Validate CSV headers
+            foreach ($requiredHeaders as $header) {
+                if (!in_array($header, $headers)) {
+                    return back()->with('error', "Invalid CSV format. Missing required column: {$header}");
+                }
+            }
+            
+            $records = (new Statement())->process($csv);
+            $results = [
+                'processed' => 0,
+                'created' => 0,
+                'updated' => 0,
+                'skipped' => [],
+                'errors' => []
+            ];
+            
+            DB::beginTransaction();
+            
+            foreach ($records as $record) {
+                $results['processed']++;
+                
+                try {
+                    $programme = Programme::where('programme_code', $record['programme_code'])->first();
+                    if (!$programme) {
+                        $results['skipped'][] = "Programme not found: {$record['programme_code']}";
+                        continue;
+                    }
+                    
+                    $courseUnit = CourseUnit::where('code', $record['course_unit_code'])->first();
+                    if (!$courseUnit) {
+                        $results['skipped'][] = "Course unit not found: {$record['course_unit_code']}";
+                        continue;
+                    }
+                    
+                    $yearOfStudy = YearOfStudy::where('name', $record['year_of_study'])->first();
+                    if (!$yearOfStudy) {
+                        $results['skipped'][] = "Invalid year of study: {$record['year_of_study']}";
+                        continue;
+                    }
+                    
+                    $semester = Semester::where('name', $record['semester'])->first();
+                    if (!$semester) {
+                        $results['skipped'][] = "Invalid semester: {$record['semester']}";
+                        continue;
+                    }
+                    
+                    // Check if mapping already exists for this academic session
+                    $existingMapping = DB::table('course_unit_programme_mappings')
+                        ->where('academic_session_id', $academicSession->id)
+                        ->where('programme_id', $programme->id)
+                        ->where('course_unit_id', $courseUnit->id)
+                        ->first();
+
+                    if ($existingMapping) {
+                        // Update existing mapping
+                        DB::table('course_unit_programme_mappings')
+                            ->where('id', $existingMapping->id)
+                            ->update([
+                                'year_of_study_id' => $yearOfStudy->id,
+                                'semester_id' => $semester->id,
+                                'updated_at' => now()
+                            ]);
+                        $results['updated']++;
+                    } else {
+                        // Create new mapping
+                        DB::table('course_unit_programme_mappings')->insert([
+                            'academic_session_id' => $academicSession->id,
+                            'programme_id' => $programme->id,
+                            'course_unit_id' => $courseUnit->id,
+                            'year_of_study_id' => $yearOfStudy->id,
+                            'semester_id' => $semester->id,
+                            'created_at' => now(),
+                            'updated_at' => now()
+                        ]);
+                        $results['created']++;
+                    }
+                } catch (\Exception $e) {
+                    $results['errors'][] = "Error processing row {$results['processed']}: " . $e->getMessage();
+                    continue;
+                }
+            }
+            
+            DB::commit();
+            
+            // Generate report filename
+            $timestamp = now()->format('Ymd_His');
+            $reportFilename = "bulk_upload_report_{$timestamp}.csv";
+            $reportPath = storage_path("app/reports/{$reportFilename}");
+            
+            // Ensure reports directory exists
+            if (!file_exists(storage_path('app/reports'))) {
+                mkdir(storage_path('app/reports'), 0755, true);
+            }
+            
+            // Generate report content
+            $reportContent = [];
+            
+            // Add summary
+            $reportContent[] = ['Bulk Upload Report', ''];
+            $reportContent[] = ['Date', now()->toDateTimeString()];
+            $reportContent[] = ['Academic Session', $academicSession->name];
+            $reportContent[] = [''];
+            $reportContent[] = ['Summary', ''];
+            $reportContent[] = ['Total Processed', $results['processed']];
+            $reportContent[] = ['Created', $results['created']];
+            $reportContent[] = ['Updated', $results['updated']];
+            $reportContent[] = ['Skipped', count($results['skipped'])];
+            $reportContent[] = ['Errors', count($results['errors'])];
+            $reportContent[] = [''];
+            
+            // Add skipped items
+            if (!empty($results['skipped'])) {
+                $reportContent[] = ['Skipped Items', ''];
+                $reportContent[] = ['Programme Code', 'Course Unit Code', 'Year', 'Semester', 'Reason'];
+                foreach ($results['skipped'] as $item) {
+                    $parts = explode(':', $item, 2);
+                    $reason = trim($parts[1] ?? 'Unknown reason');
+                    $code = trim($parts[0] ?? '');
+                    $reportContent[] = [
+                        $record['programme_code'] ?? $code,
+                        $record['course_unit_code'] ?? '',
+                        $record['year_of_study'] ?? '',
+                        $record['semester'] ?? '',
+                        $reason
+                    ];
+                }
+                $reportContent[] = [''];
+            }
+            
+            // Add errors
+            if (!empty($results['errors'])) {
+                $reportContent[] = ['Errors', ''];
+                $reportContent[] = ['Row', 'Error'];
+                foreach ($results['errors'] as $error) {
+                    $parts = explode(':', $error, 2);
+                    $reportContent[] = [
+                        trim(str_replace('Error processing row', '', $parts[0] ?? '')),
+                        trim($parts[1] ?? $error)
+                    ];
+                }
+            }
+            
+            // Write report to file
+            $file = fopen($reportPath, 'w');
+            foreach ($reportContent as $row) {
+                fputcsv($file, $row);
+            }
+            fclose($file);
+            
+            // Store report filename in session
+            session()->flash('report_filename', $reportFilename);
+            
+            $message = "Bulk upload completed. Processed: {$results['processed']}, Created: {$results['created']}, Updated: {$results['updated']}";
+            
+            if (!empty($results['skipped'])) {
+                $skippedCount = count($results['skipped']);
+                $message .= ", Skipped: {$skippedCount}";
+                session()->flash('skipped_items', array_slice($results['skipped'], 0, 50));
+            }
+            
+            if (!empty($results['errors'])) {
+                $errorCount = count($results['errors']);
+                $message .= ", Errors: {$errorCount}";
+                session()->flash('error_items', array_slice($results['errors'], 0, 50));
+            }
+            
+            return redirect()
+                ->route('admin.academic-sessions.bulk-upload', $academicSession)
+                ->with([
+                    'success' => $message,
+                    'show_report' => true,
+                    'skipped_items' => array_slice($results['skipped'] ?? [], 0, 50),
+                    'error_items' => array_slice($results['errors'] ?? [], 0, 50),
+                    'report_filename' => $reportFilename
+                ]);
+            
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->with('error', 'Error processing CSV file: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Download the bulk upload report.
+     */
+    public function downloadReport(AcademicSession $academicSession, $filename)
+    {
+        $path = storage_path("app/reports/{$filename}");
+        
+        if (!file_exists($path)) {
+            return back()->with('error', 'Report file not found.');
+        }
+        
+        return response()->download($path, "bulk_upload_report_{$academicSession->name}.csv", [
+            'Content-Type' => 'text/csv',
+        ]);
     }
 
     /**
