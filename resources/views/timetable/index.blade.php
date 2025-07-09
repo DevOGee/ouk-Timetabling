@@ -22,11 +22,12 @@
         }
 
         .page-header {
-            text-align: center;
-            margin-bottom: 30px;
+            text-align: left;
+            margin: 0 0 15px 15px;
             color: #037b90;
-            font-size: 28px;
-            font-weight: bold;
+            font-size: 24px;
+            font-weight: 600;
+            padding-top: 15px;
         }
 
         .filter-section {
@@ -441,7 +442,7 @@
         </div>
     </div>
 
-    <div class="container mt-5">
+    <div class="container-fluid p-0">
         @if ($timetable->isNotEmpty())
             @php
                 $selectedProgramme = request('programme_id') ? $programmes->where('id', request('programme_id'))->first() : null;
@@ -466,15 +467,15 @@
                 $startTimeInMinutes = $startHour * 60;
                 // --- FIX ENDS HERE ---
             @endphp
-            <h2 class="page-header">
-                Teaching & Learning Schedule
+            <h2 class="page-header" style="text-align: left; margin-top: 0;">
+                Teaching &amp; Learning Schedule
                 @if ($selectedProgramme)
-                    - {{ $selectedProgramme->name }}
+                    - {{ $selectedProgramme->programme_name ?? '' }}
                 @endif
             </h2>
 
-            <div class="d-none d-md-block">
-                <table class="table table-bordered" style="table-layout: fixed; width: 100%;">
+            <div class="d-none d-md-block px-3 py-2">
+                <table class="table table-bordered m-0" style="table-layout: fixed; width: 100%;">
                     <thead>
                         <tr>
                             <th style="width: 10%;">Time (EAT)</th>
@@ -543,7 +544,7 @@
                 </table>
             </div>
 
-            <div class="d-md-none">
+            <div class="d-md-none px-3 pb-3">
                  <div style="width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch;">
                     <table class="table table-bordered" style="min-width: 800px;">
                         <thead>
