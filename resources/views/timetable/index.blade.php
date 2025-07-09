@@ -33,17 +33,41 @@
         }
 
         .filter-section {
-            padding: 3rem 2rem;
-            background: linear-gradient(rgba(0, 0, 0, 0.8), rgba(0, 0, 0, 0.8)),
-                url('https://events.snap.co.ke/images/hero-bg.jpg');
-            background-size: cover;
-            background-position: center;
-            background-attachment: fixed;
-            border-radius: 0;
+            padding: 1.5rem 1rem;
+            background-color: #037b90;
             margin: 0 0 2rem 0;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-            position: relative;
-            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .filter-title {
+            color: #fff;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            text-align: center;
+            font-size: 1.5rem;
+        }
+        
+        .form-control, .form-select {
+            border: 1px solid rgba(255,255,255,0.2);
+            background-color: rgba(255,255,255,0.95);
+            color: #333;
+            height: 48px;
+            border-radius: 6px;
+            font-size: 15px;
+            padding: 0.5rem 1rem;
+        }
+        
+        .form-control:focus, .form-select:focus {
+            border-color: #fff;
+            box-shadow: 0 0 0 0.25rem rgba(255, 255, 255, 0.3);
+            background-color: #fff;
+        }
+        
+        .form-label {
+            color: #fff;
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+            font-size: 0.95rem;
         }
 
         .filter-section::before {
@@ -381,7 +405,7 @@
         @endphp
 
         <div class="container">
-            <h1 class="filter-title">Timetable Viewer</h1>
+            <h2 class="filter-title">Timetable Viewer</h2>
 
             <form method="GET" action="{{ route('timetable.index') }}" class="filter-form">
                 <div class="row g-4">
@@ -432,14 +456,7 @@
                     </div>
                 </div>
 
-                {{-- Export Button --}}
-                <div class="row mt-4">
-                    <div class="col-12 text-center">
-                        <a href="{{ route('timetable.export.pdf', request()->all()) }}" class="btn btn-danger" id="exportPdfBtn">
-                            <i class="fas fa-file-pdf me-2"></i> Export Timetable as PDF
-                        </a>
-                    </div>
-                </div>
+
             </form>
         </div>
     </div>
