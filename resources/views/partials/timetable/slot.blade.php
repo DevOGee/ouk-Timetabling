@@ -81,11 +81,11 @@
                 {{ $instructorName }}
             </p>
             
-            <div class="course-code" style="font-size: 0.9rem; margin-bottom: 5px; line-height: 1.3; white-space: normal;">
-                {{ $lesson->courseUnit->code }}:
-                <span class="course-title" style="font-weight: 400;">
-                    {{ $lesson->courseUnit->name }}
-                </span>
+            <div class="course-info" style="margin: 5px 0; line-height: 1.3;">
+                <div style="font-size: 0.9rem; white-space: normal; word-wrap: break-word;">
+                    <strong>{{ $lesson->courseUnit->code }}:</strong> {{ $lesson->courseUnit->name }}
+                </div>
+                <hr style="margin: 8px 0; border: 0; height: 2px; background: #fff; opacity: 0.9;">
             </div>
             
             <div style="font-size: 0.8rem; margin-top: 4px; color: rgba(255,255,255,0.9) !important;">
