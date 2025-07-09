@@ -78,9 +78,12 @@
     <div class="card shadow mb-4">
         <div class="card-header py-3 d-flex justify-content-between align-items-center">
             <h6 class="m-0 font-weight-bold text-primary">Course Schedule</h6>
-            <div>
+            <div class="d-flex align-items-center gap-2">
                 <span class="badge bg-primary">Morning</span>
                 <span class="badge bg-info">Evening</span>
+                <button class="btn btn-sm btn-success ms-2" data-bs-toggle="modal" data-bs-target="#bulkScheduleModal">
+                    <i class="bi bi-upload me-1"></i> Bulk Schedule
+                </button>
             </div>
         </div>
         <div class="card-body">
@@ -289,10 +292,95 @@
 @include('admin.programmes.scheduling.modals.assign-slot')
 @include('admin.programmes.scheduling.modals.edit-slot')
 
+<!-- Bulk Schedule Modal -->
+<div class="modal fade" id="bulkScheduleModal" tabindex="-1" aria-labelledby="bulkScheduleModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <form action="{{ route('admin.academic-sessions.programmes.scheduling.bulk-schedule', [$academicSession, $programme]) }}" method="POST" enctype="multipart/form-data">
+                @csrf
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title" id="bulkScheduleModalLabel">
+                        <i class="bi bi-upload me-2"></i> Bulk Schedule Upload
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-info">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <i class="bi bi-info-circle-fill me-2"></i>
+                                Download the template file with current courses, update the scheduling information, and upload the completed file.
+                            </div>
+                            <button type="button" class="btn btn-sm btn-outline-primary" id="downloadTemplate">
+                                <i class="bi bi-download me-1"></i> Download Template
+                            </button>
+                        </div>
+                        <div class="mt-2 small">
+                            The template includes all current courses. You can add, modify, or remove rows as needed.
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="scheduleFile" class="form-label">Schedule File (CSV)</label>
+                        <input class="form-control" type="file" id="scheduleFile" name="schedule_file" accept=".csv" required>
+                        <div class="form-text">
+                            File must be in CSV format with the following columns: course_code, instructor_email, day_id, morning_start, morning_duration, evening_start, evening_duration
+                        </div>
+                    </div>
+                    
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-sm">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Course Code</th>
+                                    <th>Instructor Email</th>
+                                    <th>Day</th>
+                                    <th>Morning Start</th>
+                                    <th>Duration (min)</th>
+                                    <th>Evening Start</th>
+                                    <th>Duration (min)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="previewTable">
+                                <tr>
+                                    <td colspan="7" class="text-center text-muted">
+                                        Upload a file to preview data
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="submitBulkSchedule" disabled>
+                        <i class="bi bi-upload me-1"></i> Upload & Schedule
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 @endsection
+
+@push('styles')
+<style>
+    .preview-row {
+        font-size: 0.85rem;
+    }
+    .preview-row td {
+        vertical-align: middle;
+    }
+    .invalid-cell {
+        background-color: #fff5f5;
+    }
+</style>
+@endpush
 
 @push('scripts')
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         // Initialize tooltips and modals when DOM is fully loaded
@@ -455,6 +543,148 @@
             const errorToast = new bootstrap.Toast(document.getElementById('errorToast'));
             errorToast.show();
         @endif
+
+        // Bulk scheduling functionality
+        const bulkScheduleModal = document.getElementById('bulkScheduleModal');
+        if (bulkScheduleModal) {
+            const days = @json(\App\Models\Day::all()->pluck('name', 'id'));
+            
+            // Download template with current courses
+            document.getElementById('downloadTemplate').addEventListener('click', function(e) {
+                e.preventDefault();
+                const url = '{{ route("admin.academic-sessions.programmes.scheduling.download-courses", [$academicSession, $programme]) }}';
+                window.location.href = url;
+            });
+
+            // Handle file upload and preview
+            document.getElementById('scheduleFile').addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                Papa.parse(file, {
+                    header: true,
+                    skipEmptyLines: true,
+                    complete: function(results) {
+                        const previewTable = document.getElementById('previewTable');
+                        previewTable.innerHTML = '';
+                        
+                        if (results.errors.length > 0) {
+                            previewTable.innerHTML = `
+                                <tr>
+                                    <td colspan="7" class="text-center text-danger">
+                                        Error parsing file: ${results.errors[0].message}
+                                    </td>
+                                </tr>`;
+                            return;
+                        }
+
+                        const data = results.data;
+                        if (data.length === 0) {
+                            previewTable.innerHTML = `
+                                <tr>
+                                    <td colspan="7" class="text-center text-muted">
+                                        No data found in the file
+                                    </td>
+                                </tr>`;
+                            return;
+                        }
+
+                        // Validate required columns
+                        const requiredColumns = ['course_code', 'day'];
+                        const missingColumns = requiredColumns.filter(col => !results.meta.fields.includes(col));
+                        
+                        if (missingColumns.length > 0) {
+                            previewTable.innerHTML = `
+                                <tr>
+                                    <td colspan="7" class="text-center text-danger">
+                                        Missing required columns: ${missingColumns.join(', ')}. Note: 'day' should be a day name (e.g., Monday, Tuesday, etc.)
+                                    </td>
+                                </tr>`;
+                            return;
+                        }
+
+                        // Display preview
+                        data.forEach((row, index) => {
+                            const tr = document.createElement('tr');
+                            tr.className = 'preview-row';
+                            
+                            // Helper to validate time format (HH:MM, 24-hour format)
+                            const isValidTime = (time) => {
+                                if (!time) return true;
+                                return /^([01]?[0-9]|2[0-3]):[0-5][0-9]$/.test(time);
+                            };
+                            
+                            // Helper to validate day name
+                            const isValidDay = (day) => {
+                                if (!day) return false;
+                                const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+                                return days.includes(day.toLowerCase().trim());
+                            };
+                            
+                            // Helper to validate duration
+                            const isValidDuration = (dur) => {
+                                if (!dur) return true;
+                                return !isNaN(dur) && parseInt(dur) > 0;
+                            };
+                            
+                            const dayName = row.day ? row.day.trim() : '';
+                            const dayId = Object.entries(days).find(([_, name]) => 
+                                name.toLowerCase() === dayName.toLowerCase()
+                            )?.[0];
+                            
+                            const cells = [
+                                row.course_code || '',
+                                row.instructor_email || '',
+                                dayName || '-',
+                                row.morning_start || '-',
+                                row.morning_duration ? `${row.morning_duration} min` : '-',
+                                row.evening_start || '-',
+                                row.evening_duration ? `${row.evening_duration} min` : '-',
+                            ];
+                            
+                            cells.forEach((cell, i) => {
+                                const td = document.createElement('td');
+                                td.textContent = cell;
+                                
+                                // Highlight invalid cells
+                                if (i === 2) {
+                                    if (!dayName) {
+                                        td.classList.add('text-danger');
+                                        td.title = 'Day is required';
+                                    } else if (!dayId) {
+                                        td.classList.add('text-danger');
+                                        td.title = 'Invalid day name. Use full day names (e.g., Monday, Tuesday, etc.)';
+                                    }
+                                } else if ((i === 3 || i === 5) && cell !== '-' && !isValidTime(cell)) {
+                                    td.classList.add('invalid-cell');
+                                    td.title = 'Invalid time format. Use HH:MM (24-hour format, e.g., 09:00, 14:30)';
+                                } else if ((i === 4 || i === 6) && cell !== '-' && !isValidDuration(row[i === 4 ? 'morning_duration' : 'evening_duration'])) {
+                                    td.classList.add('invalid-cell');
+                                    td.title = 'Invalid duration (must be a positive number)';
+                                }
+                                
+                                tr.appendChild(td);
+                            });
+                            
+                            previewTable.appendChild(tr);
+                        });
+                        
+                        // Enable submit button if we have valid data
+                        document.getElementById('submitBulkSchedule').disabled = false;
+                    },
+                    error: function(error) {
+                        console.error('Error parsing CSV:', error);
+                        const previewTable = document.getElementById('previewTable');
+                        previewTable.innerHTML = `
+                            <tr>
+                                <td colspan="7" class="text-center text-danger">
+                                    Error parsing file: ${error.message}
+                                </td>
+                            </tr>`;
+                    }
+                });
+            });
+        }
     });
 </script>
 @endpush

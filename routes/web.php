@@ -273,6 +273,8 @@ Route::prefix('admin')->middleware(['auth'])->group(function () {
         Route::post('assign-slot', [\App\Http\Controllers\Admin\ProgrammeSchedulingController::class, 'assignSlot'])->name('scheduling.assign-slot');
         Route::put('update-slot/{mapping}', [\App\Http\Controllers\Admin\ProgrammeSchedulingController::class, 'updateSlot'])->name('scheduling.update-slot');
         Route::delete('delete-slot/{mapping}', [\App\Http\Controllers\Admin\ProgrammeSchedulingController::class, 'deleteSlot'])->name('scheduling.delete-slot');
+        Route::post('bulk-schedule', [\App\Http\Controllers\Admin\ProgrammeSchedulingController::class, 'bulkSchedule'])->name('scheduling.bulk-schedule');
+        Route::get('download-courses', [\App\Http\Controllers\Admin\ProgrammeSchedulingController::class, 'downloadCourses'])->name('scheduling.download-courses');
     });
 
     // Programme Course Unit Instructor routes

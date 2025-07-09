@@ -2,7 +2,8 @@
 <div class="modal fade" id="assignSlotModal" tabindex="-1" aria-labelledby="assignSlotModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
-            <form action="{{ route('admin.academic-sessions.programmes.scheduling.assign-slot', [$academicSession, $programme]) }}" method="POST">
+            <form id="scheduleForm" action="" method="POST">
+                @method('POST')
                 @csrf
                 <input type="hidden" name="mapping_id" value="">
                 <div class="modal-header">
@@ -131,10 +132,25 @@ $(document).ready(function() {
     // Set default values when modal is shown
     $('#assignSlotModal').on('show.bs.modal', function (event) {
         const button = $(event.relatedTarget);
-        const row = button.closest('tr');
         const mappingId = button.data('mapping-id');
+        
+        // Find the row that contains this mapping ID
+        const row = $(`tr[data-mapping-id="${mappingId}"]`);
         const courseCode = row.find('td:first').text().trim();
         const isEdit = button.data('edit') || false;
+        
+        console.log('Row data attributes:', row.data());
+        
+        // Set the correct form action based on whether we're editing or creating
+        const form = $('#scheduleForm');
+        if (isEdit) {
+            form.attr('action', `{{ route('admin.academic-sessions.programmes.scheduling.update-slot', [$academicSession, $programme, '']) }}/${mappingId}`);
+            form.find('input[name="_method"]').remove();
+            form.append('<input type="hidden" name="_method" value="PUT">');
+        } else {
+            form.attr('action', `{{ route('admin.academic-sessions.programmes.scheduling.assign-slot', [$academicSession, $programme]) }}`);
+            form.find('input[name="_method"]').remove();
+        }
         
         console.log('Modal opened with mapping ID:', mappingId, 'for course:', courseCode, 'isEdit:', isEdit);
         
@@ -142,9 +158,14 @@ $(document).ready(function() {
         const $form = $(this).find('form');
         $form[0].reset();
         
+        // Reset all fields
+        $form.find('select[name="day_id"]').val('');
+        $form.find('#enableMorning, #enableEvening').prop('checked', false);
+        $form.find('#morning_start, #morning_duration, #evening_start, #evening_duration').val('').prop('disabled', true);
+        
         // Set the mapping ID in the form
         $form.find('input[name="mapping_id"]').val(mappingId);
-        console.log('Form mapping_id value set to:', $form.find('input[name="mapping_id"]').val());
+        console.log('Form mapping_id value set to:', mappingId);
         
         // Update title with course code
         const modalTitle = isEdit ? 'Edit Schedule' : 'Schedule Time Slot';
@@ -152,20 +173,38 @@ $(document).ready(function() {
         
         // If editing, populate the form with existing data
         if (isEdit) {
-            // Get data directly from row attributes
-            const dayId = row.attr('data-day-id');
-            const morningStart = row.attr('data-morning-start');
-            const morningDuration = row.attr('data-morning-duration');
-            const eveningStart = row.attr('data-evening-start');
-            const eveningDuration = row.attr('data-evening-duration');
+            // Get data directly from row data attributes
+            let dayId = row.data('day-id');
+            let morningStart = row.data('morning-start');
+            let morningDuration = row.data('morning-duration');
+            let eveningStart = row.data('evening-start');
+            let eveningDuration = row.data('evening-duration');
             
-            console.log('Editing schedule - Raw data:', {
+            console.log('Editing schedule - Raw data from row data attributes:', {
                 dayId, 
                 morningStart, 
                 morningDuration, 
                 eveningStart, 
                 eveningDuration
             });
+            
+            // Fallback to attributes if data() doesn't work
+            if (!morningStart && row.attr('data-morning-start')) {
+                console.log('Falling back to attr() for data retrieval');
+                dayId = row.attr('data-day-id');
+                morningStart = row.attr('data-morning-start');
+                morningDuration = row.attr('data-morning-duration');
+                eveningStart = row.attr('data-evening-start');
+                eveningDuration = row.attr('data-evening-duration');
+                
+                console.log('Data from attr():', {
+                    dayId, 
+                    morningStart, 
+                    morningDuration, 
+                    eveningStart, 
+                    eveningDuration
+                });
+            }
             
             // Set day first
             if (dayId && dayId !== '') {
@@ -181,10 +220,16 @@ $(document).ready(function() {
                 $form.find('#morning_start').val(morningStart).prop('disabled', false);
                 $form.find('#morning_duration').val(morningDuration || '60').prop('disabled', false);
                 console.log('Set morning:', morningStart, 'Duration:', morningDuration);
+                
+                // Show morning fields
+                $('#morningFields').show();
             } else {
                 $form.find('#enableMorning').prop('checked', false);
                 $form.find('#morning_start, #morning_duration').val('').prop('disabled', true);
                 console.log('Morning session disabled');
+                
+                // Hide morning fields
+                $('#morningFields').hide();
             }
             
             // Set evening session
@@ -193,10 +238,16 @@ $(document).ready(function() {
                 $form.find('#evening_start').val(eveningStart).prop('disabled', false);
                 $form.find('#evening_duration').val(eveningDuration || '60').prop('disabled', false);
                 console.log('Set evening:', eveningStart, 'Duration:', eveningDuration);
+                
+                // Show evening fields
+                $('#eveningFields').show();
             } else {
                 $form.find('#enableEvening').prop('checked', false);
                 $form.find('#evening_start, #evening_duration').val('').prop('disabled', true);
                 console.log('Evening session disabled');
+                
+                // Hide evening fields
+                $('#eveningFields').hide();
             }
             
             // Force UI update
