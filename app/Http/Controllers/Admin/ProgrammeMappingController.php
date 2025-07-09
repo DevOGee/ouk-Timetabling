@@ -34,8 +34,38 @@ class ProgrammeMappingController extends Controller
             'programmes.*' => 'exists:programmes,id'
         ]);
 
-        // Just sync the programmes without any pivot data
-        $academicSession->programmes()->sync($request->programmes);
+        // Get current programme IDs for this academic session
+        $currentProgrammeIds = $academicSession->programmes()->pluck('programmes.id')->toArray();
+        $newProgrammeIds = $request->programmes;
+        
+        // Find newly added programmes (in new but not in current)
+        $addedProgrammeIds = array_diff($newProgrammeIds, $currentProgrammeIds);
+
+        // Sync the programmes
+        $academicSession->programmes()->sync($newProgrammeIds);
+
+        // Ensure a timetable entry exists for each programme in the session
+        foreach ($newProgrammeIds as $programmeId) {
+            // Use updateOrCreate to ensure we have a timetable entry
+            \App\Models\ProgrammeTimetable::updateOrCreate(
+                [
+                    'programme_id' => $programmeId,
+                    'academic_session_id' => $academicSession->id
+                ],
+                [
+                    'status' => 'draft',
+                    'updated_at' => now()
+                ]
+            );
+        }
+        
+        // Remove timetables for programmes that were removed
+        $removedProgrammeIds = array_diff($currentProgrammeIds, $newProgrammeIds);
+        if (!empty($removedProgrammeIds)) {
+            \App\Models\ProgrammeTimetable::whereIn('programme_id', $removedProgrammeIds)
+                ->where('academic_session_id', $academicSession->id)
+                ->delete();
+        }
 
         return redirect()
             ->route('admin.academic-sessions.show', $academicSession)

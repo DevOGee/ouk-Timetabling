@@ -840,6 +840,13 @@
             {{-- Academic Setup - Admin and Dean only --}}
             @auth
             @if(auth()->user()->hasRole(['admin', 'dean']))
+            <li class="menu-item {{ request()->routeIs('admin.timetables.*') ? 'active' : '' }}">
+                <a href="{{ route('admin.timetables.manage') }}" class="menu-link">
+                    <i class="bi bi-calendar-check"></i>
+                    <span>Timetable Management</span>
+                </a>
+            </li>
+            
             <li class="menu-item has-submenu">
                 <a href="#" class="menu-link">
                     <i class="bi bi-gear"></i>

@@ -71,73 +71,84 @@ class AcademicSessionController extends Controller
         // Get the first school ID for default selection
         $firstSchoolId = $schools->first() ? $schools->first()->id : null;
         
-        // Base query for programmes in this academic session
-        $programmesQuery = $academicSession->programmes()
-            ->with(['school', 'courseUnitMappings' => function($q) use ($academicSession) {
-                $q->where('academic_session_id', $academicSession->id);
-            }]);
-            
-        // Base query for programmes in this academic session with timetable status
-        $timetableQuery = $academicSession->programmes()
+        // Get all programmes for this academic session with their school
+        $programmes = $academicSession->programmes()
             ->with(['school'])
-            ->withCount([
-                'courseUnitMappings as course_units_count' => function($q) use ($academicSession) {
-                    $q->where('academic_session_id', $academicSession->id);
-                },
-                'courseUnitMappings as incomplete_mappings' => function($q) use ($academicSession) {
-                    $q->where('academic_session_id', $academicSession->id)
-                      ->where(function($query) {
-                          $query->whereNull('user_id')
-                                ->orWhereNull('day_id')
-                                ->orWhereNull('morning_start_time')
-                                ->orWhereNull('morning_duration')
-                                ->orWhereNull('evening_start_time')
-                                ->orWhereNull('evening_duration');
-                      });
-                }
-            ])
-            ->select('programmes.*')
-            ->addSelect([
-                'has_timetable' => \App\Models\Timetable::selectRaw('COUNT(*)')
-                    ->join('programme_timetable', 'timetables.id', '=', 'programme_timetable.timetable_id')
-                    ->whereColumn('programme_timetable.programme_id', 'programmes.id')
-                    ->where('timetables.academic_session_id', $academicSession->id)
-            ]);
+            ->get();
+
+        // Manually count course units for each programme
+        $programmes->each(function($programme) use ($academicSession) {
+            // Count distinct course units for this programme in the current academic session
+            $countQuery = \App\Models\CourseUnitProgrammeMapping::where('programme_id', $programme->id)
+                ->where('academic_session_id', $academicSession->id)
+                ->whereHas('courseUnit');
+                
+            $programme->mapped_course_units_count = $countQuery->distinct('course_unit_id')->count('course_unit_id');
+
+            // Count incomplete mappings for this programme
+            $programme->incomplete_mappings = \App\Models\CourseUnitProgrammeMapping::where('programme_id', $programme->id)
+                ->where('academic_session_id', $academicSession->id)
+                ->whereHas('courseUnit')
+                ->where(function($query) {
+                    $query->whereNull('user_id')
+                          ->orWhereNull('day_id')
+                          ->orWhereNull('morning_start_time')
+                          ->orWhereNull('morning_duration')
+                          ->orWhereNull('evening_start_time')
+                          ->orWhereNull('evening_duration');
+                })
+                ->count();
+                
+            // Add has_timetable flag
+            $programme->has_timetable = \App\Models\ProgrammeTimetable::where('programme_id', $programme->id)
+                ->where('academic_session_id', $academicSession->id)
+                ->exists();
             
+            // Add timetable status
+            $programme->timetable_status = $this->getTimetableStatus($programme);
+        });
+
+        // Get programmes that can have timetables added (have mappings but no timetable)
+        $programmesWithoutTimetable = $academicSession->programmes()
+            ->whereDoesntHave('programmeTimetables', function($query) use ($academicSession) {
+                $query->where('academic_session_id', $academicSession->id);
+            })
+            ->whereHas('courseUnitMappings', function($query) use ($academicSession) {
+                $query->where('academic_session_id', $academicSession->id);
+            })
+            ->get();
+            
+        // Get programmes with timetables
+        $programmesWithTimetable = $academicSession->programmes()
+            ->whereHas('programmeTimetables', function($query) use ($academicSession) {
+                $query->where('academic_session_id', $academicSession->id);
+            })
+            ->with(['programmeTimetables' => function($query) use ($academicSession) {
+                $query->where('academic_session_id', $academicSession->id);
+            }])
+            ->get();
+
+        // Convert to paginator for consistent interface
+        $page = \Illuminate\Pagination\Paginator::resolveCurrentPage('page');
+        $perPage = 10;
+        $programmes = new \Illuminate\Pagination\LengthAwarePaginator(
+            $programmes->forPage($page, $perPage),
+            $programmes->count(),
+            $perPage,
+            $page,
+            ['path' => \Illuminate\Pagination\Paginator::resolveCurrentPath()]
+        );
+        
         // For AJAX requests, handle filtering and pagination
         if (request()->ajax() && request()->has('tab')) {
             $tab = request('tab');
             
             if ($tab === 'timetables') {
                 if (request()->has('school_id') && request('school_id') !== 'all') {
-                    $timetableQuery->where('school_id', request('school_id'));
-                }
-                
-                $programmes = $timetableQuery->paginate(10);
-                
-                // Eager load timetables with pivot data for the current academic session
-                $programmes->load(['timetables' => function($query) use ($academicSession) {
-                    $query->withPivot(['status', 'published_at', 'academic_session_id'])
-                          ->wherePivot('academic_session_id', $academicSession->id);
-                }]);
-                
-                // Ensure each programme has the timetables relationship properly loaded
-                $programmes->each(function($programme) use ($academicSession) {
-                    if (!$programme->relationLoaded('timetables')) {
-                        $programme->setRelation('timetables', collect([]));
-                    }
-                    
-                    // Ensure pivot data is accessible
-                    $programme->timetables->each(function($timetable) {
-                        if (!isset($timetable->pivot)) {
-                            $timetable->setRelation('pivot', (object) [
-                                'status' => 'draft',
-                                'published_at' => null,
-                                'academic_session_id' => null
-                            ]);
-                        }
+                    $programmes = $programmes->filter(function($programme) {
+                        return $programme->school_id == request('school_id');
                     });
-                });
+                }
                 
                 return response()->json([
                     'html' => view('admin.academic-sessions.partials.timetables-table', [
@@ -147,16 +158,11 @@ class AcademicSessionController extends Controller
                     'pagination' => (string) $programmes->links()
                 ]);
             } else if ($tab === 'programmes') {
-                $programmesQuery = $academicSession->programmes()
-                    ->with(['school', 'courseUnitMappings' => function($q) use ($academicSession) {
-                        $q->where('academic_session_id', $academicSession->id);
-                    }]);
-                
                 if (request()->has('school_id') && request('school_id') !== 'all') {
-                    $programmesQuery->where('school_id', request('school_id'));
+                    $programmes = $programmes->filter(function($programme) {
+                        return $programme->school_id == request('school_id');
+                    });
                 }
-                
-                $programmes = $programmesQuery->paginate(10);
                 
                 return response()->json([
                     'html' => view('admin.academic-sessions.partials.programmes-table', [
@@ -168,29 +174,23 @@ class AcademicSessionController extends Controller
             }
         }
         
-        // For initial page load, get all programmes with timetable status (paginated)
-        $programmes = $timetableQuery->paginate(10);
-        $programmes->each(function($programme) {
-            $programme->timetable_status = $this->getTimetableStatus($programme);
-        });
-        
         // Get programmes that can have timetables added (have mappings but no timetable)
         $programmesForTimetable = $academicSession->programmes()
-            ->whereNotExists(function($query) use ($academicSession) {
-                $query->select(DB::raw(1))
-                      ->from('programme_timetable')
-                      ->join('timetables', 'timetables.id', '=', 'programme_timetable.timetable_id')
-                      ->whereColumn('programme_timetable.programme_id', 'programmes.id')
-                      ->where('timetables.academic_session_id', $academicSession->id);
+            ->whereDoesntHave('programmeTimetables', function($query) use ($academicSession) {
+                $query->where('academic_session_id', $academicSession->id);
             })
-            ->whereHas('courseUnitMappings', function($q) use ($academicSession) {
-                $q->where('academic_session_id', $academicSession->id);
+            ->whereHas('courseUnitMappings', function($query) use ($academicSession) {
+                $query->where('academic_session_id', $academicSession->id);
             })
+            ->with('school')
+            ->orderBy('name')
             ->get();
-        
+
         return view('admin.academic-sessions.show', [
             'academicSession' => $academicSession,
             'programmes' => $programmes->isEmpty() ? collect() : $programmes,
+            'programmesWithoutTimetable' => $programmesWithoutTimetable,
+            'programmesWithTimetable' => $programmesWithTimetable,
             'programmesForTimetable' => $programmesForTimetable,
             'schools' => $schools,
             'selectedSchool' => $firstSchoolId
@@ -198,63 +198,39 @@ class AcademicSessionController extends Controller
     }
     
     /**
-     * Get timetable status for a programme
+     * Get timetable status for a programme based on course unit mappings
+     * 
+     * Status is determined by checking if all required fields are filled for each course unit:
+     * - Done: All required fields are filled for all course units
+     * - Pending: Some required fields are filled for some course units
+     * - Not Started: No required fields are filled for any course unit
      */
     protected function getTimetableStatus($programme)
     {
-        // Check if programme has any timetables
-        if ($programme->timetables->isNotEmpty()) {
-            $timetable = $programme->timetables->first();
-            $isPublished = $timetable->pivot->status === 'published' && $timetable->pivot->published_at !== null;
-            
-            if ($isPublished) {
-                return [
-                    'status' => 'published',
-                    'label' => 'Published',
-                    'class' => 'success',
-                    'has_timetable' => true,
-                    'progress' => 100
-                ];
-            }
-            
-            // Check if all required fields are filled
-            $requiredFields = [
-                'exam_dates' => !empty($timetable->exam_dates),
-                'exam_venues' => !empty($timetable->exam_venues),
-                'exam_times' => !empty($timetable->exam_times),
-                'timetable_file' => !empty($timetable->timetable_file)
-            ];
-            
-            $completedFields = count(array_filter($requiredFields));
-            $totalFields = count($requiredFields);
-            $progress = round(($completedFields / $totalFields) * 100);
-            
-            if ($progress === 100) {
-                return [
-                    'status' => 'ready',
-                    'label' => 'Ready to Publish',
-                    'class' => 'info',
-                    'has_timetable' => true,
-                    'progress' => $progress
-                ];
-            }
-            
+        $timetable = $programme->timetable;
+        
+        if (!$timetable) {
             return [
-                'status' => 'in_progress',
-                'label' => 'In Progress',
-                'class' => 'warning',
-                'has_timetable' => true,
-                'progress' => $progress
+                'status' => 'not_created',
+                'label' => 'Not Created',
+                'class' => 'secondary'
             ];
         }
         
-        // No timetable exists yet
+        if ($timetable->status === 'published') {
+            return [
+                'status' => 'published',
+                'label' => 'Published',
+                'class' => 'success',
+                'published_at' => $timetable->published_at,
+                'published_by' => $timetable->published_by
+            ];
+        }
+        
         return [
-            'status' => 'not_started',
-            'label' => 'Not Started',
-            'class' => 'secondary',
-            'has_timetable' => false,
-            'progress' => 0
+            'status' => 'draft',
+            'label' => 'Draft',
+            'class' => 'warning'
         ];
     }
 
@@ -289,7 +265,7 @@ class AcademicSessionController extends Controller
 
     public function destroy(AcademicSession $academicSession)
     {
-        if ($academicSession->timetables()->exists()) {
+        if ($academicSession->programmeTimetables()->exists()) {
             return back()->with('error', 'Cannot delete session with associated timetables');
         }
 

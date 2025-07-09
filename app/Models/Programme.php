@@ -9,7 +9,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasManyThrough;
-use App\Models\Timetable;
 use App\Models\ProgrammeTimetable;
 
 class Programme extends Model
@@ -166,25 +165,60 @@ class Programme extends Model
     }
     
     /**
-     * Get all timetables for this programme.
+     * Get the programme timetables.
+     *
+     * @param int|null $academicSessionId
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
      */
-    /**
-     * Get all timetables for this programme.
-     * 
-     * @param int|null $academicSessionId Optional academic session ID to filter by
-     * @return \Illuminate\Database\Eloquent\Relations\BelongsToMany
-     */
-    public function timetables($academicSessionId = null): BelongsToMany
+    public function programmeTimetables($academicSessionId = null)
     {
-        $query = $this->belongsToMany(Timetable::class, 'programme_timetable')
-            ->using(ProgrammeTimetable::class)
-            ->withPivot(['status', 'published_at', 'academic_session_id'])
-            ->withTimestamps();
-            
+        $query = $this->hasMany(ProgrammeTimetable::class, 'programme_id')
+            ->with('academicSession');
+
         if ($academicSessionId) {
-            $query->wherePivot('academic_session_id', $academicSessionId);
+            $query->where('academic_session_id', $academicSessionId);
+        }
+
+        return $query;
+    }
+
+    /**
+     * Get the timetables for the programme.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     */
+    public function timetables()
+    {
+        return $this->hasMany(ProgrammeTimetable::class, 'programme_id')
+            ->with('academicSession');
+    }
+    
+    /**
+     * Get the timetable for a specific academic session.
+     *
+     * @param int $academicSessionId
+     * @return \App\Models\ProgrammeTimetable|null
+     */
+    public function getTimetable($academicSessionId = null)
+    {
+        if (!$academicSessionId) {
+            $academicSessionId = optional(AcademicSession::where('is_current', true)->first())->id;
         }
         
-        return $query;
+        return $this->programmeTimetables($academicSessionId)->first();
+    }
+    
+    /**
+     * Get the current timetable for this programme.
+     * 
+     * @return \App\Models\ProgrammeTimetable|null
+     */
+    public function getTimetableAttribute()
+    {
+        if (!isset($this->relations['timetable'])) {
+            $this->setRelation('timetable', $this->getTimetable());
+        }
+        
+        return $this->getRelation('timetable');
     }
 }

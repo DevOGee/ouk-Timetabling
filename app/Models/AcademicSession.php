@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Carbon\Carbon;
+use App\Models\ProgrammeTimetable;
 
 class AcademicSession extends Model
 {
@@ -45,9 +46,32 @@ class AcademicSession extends Model
         });
     }
 
+    /**
+     * Get all programme timetables for this academic session
+     * 
+     * @return \Illuminate\Database\Eloquent\Relations\HasManyThrough
+     */
     public function timetables()
     {
-        return $this->hasMany(Timetable::class);
+        return $this->hasManyThrough(
+            ProgrammeTimetable::class,
+            Programme::class,
+            'id', // Foreign key on programmes table
+            'programme_id', // Foreign key on programme_timetable table
+            'id', // Local key on academic_sessions table
+            'id' // Local key on programmes table
+        )->where('academic_session_id', $this->id);
+    }
+    
+    /**
+     * Get all programme timetables for this academic session
+     * 
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     */
+    public function programmeTimetables()
+    {
+        return $this->hasMany(ProgrammeTimetable::class, 'academic_session_id')
+            ->with('programme');
     }
     
     /**

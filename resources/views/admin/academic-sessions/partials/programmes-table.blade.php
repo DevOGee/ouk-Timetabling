@@ -6,7 +6,7 @@
                     <th>Code</th>
                     <th>Name</th>
                     <th>School</th>
-                    <th>Course Units</th>
+                    <th>Course Mapping</th>
                     <th>Actions</th>
                 </tr>
             </thead>
@@ -17,7 +17,7 @@
                         <td>{{ $programme->name }}</td>
                         <td>{{ $programme->school->name ?? 'N/A' }}</td>
                         <td>
-                            {{ $programme->course_units_count ?? 0 }}
+                            {{ $programme->mapped_course_units_count ?? 0 }}
                         </td>
                         <td>
                             <div class="btn-group" role="group">

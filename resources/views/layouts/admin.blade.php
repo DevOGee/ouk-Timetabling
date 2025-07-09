@@ -43,6 +43,13 @@
                         </a>
                     </li>
                     <li class="nav-item">
+                        <a class="nav-link text-white {{ request()->routeIs('admin.timetables.*') ? 'active' : '' }}" 
+                           href="{{ route('admin.timetables.manage') }}">
+                            <i class="bi bi-calendar-check me-2"></i>
+                            Timetable Management
+                        </a>
+                    </li>
+                    <li class="nav-item">
                         <a class="nav-link text-white {{ request()->routeIs('admin.users.*') ? 'active' : '' }}" 
                            href="{{ route('admin.users.index') }}">
                             <i class="bi bi-person-gear me-2"></i>

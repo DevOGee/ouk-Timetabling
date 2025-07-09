@@ -19,6 +19,7 @@ use App\Http\Controllers\Admin\CurriculumMappingController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\Admin\AcademicSessionController;
 use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\TimetableManagementController;
 use App\Models\User;
 use Illuminate\Support\Facades\Route;
 
@@ -71,7 +72,26 @@ Route::resource('academic_years', AcademicYearController::class);
 // School routes
 Route::resource('schools', SchoolController::class);
 
-// Programme routes are now under the admin prefix below
+// Debug route for timetable status
+Route::get('/debug/timetable-status/{academicSessionId?}', function($academicSessionId = null) {
+    $academicSessionId = $academicSessionId ?? 3; // Default to session 3 if not provided
+    
+    $programmes = \App\Models\Programme::with(['courseUnitMappings' => function($q) use ($academicSessionId) {
+        $q->where('academic_session_id', $academicSessionId);
+    }])->get();
+    
+    // Get some sample mappings for detailed view
+    $sampleMappings = \App\Models\CourseUnitProgrammeMapping::with(['programme', 'courseUnit', 'instructor', 'day'])
+        ->where('academic_session_id', $academicSessionId)
+        ->limit(5)
+        ->get();
+    
+    return view('debug.timetable-status', [
+        'programmes' => $programmes,
+        'sampleMappings' => $sampleMappings,
+        'academicSessionId' => $academicSessionId
+    ]);
+})->name('debug.timetable-status');
 
 // Semester routes
 Route::resource('semesters', SemesterController::class);
@@ -91,6 +111,22 @@ Route::resource('course_units', CourseUnitController::class);
 Route::prefix('admin')->middleware(['auth'])->group(function () {
     // Dashboard
     Route::get('dashboard', [DashboardController::class, 'index'])->name('admin.dashboard');
+    
+    // Timetable Management
+    Route::prefix('timetables')->name('admin.timetables.')->group(function () {
+        Route::get('/', [TimetableManagementController::class, 'index'])->name('manage');
+        Route::get('/create', [TimetableManagementController::class, 'create'])->name('create');
+        Route::post('/', [TimetableManagementController::class, 'store'])->name('store');
+        Route::post('/{timetable}/publish', [TimetableManagementController::class, 'publish'])
+            ->name('publish')
+            ->where('timetable', '[0-9]+');
+        Route::post('/{timetable}/unpublish', [TimetableManagementController::class, 'unpublish'])
+            ->name('unpublish')
+            ->where('timetable', '[0-9]+');
+        Route::delete('/{timetable}', [TimetableManagementController::class, 'destroy'])
+            ->name('destroy')
+            ->where('timetable', '[0-9]+');
+    });
     
     // User Management
     Route::resource('users', \App\Http\Controllers\RoleController::class, [

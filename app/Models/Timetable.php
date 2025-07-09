@@ -5,6 +5,11 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Models\ProgrammeTimetable;
+use App\Models\Programme;
+use App\Models\Semester;
+use App\Models\YearOfStudy;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class Timetable extends Model
 {
@@ -23,12 +28,32 @@ class Timetable extends Model
     protected $casts = [
         'start_date' => 'date',
         'end_date' => 'date',
-        'is_published' => 'boolean'
+        'is_published' => 'boolean',
+        'published_at' => 'datetime'
+    ];
+    
+    protected $dates = [
+        'published_at'
     ];
 
     public function academicSession()
     {
         return $this->belongsTo(AcademicSession::class);
+    }
+    
+    public function programme()
+    {
+        return $this->belongsTo(Programme::class);
+    }
+    
+    public function semester()
+    {
+        return $this->belongsTo(Semester::class);
+    }
+    
+    public function yearOfStudy()
+    {
+        return $this->belongsTo(YearOfStudy::class);
     }
     
     /**
