@@ -310,6 +310,20 @@
         <div class="container">
             <h1 class="filter-title">Timetable Viewer</h1>
             
+            @if(isset($currentAcademicSession))
+                <div class="alert alert-info mb-4">
+                    <i class="fas fa-info-circle me-2"></i>
+                    Viewing published timetables for <strong>{{ $currentAcademicSession->name }}</strong> academic session.
+                </div>
+            @endif
+            
+            @if(session('error'))
+                <div class="alert alert-danger mb-4">
+                    <i class="fas fa-exclamation-circle me-2"></i>
+                    {{ session('error') }}
+                </div>
+            @endif
+            
             <form method="GET" action="{{ route('timetable.index') }}" class="filter-form">
                 <div class="row g-4">
                     {{-- School Dropdown --}}
@@ -332,14 +346,18 @@
                         <div class="form-group">
                             <select class="form-control form-control-lg" id="programme_id" name="programme_id" required>
                                 <option value="">Select Programme</option>
-                                @foreach ($groupedProgrammes as $schoolId => $schoolProgrammes)
-                                    @foreach ($schoolProgrammes as $programme)
-                                        <option value="{{ $programme->id }}" data-school="{{ $schoolId }}"
-                                            {{ request('programme_id') == $programme->id ? 'selected' : '' }}>
-                                            {{ $programme->programme_code }} - {{ $programme->name }}
-                                        </option>
+                                @forelse($groupedProgrammes as $schoolId => $schoolProgrammes)
+                                    @foreach($schoolProgrammes as $programme)
+                                        @if($programme) {{-- Check if programme exists --}}
+                                            <option value="{{ $programme->id }}" data-school="{{ $schoolId }}"
+                                                {{ request('programme_id') == $programme->id ? 'selected' : '' }}>
+                                                {{ $programme->programme_code }} - {{ $programme->name }}
+                                            </option>
+                                        @endif
                                     @endforeach
-                                @endforeach
+                                @empty
+                                    <option value="" disabled>No programmes with published timetables found</option>
+                                @endforelse
                             </select>
                         </div>
                     </div>
@@ -361,15 +379,21 @@
                 </div>
                 
                 {{-- Export Button (initially hidden) --}}
-                <div class="row mt-4">
-                    <div class="col-12 text-center">
-                        <a href="{{ route('timetable.export.pdf', request()->all()) }}" 
-                           class="btn btn-danger" 
-                           id="exportPdfBtn">
-                            <i class="fas fa-file-pdf me-2"></i> Export Timetable as PDF
-                        </a>
+                @if($timetable->isNotEmpty())
+                    <div class="row mt-4">
+                        <div class="col-12 text-center">
+                            <a href="{{ route('timetable.export.pdf', request()->all()) }}" 
+                               class="btn btn-danger" 
+                               id="exportPdfBtn">
+                                <i class="fas fa-file-pdf me-2"></i> Export Timetable as PDF
+                            </a>
+                            <div class="mt-2 text-muted small">
+                                <i class="fas fa-info-circle me-1"></i>
+                                Only showing published timetables for the current academic session
+                            </div>
+                        </div>
                     </div>
-                </div>
+                @endif
             </form>
         </div>
     </div>

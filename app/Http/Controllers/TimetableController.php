@@ -16,8 +16,23 @@ class TimetableController extends Controller
 {
     public function index(Request $request)
     {
-        $schools = School::all();
-        $programmes = Programme::all();
+        // Get current academic session
+        $currentAcademicSession = \App\Models\AcademicSession::where('is_current', true)->first();
+        
+        if (!$currentAcademicSession) {
+            return redirect()->back()->with('error', 'No active academic session found.');
+        }
+        
+        // Get only programmes that have published timetables in the current academic session
+        $programmesWithPublishedTimetables = \App\Models\ProgrammeTimetable::where('academic_session_id', $currentAcademicSession->id)
+            ->where('status', 'published')
+            ->with('programme')
+            ->get()
+            ->pluck('programme')
+            ->unique('id')
+            ->sortBy('name');
+            
+        $schools = School::whereIn('id', $programmesWithPublishedTimetables->pluck('school_id'))->get();
         $days = Day::where('id', '<=', 5)->get();
 
         // Create combined levels (e.g., 1.1, 1.2, 2.1, 2.2, etc.)
@@ -38,24 +53,42 @@ class TimetableController extends Controller
 
         // Default empty collection if no filters are applied
         $timetable = collect();
+        $selectedProgramme = null;
 
         if ($request->filled(['school_id', 'programme_id', 'level'])) {
+            $selectedProgramme = Programme::find($request->programme_id);
+            
+            // Verify this programme has a published timetable
+            $hasPublishedTimetable = \App\Models\ProgrammeTimetable::where('programme_id', $request->programme_id)
+                ->where('academic_session_id', $currentAcademicSession->id)
+                ->where('status', 'published')
+                ->exists();
+                
+            if (!$hasPublishedTimetable) {
+                return redirect()->route('timetable.index')
+                    ->with('error', 'No published timetable found for the selected programme in the current academic session.');
+            }
+            
             list($yearId, $semesterId) = explode('.', $request->level);
+            
             // Get the filtered timetable
             $timetable = CourseUnitProgrammeMapping::where('programme_id', $request->programme_id)
                 ->where('year_of_study_id', $yearId)
                 ->where('semester_id', $semesterId)
+                ->where('academic_session_id', $currentAcademicSession->id)
                 ->with(['courseUnit', 'lecturer', 'day'])
                 ->get();
         }
 
-        return view('timetable.index', compact(
-            'schools',
-            'programmes',
-            'days',
-            'timetable',
-            'levels'
-        ));
+        return view('timetable.index', [
+            'schools' => $schools,
+            'programmes' => $programmesWithPublishedTimetables,
+            'days' => $days,
+            'timetable' => $timetable,
+            'levels' => $levels,
+            'selectedProgramme' => $selectedProgramme,
+            'currentAcademicSession' => $currentAcademicSession
+        ]);
     }
 
     // public function exportPDF(Request $request)
