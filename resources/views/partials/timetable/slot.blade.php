@@ -1,67 +1,109 @@
-@if (isset($mobile) && $mobile)
-    <td rowspan="{{ ceil(($lesson->duration ?? 0) / 30) }}"
-        style="background-color: {{ $lesson->courseUnit?->color ?? '#ff7f50' }}; color: white; vertical-align: top; padding: 8px;">
-        <!-- Instructor Image -->
-        <div class="mb-2" style="text-align: left;">
-            <img class="instructor-image"
-                src="{{ $lesson->lecturer?->image_path ? asset('storage/' . $lesson->lecturer->image_path) : 'https://ouk.ac.ke/sites/default/files/Facilitators/alt.png' }}"
-                alt="Instructor"
-                style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover; border: 2px solid white;">
-        </div>
+@php
+    $duration = $lesson->duration ?? ($lesson->session_duration ?? 0);
+    $rowspan = max(1, ceil($duration / 30));
+    $isMobile = isset($mobile) && $mobile;
+    
+    // Set default image path
+    $imagePath = 'https://planner.ouk.ac.ke/storage/facilitators/alt.png';
+    
+    // Get session information
+    $session = $lesson->session ?? ($lesson->active_slot_type ?? 'Not specified');
+    $mode = $lesson->mode ?? 'Synchronous online';
+    $instructorName = trim(($lesson->lecturer?->title->name ?? '') . ' ' . ($lesson->lecturer?->name ?? ''));
+@endphp
 
-        <!-- Course and Instructor Info -->
-        <div style="text-align: left;">
-            <!-- Course Code and Name -->
-            <div class="mb-1">
-                <div class="fw-bold"
-                    style="font-size: 0.8rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-                    {{ $lesson->courseUnit->code }}
-                </div>
-                <div style="font-size: 0.7rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-                    {{ $lesson->courseUnit->name }}
-                </div>
-            </div>
-
-            <!-- Instructor Name -->
-            <div class="mb-1"
-                style="font-size: 0.7rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-                {{ $lesson->lecturer?->title->name ?? '' }} {{ $lesson->lecturer?->name ?? '' }}
-            </div>
-
-            <!-- Mode and Session -->
-            <div style="font-size: 0.65rem; opacity: 0.9;">
-                <div>Mode: {{ $lesson->mode ?? 'Synchronous online' }}</div>
-                <div>Session: {{ $lesson->session ?? 'Not specified' }}</div>
-            </div>
-        </div>
-    </td>
-@else
-    <td rowspan="{{ ceil(($lesson->duration ?? 0) / 30) }}"
-        style="background-color: {{ $lesson->courseUnit?->color ?? '#ff7f50' }}; color: white; vertical-align: middle; padding: 10px;">
-        <div class="lesson-container">
-            <div class="instructor-img-container">
+<td rowspan="{{ $rowspan }}" 
+   style="background-color: {{ $lesson->courseUnit?->color ?? '#ff7f50' }}; color: white;"
+   class="timetable-slot">
+    <div class="lesson-container">
+        @if($isMobile)
+            <!-- Mobile View -->
+            <div class="mb-2" style="text-align: left;">
                 <img class="instructor-image"
-                    src="{{ $lesson->lecturer?->image_path
-                        ? asset('https://planner.ouk.ac.ke/storage/' . $lesson->lecturer->image_path)
-                        : 'https://ouk.ac.ke/sites/default/files/Facilitators/alt.png' }}"
-                    alt="Instructor Image">
+                    src="{{ $imagePath }}"
+                    alt="Instructor"
+                    style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover; border: 2px solid white;">
             </div>
-            <div class="lesson-details">
-                <p class="instructor-name">
-                    {{ $lesson->lecturer?->title->name ?? '' }}
-                    {{ $lesson->lecturer?->name ?? '' }}
-                </p>
-                <div class="course-code">
-                    {{ $lesson->courseUnit->code }}:
-                    <span class="course-title">
+
+            <div style="text-align: left;">
+                <div class="mb-1">
+                    <div class="fw-bold" style="font-size: 0.8rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                        {{ $lesson->courseUnit->code }}
+                    </div>
+                    <div style="font-size: 0.7rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
                         {{ $lesson->courseUnit->name }}
-                    </span>
+                    </div>
                 </div>
-                <p class="mode">Mode: Synchronous online</p>
-                <div class="session">
-                    Session: {{ ucfirst($lesson->session ?? ($lesson->active_slot_type ?? '-')) }}
+
+                @if($instructorName)
+                <div class="mb-1" style="font-size: 0.7rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                    {{ $instructorName }}
+                </div>
+                @endif
+
+                <div style="font-size: 0.65rem; opacity: 0.9;">
+                    <div>Mode: {{ $mode }}</div>
+                    <div>Session: {{ ucfirst($session) }}</div>
                 </div>
             </div>
-        </div>
-    </td>
-@endif
+        @else
+            <!-- Desktop View -->
+            <div class="lesson-container" style="display: flex; align-items: center; height: 100%;">
+                <div class="instructor-img-container" style="margin-right: 10px; flex-shrink: 0;">
+                        <img class="instructor-image"
+                            src="{{ $imagePath }}"
+                            alt="Instructor"
+                            onerror="this.onerror=null; this.src='https://planner.ouk.ac.ke/storage/facilitators/alt.png'"
+                            style="
+                                width: 40px;
+                                height: 40px;
+                                border-radius: 50%;
+                                object-fit: cover;
+                                border: 2px solid white;
+                                display: block;
+                            ">
+                </div>
+                <div class="lesson-details" style="flex: 1; min-width: 0;">
+                    @if($instructorName)
+                    <p class="instructor-name" style="
+                        margin: 0 0 4px 0;
+                        font-size: 0.8rem;
+                        font-weight: 500;
+                        white-space: nowrap;
+                        overflow: hidden;
+                        text-overflow: ellipsis;
+                    ">
+                        {{ $instructorName }}
+                    </p>
+                    @endif
+                    <div class="course-code" style="
+                        margin-bottom: 2px;
+                        font-weight: 600;
+                        font-size: 0.85rem;
+                        white-space: nowrap;
+                        overflow: hidden;
+                        text-overflow: ellipsis;
+                    ">
+                        {{ $lesson->courseUnit->code }}:
+                        <span class="course-title" style="font-weight: 400;">
+                            {{ $lesson->courseUnit->name }}
+                        </span>
+                    </div>
+                    <p class="mode" style="
+                        margin: 2px 0;
+                        font-size: 0.7rem;
+                        color: rgba(255,255,255,0.9);
+                    ">
+                        Mode: {{ !empty($mode) ? ucfirst($mode) : 'Synchronous Online' }}
+                    </p>
+                    <div class="session" style="
+                        font-size: 0.7rem;
+                        color: rgba(255,255,255,0.9);
+                    ">
+                        Session: {{ !empty($session) ? ucfirst($session) : 'Not Specified' }}
+                    </div>
+                </div>
+            </div>
+        @endif
+    </div>
+</td>

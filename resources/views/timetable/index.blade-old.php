@@ -297,8 +297,8 @@
             border: 1px solid #dee2e6;
             vertical-align: middle;
             color: #333;
-            padding: 0;
-            height: 50px;
+            padding: 12px 8px;
+            height: 60px;
             overflow: hidden;
         }
         .table thead th {
@@ -308,65 +308,22 @@
             color: #495057;
             text-align: center;
             font-weight: 600;
-            padding: 10px 5px;
+            padding: 15px 8px;
         }
         .table tbody tr {
-            height: 50px;
+            height: 60px;
         }
         .table tbody td {
+            height: 60px;
             padding: 0;
-            vertical-align: top;
-            position: relative;
+            vertical-align: middle;
         }
         .table tbody td.time-cell {
             background-color: #f8f9fa;
             text-align: center;
             font-weight: bold;
             white-space: nowrap;
-            padding: 0 5px;
-            width: 10%;
-        }
-        .lesson-container {
-            padding: 4px 8px;
-            position: absolute;
-            top: 1px;
-            left: 1px;
-            right: 1px;
-            bottom: 1px;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            overflow: hidden;
-        }
-        .instructor-img-container {
-            display: none; /* Hide images in desktop view for now */
-        }
-        .instructor-name {
-            font-weight: bold;
-            color: white;
-            margin: 0;
-            font-size: 14px;
-            line-height: 1.2;
-        }
-        .course-code {
-            font-size: 12px;
-            color: rgba(255, 255, 255, 0.9);
-            font-weight: bold;
-            line-height: 1.2;
-        }
-        .course-title {
-            font-style: italic;
-            font-size: 11px;
-            color: rgba(255, 255, 255, 0.8);
-            line-height: 1.2;
-            display: -webkit-box;
-            -webkit-line-clamp: 2;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-        .mode, .session {
-            display: none; /* Hide mode and session in desktop view */
+            padding: 0 10px;
         }
     </style>
 </head>
@@ -490,7 +447,7 @@
                                 $min = $minute % 60;
                                 $timeLabel = ($min == 0) ? sprintf('%02d:00', $hour) : '';
                             @endphp
-                            <tr>
+                            <tr style="height: 30px;">
                                 <td class="time-cell">{{ $timeLabel }}</td>
                                 @foreach ($days as $day)
                                     @php
@@ -532,7 +489,7 @@
                                     @endphp
 
                                     @if ($isFirstSlot)
-                                        @include('partials.timetable.slot', ['lesson' => $lesson, 'mobile' => false])
+                                        {{-- @include('partials.timetable.slot', ['lesson' => $lesson, 'mobile' => false]) --}}
                                     @elseif (!$lesson)
                                         <td></td>
                                     @endif
@@ -603,7 +560,7 @@
                                         @endphp
 
                                         @if ($isFirstSlot)
-                                             @include('partials.timetable.slot', ['lesson' => $lesson, 'mobile' => true])
+                                             {{-- @include('partials.timetable.slot', ['lesson' => $lesson, 'mobile' => true]) --}}
                                         @elseif (!$lesson)
                                             <td></td>
                                         @endif
