@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use App\Models\ProgrammeTimetable;
 
 class Timetable extends Model
 {
@@ -28,6 +29,17 @@ class Timetable extends Model
     public function academicSession()
     {
         return $this->belongsTo(AcademicSession::class);
+    }
+    
+    /**
+     * Get all programmes associated with this timetable.
+     */
+    public function programmes(): BelongsToMany
+    {
+        return $this->belongsToMany(Programme::class, 'programme_timetable')
+            ->using(ProgrammeTimetable::class)
+            ->withPivot(['status', 'published_at', 'academic_session_id'])
+            ->withTimestamps();
     }
 
     public function scopeForSession($query, $sessionId)

@@ -57,7 +57,7 @@
     </div>
     
     <!-- Pagination -->
-    @if($programmes->hasPages())
+    @if(method_exists($programmes, 'hasPages') && $programmes->hasPages())
         <div class="pagination-container mt-3">
             {{ $programmes->links() }}
         </div>

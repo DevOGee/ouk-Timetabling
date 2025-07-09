@@ -160,74 +160,74 @@
 
         <!-- Timetables Tab -->
         <div class="tab-pane fade" id="timetables" role="tabpanel" aria-labelledby="timetables-tab">
-            <div class="card">
-                <div class="card-header">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <h5 class="mb-0">Timetables</h5>
-                <a href="#" class="btn btn-sm btn-primary">
-                    <i class="bi bi-plus"></i> Add Timetable
-                </a>
-            </div>
-        </div>
-        <div class="card-body">
-            @if($academicSession->timetables->count() > 0)
-                <div class="table-responsive">
-                    <table class="table table-hover">
-                        <thead>
-                            <tr>
-                                <th>Name</th>
-                                <th>Status</th>
-                                <th>Published</th>
-                                <th>Start Date</th>
-                                <th>End Date</th>
-                                <th class="text-end">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach($academicSession->timetables as $timetable)
-                                <tr>
-                                    <td>{{ $timetable->name }}</td>
-                                    <td>
-                                        <span class="badge bg-{{ $timetable->status === 'active' ? 'success' : 'secondary' }}">
-                                            {{ ucfirst($timetable->status) }}
-                                        </span>
-                                    </td>
-                                    <td>
-                                        @if($timetable->is_published)
-                                            <span class="badge bg-success">Yes</span>
-                                        @else
-                                            <span class="badge bg-warning text-dark">No</span>
-                                        @endif
-                                    </td>
-                                    <td>{{ $timetable->start_date->format('M d, Y') }}</td>
-                                    <td>{{ $timetable->end_date->format('M d, Y') }}</td>
-                                    <td class="text-end">
-                                        <a href="#" class="btn btn-sm btn-outline-primary">
-                                            <i class="bi bi-eye"></i>
-                                        </a>
-                                        <a href="#" class="btn btn-sm btn-outline-secondary">
-                                            <i class="bi bi-pencil"></i>
-                                        </a>
-                                    </td>
-                                </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Programme Timetables</h5>
+                    <div class="d-flex align-items-center">
+                        <!-- School Filter Dropdown -->
+                        @if(isset($schools) && $schools->count() > 0)
+                            <div class="me-3">
+                                <label for="timetableSchoolFilter" class="form-label mb-0 me-2">Filter by School:</label>
+                                <select id="timetableSchoolFilter" class="form-select form-select-sm" style="width: auto; display: inline-block;">
+                                    <option value="all">All Schools</option>
+                                    @foreach($schools as $school)
+                                        <option value="{{ $school->id }}">{{ $school->name }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                        @endif
+                        
+                        @if($programmesForTimetable->isNotEmpty())
+                            <div class="dropdown">
+                                <button class="btn btn-sm btn-primary dropdown-toggle" type="button" id="addTimetableDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <i class="bi bi-plus"></i> Add Timetable
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="addTimetableDropdown">
+                                    @foreach($programmesForTimetable as $programme)
+                                        <li>
+                                            <a class="dropdown-item" href="#" data-programme-id="{{ $programme->id }}">
+                                                {{ $programme->name }} ({{ $programme->programme_code }})
+                                            </a>
+                                        </li>
+                                    @endforeach
+                                </ul>
+                            </div>
+                        @endif
+                    </div>
                 </div>
-            @else
-                <div class="alert alert-info mb-0">
-                    No timetables found for this academic session.
+                <div class="card-body">
+                    <!-- Timetables Table Container (will be updated via AJAX) -->
+                    <div id="timetables-container">
+                        @include('admin.academic-sessions.partials.timetables-table', [
+                            'programmes' => $programmes,
+                            'academicSession' => $academicSession
+                        ])
+                    </div>
+                    
+                    <!-- Loading Indicator -->
+                    <div id="timetableLoadingIndicator" class="text-center d-none">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="mt-2">Loading timetables...</p>
+                    </div>
                 </div>
-            @endif
         </div>
     </div>
 </div>
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Programmes tab elements
     const schoolFilter = document.getElementById('schoolFilter');
     const programmesContainer = document.getElementById('programmes-container');
     const loadingIndicator = document.getElementById('loadingIndicator');
+    
+    // Timetables tab elements
+    const timetableSchoolFilter = document.getElementById('timetableSchoolFilter');
+    const timetablesContainer = document.getElementById('timetables-container');
+    const timetableLoadingIndicator = document.getElementById('timetableLoadingIndicator');
+    
     let currentPage = 1;
     let isLoading = false;
 
@@ -242,171 +242,281 @@ document.addEventListener('DOMContentLoaded', function() {
         programmesContainer.classList.add('d-none');
         loadingIndicator.classList.remove('d-none');
         
-        // Get the current school filter value
-        const selectedSchoolId = schoolId !== null ? schoolId : (schoolFilter && schoolFilter.value !== 'all' ? schoolFilter.value : '');
-        
         // Build URL with query parameters
-        const url = new URL(window.location.href);
-        const params = new URLSearchParams();
+        const url = new URL(window.location);
+        url.searchParams.set('page', page);
+        url.searchParams.set('tab', 'programmes');
         
-        // Only add school_id parameter if a school is selected and not 'all'
-        if (selectedSchoolId && selectedSchoolId !== 'all') {
-            params.append('school_id', selectedSchoolId);
+        if (schoolId && schoolId !== 'all') {
+            url.searchParams.set('school_id', schoolId);
+        } else if (schoolFilter && schoolFilter.value && schoolFilter.value !== 'all') {
+            url.searchParams.set('school_id', schoolFilter.value);
+        } else {
+            url.searchParams.delete('school_id');
         }
         
-        if (page > 1) {
-            params.append('page', page);
-        }
+        // Update browser URL without reloading the page
+        window.history.pushState({}, '', url);
         
-        // Add CSRF token for AJAX requests
-        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
-        
-        // Make AJAX request
-        fetch(`${url}?${params.toString()}`, {
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest',
-                'X-CSRF-TOKEN': csrfToken || ''
-            }
+        // Prepare headers with CSRF token
+        const headers = new Headers({
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+        });
+
+        // Make AJAX request with proper headers
+        fetch(`{{ route('admin.academic-sessions.show', $academicSession) }}?${url.searchParams.toString()}`, {
+            headers: headers
         })
-        .then(response => response.json())
+        .then(async response => {
+            if (!response.ok) {
+                const error = await response.text();
+                throw new Error(`HTTP error! status: ${response.status}, body: ${error}`);
+            }
+            return response.json();
+        })
         .then(data => {
-            // Update the programmes container
-            programmesContainer.innerHTML = data.html;
-            
-            // Update pagination
-            const paginationContainer = document.createElement('div');
-            paginationContainer.innerHTML = data.pagination;
-            
-            // Find the existing pagination container or create a new one
-            const existingPagination = programmesContainer.querySelector('.pagination-container');
-            const newPagination = document.createElement('div');
-            newPagination.className = 'pagination-container mt-3';
-            
-            // If we have pagination content, add it to the container
-            const paginationContent = paginationContainer.querySelector('.pagination');
-            if (paginationContent) {
-                newPagination.appendChild(paginationContent);
+            if (data.html) {
+                programmesContainer.innerHTML = data.html;
+                programmesContainer.classList.remove('d-none');
                 
-                // Add event listeners to pagination links
-                newPagination.querySelectorAll('a').forEach(link => {
-                    link.addEventListener('click', function(e) {
-                        e.preventDefault();
-                        const page = this.getAttribute('href').match(/page=(\d+)/)?.[1] || 1;
-                        loadProgrammes(page, schoolFilter.value);
-                        window.scrollTo({ top: 0, behavior: 'smooth' });
-                    });
-                });
-                
-                // Replace or add the pagination container
-                const table = programmesContainer.querySelector('table');
-                if (existingPagination) {
-                    existingPagination.replaceWith(newPagination);
-                } else if (table) {
-                    table.insertAdjacentElement('afterend', newPagination);
-                } else {
-                    programmesContainer.appendChild(newPagination);
+                // Update pagination links if available
+                if (data.pagination) {
+                    updatePagination(data, 'programmes');
                 }
-            } else if (existingPagination) {
-                // Remove pagination if no pages
-                existingPagination.remove();
-            }
-            
-            // Show the container and hide loading indicator
-            programmesContainer.classList.remove('d-none');
-            loadingIndicator.classList.add('d-none');
-            
-            // Update URL without page reload
-            const newUrl = new URL(window.location);
-            if (schoolId) {
-                newUrl.searchParams.set('school_id', schoolId);
             } else {
-                newUrl.searchParams.delete('school_id');
+                throw new Error('Invalid response format from server');
             }
-            
-            if (page > 1) {
-                newUrl.searchParams.set('page', page);
-            } else {
-                newUrl.searchParams.delete('page');
-            }
-            
-            window.history.pushState({}, '', newUrl);
         })
         .catch(error => {
             console.error('Error loading programmes:', error);
-            programmesContainer.classList.remove('d-none');
-            loadingIndicator.classList.add('d-none');
-            
-            // Show error message
             programmesContainer.innerHTML = `
                 <div class="alert alert-danger">
-                    An error occurred while loading programmes. Please try again.
-                    <button class="btn btn-sm btn-outline-secondary ms-3" onclick="window.location.reload()">
-                        <i class="bi bi-arrow-clockwise"></i> Reload
-                    </button>
+                    An error occurred while loading programmes. Please try again.<br>
+                    <small>${error.message}</small>
                 </div>
             `;
+            programmesContainer.classList.remove('d-none');
         })
         .finally(() => {
+            loadingIndicator.classList.add('d-none');
             isLoading = false;
         });
     }
     
-    // Update URL without reloading the page
-    function updateUrl(page, schoolId) {
+    // Load timetables for the timetables tab
+    function loadTimetables(page = 1, schoolId = null) {
+        if (isLoading) return;
+        
+        isLoading = true;
+        currentPage = page;
+        
+        // Show loading indicator
+        timetablesContainer.classList.add('d-none');
+        timetableLoadingIndicator.classList.remove('d-none');
+        
+        // Build URL with query parameters
         const url = new URL(window.location);
-        
-        // Update or remove page parameter
-        if (page > 1) {
-            url.searchParams.set('page', page);
-        } else {
-            url.searchParams.delete('page');
-        }
-        
-        // Update or remove school_id parameter
+        url.searchParams.set('page', page);
+        url.searchParams.set('tab', 'timetables');
         if (schoolId && schoolId !== 'all') {
             url.searchParams.set('school_id', schoolId);
         } else {
             url.searchParams.delete('school_id');
         }
         
-        // Update URL without reloading
+        // Update browser URL without reloading the page
         window.history.pushState({}, '', url);
-    }
-    
-    // Handle school filter change
-    if (schoolFilter) {
-        schoolFilter.addEventListener('change', function() {
-            const schoolId = this.value;
-            updateUrl(1, schoolId);
-            loadProgrammes(1, schoolId);
+        
+        // Prepare headers with CSRF token
+        const headers = new Headers({
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+        });
+
+        // Make AJAX request with proper headers
+        fetch(`{{ route('admin.academic-sessions.show', $academicSession) }}?${url.searchParams.toString()}`, {
+            headers: headers
+        })
+        .then(async response => {
+            if (!response.ok) {
+                const error = await response.text();
+                throw new Error(`HTTP error! status: ${response.status}, body: ${error}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.html) {
+                timetablesContainer.innerHTML = data.html;
+                timetablesContainer.classList.remove('d-none');
+                
+                // Update pagination links if available
+                if (data.pagination) {
+                    updatePagination(data, 'timetables');
+                }
+            } else {
+                throw new Error('Invalid response format from server');
+            }
+        })
+        .catch(error => {
+            console.error('Error loading timetables:', error);
+            timetablesContainer.innerHTML = `
+                <div class="alert alert-danger">
+                    An error occurred while loading timetables. Please try again.<br>
+                    <small>${error.message}</small>
+                </div>
+            `;
+            timetablesContainer.classList.remove('d-none');
+        })
+        .finally(() => {
+            timetableLoadingIndicator.classList.add('d-none');
+            isLoading = false;
         });
     }
     
-    // Handle browser back/forward buttons
-    window.addEventListener('popstate', function() {
-        const urlParams = new URLSearchParams(window.location.search);
-        const schoolId = urlParams.get('school_id') || 'all';
-        const page = parseInt(urlParams.get('page')) || 1;
+    // Update pagination for a container
+    function updatePagination(data, containerType = 'programmes') {
+        const container = containerType === 'programmes' ? programmesContainer : timetablesContainer;
+        const paginationContainer = container.querySelector('.pagination-wrapper') || document.createElement('div');
         
-        if (schoolFilter) {
-            schoolFilter.value = schoolId;
+        if (data.pagination) {
+            paginationContainer.className = 'pagination-wrapper mt-3';
+            paginationContainer.innerHTML = data.pagination;
+            
+            // If pagination wrapper doesn't exist, add it after the table
+            if (!container.querySelector('.pagination-wrapper')) {
+                const table = container.querySelector('table');
+                if (table) {
+                    table.insertAdjacentElement('afterend', paginationContainer);
+                } else {
+                    container.appendChild(paginationContainer);
+                }
+            }
+            
+            // Update pagination links
+            updatePaginationLinks(containerType);
+        } else {
+            // Remove pagination if no pages
+            if (paginationContainer.parentNode) {
+                paginationContainer.parentNode.removeChild(paginationContainer);
+            }
         }
+    }
+    
+    // Update pagination links to use AJAX
+    function updatePaginationLinks(containerType = 'programmes') {
+        const container = containerType === 'programmes' ? programmesContainer : timetablesContainer;
+        const paginationLinks = container.querySelectorAll('.pagination a');
+        const schoolFilterElement = containerType === 'programmes' ? schoolFilter : timetableSchoolFilter;
+        const loadFunction = containerType === 'programmes' ? loadProgrammes : loadTimetables;
         
-        loadProgrammes(page, schoolId);
+        paginationLinks.forEach(link => {
+            if (link.getAttribute('href') && !link.hasAttribute('data-handled')) {
+                const url = new URL(link.href);
+                const page = url.searchParams.get('page') || 1;
+                const schoolId = schoolFilterElement ? schoolFilterElement.value : null;
+                
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    loadFunction(page, schoolId);
+                });
+                
+                // Mark as handled to prevent duplicate event listeners
+                link.setAttribute('data-handled', 'true');
+            }
+        });
+    }
+    
+    // Handle popstate (back/forward navigation)
+    window.addEventListener('popstate', function() {
+        const url = new URL(window.location);
+        const page = url.searchParams.get('page') || 1;
+        const schoolId = url.searchParams.get('school_id') || 'all';
+        const tab = url.searchParams.get('tab') || 'programmes';
+        
+        // Update active tab if needed
+        if (tab === 'timetables') {
+            document.querySelector('#timetables-tab').click();
+            if (timetableSchoolFilter) {
+                timetableSchoolFilter.value = schoolId;
+            }
+            loadTimetables(page, schoolId);
+        } else {
+            document.querySelector('#programmes-tab').click();
+            if (schoolFilter) {
+                schoolFilter.value = schoolId;
+            }
+            loadProgrammes(page, schoolId);
+        }
     });
     
-    // Initial load with any URL parameters
-    document.addEventListener('DOMContentLoaded', function() {
-        const urlParams = new URLSearchParams(window.location.search);
-        const initialSchoolId = urlParams.get('school_id') || 'all';
-        const initialPage = parseInt(urlParams.get('page')) || 1;
-        
-        if (schoolFilter) {
-            schoolFilter.value = initialSchoolId;
+    // Handle tab changes
+    const tabEl = document.querySelector('button[data-bs-toggle="tab"][data-bs-target="#timetables"]');
+    if (tabEl) {
+        tabEl.addEventListener('shown.bs.tab', function (e) {
+            // Update URL to reflect the active tab
+            const url = new URL(window.location);
+            url.searchParams.set('tab', 'timetables');
+            window.history.pushState({}, '', url);
+        });
+    }
+    
+    // Initialize school filter for timetables
+    if (timetableSchoolFilter) {
+        timetableSchoolFilter.addEventListener('change', function() {
+            loadTimetables(1, this.value);
+        });
+    }
+    
+    // Initialize school filter for programmes
+    if (schoolFilter) {
+        schoolFilter.addEventListener('change', function() {
+            loadProgrammes(1, this.value);
+        });
+    }
+    
+    // Initial load based on current tab
+    const activeTab = window.location.hash === '#timetables' ? 'timetables' : 'programmes';
+    
+    // Set initial filter values from URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const schoolId = urlParams.get('school_id');
+    const page = parseInt(urlParams.get('page')) || 1;
+    
+    if (activeTab === 'timetables') {
+        if (timetableSchoolFilter && schoolId) {
+            timetableSchoolFilter.value = schoolId;
         }
-        
-        // Load the initial data
-        loadProgrammes(initialPage, initialSchoolId);
+        loadTimetables(page, schoolId || (timetableSchoolFilter ? timetableSchoolFilter.value : null));
+    } else {
+        if (schoolFilter && schoolId) {
+            schoolFilter.value = schoolId;
+        }
+        loadProgrammes(page, schoolId || (schoolFilter ? schoolFilter.value : null));
+    }
+    
+    // Update URL hash when tabs are changed
+    const tabEls = document.querySelectorAll('button[data-bs-toggle="tab"]');
+    tabEls.forEach(tabEl => {
+        tabEl.addEventListener('shown.bs.tab', function (e) {
+            const target = e.target.getAttribute('data-bs-target');
+            const tab = target === '#timetables' ? 'timetables' : 'programmes';
+            
+            // Update URL to reflect the active tab
+            const url = new URL(window.location);
+            url.hash = tab === 'timetables' ? '#timetables' : '';
+            url.searchParams.set('tab', tab);
+            window.history.pushState({}, '', url);
+            
+            // Load data for the tab if it hasn't been loaded yet
+            if (tab === 'timetables' && timetablesContainer && timetablesContainer.children.length === 0) {
+                loadTimetables(1, timetableSchoolFilter ? timetableSchoolFilter.value : null);
+            }
+        });
     });
 });
 </script>

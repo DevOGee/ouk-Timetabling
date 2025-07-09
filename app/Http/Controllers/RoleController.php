@@ -6,7 +6,12 @@ use Illuminate\Http\Request;
 use App\Models\Role;
 use App\Models\User;
 use App\Models\School;
+use App\Models\Title;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\Password;
 
 class RoleController extends Controller
 {
@@ -18,82 +23,193 @@ class RoleController extends Controller
     public function index()
     {
         $this->authorize('viewAny', User::class);
-        $users = User::with('roles', 'school')->get();
+        
+        $users = User::with(['roles', 'school', 'title'])
+            ->latest()
+            ->filter(request(['search', 'status', 'role']))
+            ->paginate(15)
+            ->withQueryString();
+            
         $roles = Role::all();
         $schools = School::all();
-        return view('roles.index', compact('users', 'roles', 'schools'));
+        
+        return view('admin.users.index', compact('users', 'roles', 'schools'));
     }
 
     /**
-     * Show the form for editing the specified user's roles.
+     * Show the form for creating a new user.
+     */
+    public function create()
+    {
+        $this->authorize('create', User::class);
+        
+        $titles = Title::orderBy('name')->get();
+        $schools = School::orderBy('name')->get();
+        $roles = Role::all();
+        
+        return view('admin.users.create', compact('titles', 'schools', 'roles'));
+    }
+
+    /**
+     * Store a newly created user in storage.
+     */
+    public function store(Request $request)
+    {
+        $this->authorize('create', User::class);
+        
+        $validated = $request->validate([
+            'title_id' => ['required', 'exists:titles,id'],
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
+            'phone' => ['nullable', 'string', 'max:20'],
+            'school_id' => ['nullable', 'exists:schools,id'],
+            'roles' => ['required', 'array', 'min:1'],
+            'roles.*' => ['exists:roles,id'],
+            'status' => ['required', 'in:active,inactive'],
+            'password' => ['required', 'confirmed', Password::defaults()],
+            'image' => ['nullable', 'image', 'mimes:jpeg,png,jpg,gif', 'max:2048'],
+        ]);
+
+        // Handle image upload
+        $imagePath = null;
+        if ($request->hasFile('image')) {
+            $imagePath = $request->file('image')->store('profile-images', 'public');
+        }
+
+        $user = User::create([
+            'title_id' => $validated['title_id'],
+            'name' => $validated['name'],
+            'email' => $validated['email'],
+            'phone' => $validated['phone'],
+            'school_id' => $validated['school_id'],
+            'status' => $validated['status'],
+            'password' => Hash::make($validated['password']),
+            'image_path' => $imagePath,
+        ]);
+
+        // Assign roles
+        $user->roles()->sync($validated['roles']);
+
+        return redirect()
+            ->route('admin.users.index')
+            ->with('success', 'User created successfully');
+    }
+
+    /**
+     * Show the form for editing the specified user.
      */
     public function edit(User $user)
     {
         $this->authorize('update', $user);
+        
+        $titles = Title::orderBy('name')->get();
+        $schools = School::orderBy('name')->get();
         $roles = Role::all();
-        $schools = School::all();
-        $userRoles = $user->roles()->pluck('id')->toArray();
-        return view('roles.edit', compact('user', 'roles', 'schools', 'userRoles'));
+        $userRoles = $user->roles->pluck('id')->toArray();
+        
+        return view('admin.users.edit', compact('user', 'titles', 'schools', 'roles', 'userRoles'));
     }
 
     /**
-     * Update the specified user's roles.
+     * Update the specified user in storage.
      */
     public function update(Request $request, User $user)
     {
         $this->authorize('update', $user);
 
         $validated = $request->validate([
-            'roles' => 'required|array',
-            'roles.*' => 'exists:roles,name',
-            'school_id' => 'nullable|exists:schools,id',
+            'title_id' => ['required', 'exists:titles,id'],
+            'name' => ['required', 'string', 'max:255'],
+            'email' => [
+                'required', 
+                'string', 
+                'email', 
+                'max:255', 
+                Rule::unique('users')->ignore($user->id)
+            ],
+            'phone' => ['nullable', 'string', 'max:20'],
+            'school_id' => ['nullable', 'exists:schools,id'],
+            'roles' => ['required', 'array', 'min:1'],
+            'roles.*' => ['exists:roles,id'],
+            'status' => ['required', 'in:active,inactive'],
+            'password' => ['nullable', 'confirmed', Password::defaults()],
+            'image' => ['nullable', 'image', 'mimes:jpeg,png,jpg,gif', 'max:2048'],
         ]);
 
-        // Get all roles that require a school assignment
-        $schoolRequiredRoles = ['dean', 'school_timetabler', 'instructor'];
+        $updateData = [
+            'title_id' => $validated['title_id'],
+            'name' => $validated['name'],
+            'email' => $validated['email'],
+            'phone' => $validated['phone'],
+            'school_id' => $validated['school_id'],
+            'status' => $validated['status'],
+        ];
+
+        // Handle image upload
+        if ($request->hasFile('image')) {
+            // Delete old image if exists
+            if ($user->image_path) {
+                Storage::disk('public')->delete($user->image_path);
+            }
+            $updateData['image_path'] = $request->file('image')->store('profile-images', 'public');
+        }
+
+        if (!empty($validated['password'])) {
+            $updateData['password'] = Hash::make($validated['password']);
+        }
+
+        $user->update($updateData);
         
-        // If user has any school-required roles, they must be assigned to a school
-        if (array_intersect($validated['roles'], $schoolRequiredRoles) && !$validated['school_id']) {
-            return back()->withErrors(['school_id' => 'A school must be selected for this role']);
-        }
+        // Sync roles
+        $user->roles()->sync($validated['roles']);
 
-        // Update user's school assignment
-        if ($validated['school_id']) {
-            $user->school_id = $validated['school_id'];
-        } else {
-            $user->school_id = null;
-        }
-        $user->save();
-
-        // Update user's roles
-        $user->roles()->sync(Role::whereIn('name', $validated['roles'])->pluck('id'));
-
-        return redirect()->route('roles.index')->with('success', 'User roles and school assignment updated successfully');
+        return redirect()
+            ->route('admin.users.index')
+            ->with('success', 'User updated successfully');
     }
 
     /**
-     * Assign a role to a user.
+     * Remove the specified user from storage.
      */
-    public function assign(Request $request, User $user)
+    public function destroy(User $user)
     {
-        $validated = $request->validate([
-            'role_id' => 'required|exists:roles,id',
-        ]);
+        $this->authorize('delete', $user);
+        
+        // Prevent deleting yourself
+        if ($user->id === auth()->id()) {
+            return back()->with('error', 'You cannot delete your own account');
+        }
 
-        $user->roles()->attach($validated['role_id']);
-        return redirect()->route('roles.index')->with('success', 'Role assigned successfully');
+        $user->delete();
+        
+        return redirect()
+            ->route('admin.users.index')
+            ->with('success', 'User deactivated successfully');
     }
-
+    
     /**
-     * Remove a role from a user.
+     * Show the specified user.
      */
-    public function remove(Request $request, User $user)
+    public function show(User $user)
     {
-        $validated = $request->validate([
-            'role_id' => 'required|exists:roles,id',
+        $this->authorize('view', $user);
+        
+        $user->load(['roles', 'school', 'title']);
+        
+        return view('admin.users.show', compact('user'));
+    }
+    
+    /**
+     * Toggle user status (active/inactive).
+     */
+    public function toggleStatus(User $user)
+    {
+        $this->authorize('update', $user);
+        
+        $user->update([
+            'status' => $user->status === 'active' ? 'inactive' : 'active'
         ]);
-
-        $user->roles()->detach($validated['role_id']);
-        return redirect()->route('roles.index')->with('success', 'Role removed successfully');
+        
+        return back()->with('success', 'User status updated successfully');
     }
 }

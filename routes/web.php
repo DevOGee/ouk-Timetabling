@@ -38,7 +38,8 @@ Route::get('/dashboard', [\App\Http\Controllers\DashboardController::class, 'ind
 
 Route::middleware('auth')->group(function () {
     // Profile Management
-    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::get('/profile', [ProfileController::class, 'show'])->name('profile.show');
+    Route::get('/profile/edit', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
@@ -90,6 +91,27 @@ Route::resource('course_units', CourseUnitController::class);
 Route::prefix('admin')->middleware(['auth'])->group(function () {
     // Dashboard
     Route::get('dashboard', [DashboardController::class, 'index'])->name('admin.dashboard');
+    
+    // User Management
+    Route::resource('users', \App\Http\Controllers\RoleController::class, [
+        'names' => [
+            'index' => 'admin.users.index',
+            'create' => 'admin.users.create',
+            'store' => 'admin.users.store',
+            'show' => 'admin.users.show',
+            'edit' => 'admin.users.edit',
+            'update' => 'admin.users.update',
+            'destroy' => 'admin.users.destroy',
+        ]
+    ]);
+    Route::patch('users/{user}/toggle-status', [\App\Http\Controllers\RoleController::class, 'toggleStatus'])->name('admin.users.toggle-status');
+    Route::post('users/{user}/assign-role', [\App\Http\Controllers\RoleController::class, 'assign'])->name('admin.users.assign-role');
+    Route::post('users/{user}/remove-role', [\App\Http\Controllers\RoleController::class, 'remove'])->name('admin.users.remove-role');
+    
+    // User Import/Export
+    Route::get('users/import', [\App\Http\Controllers\RoleController::class, 'showImportForm'])->name('admin.users.import.form');
+    Route::post('users/import', [\App\Http\Controllers\RoleController::class, 'import'])->name('admin.users.import');
+    Route::get('users/export', [\App\Http\Controllers\RoleController::class, 'export'])->name('admin.users.export');
     
     // Programme Management
     Route::resource('programmes', ProgrammeController::class, [

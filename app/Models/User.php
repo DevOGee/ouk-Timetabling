@@ -8,6 +8,7 @@ use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 use App\Traits\HasRoles;
 use Illuminate\Database\Eloquent\Builder;
+use App\Models\CourseUnitProgrammeMapping;
 
 class User extends Authenticatable
 {
@@ -96,6 +97,25 @@ class User extends Authenticatable
     }
 
     /**
+     * Scope a query to filter users based on request parameters.
+     */
+    public function scopeFilter($query, array $filters)
+    {
+        $query->when($filters['search'] ?? null, function ($query, $search) {
+            $query->where(function ($query) use ($search) {
+                $query->where('name', 'like', '%' . $search . '%')
+                    ->orWhere('email', 'like', '%' . $search . '%');
+            });
+        })->when($filters['status'] ?? null, function ($query, $status) {
+            $query->where('status', $status);
+        })->when($filters['role'] ?? null, function ($query, $role) {
+            $query->whereHas('roles', function ($query) use ($role) {
+                $query->where('name', $role);
+            });
+        });
+    }
+
+    /**
      * Update the last login timestamp.
      */
     public function updateLastLogin()
@@ -128,5 +148,13 @@ class User extends Authenticatable
     public function isInstructor(): bool
     {
         return $this->hasRole('instructor');
+    }
+    
+    /**
+     * Get all course unit programme mappings where this user is the instructor.
+     */
+    public function courseUnitProgrammeMappings()
+    {
+        return $this->hasMany(CourseUnitProgrammeMapping::class, 'user_id');
     }
 }

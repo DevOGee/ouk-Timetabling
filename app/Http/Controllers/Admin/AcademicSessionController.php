@@ -8,6 +8,7 @@ use App\Models\Programme;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 
 class AcademicSessionController extends Controller
@@ -68,52 +69,193 @@ class AcademicSessionController extends Controller
         })->orderBy('name')->get();
 
         // Get the first school ID for default selection
-        $firstSchoolId = $schools->first()?->id;
+        $firstSchoolId = $schools->first() ? $schools->first()->id : null;
         
         // Base query for programmes in this academic session
         $programmesQuery = $academicSession->programmes()
+            ->with(['school', 'courseUnitMappings' => function($q) use ($academicSession) {
+                $q->where('academic_session_id', $academicSession->id);
+            }]);
+            
+        // Base query for programmes in this academic session with timetable status
+        $timetableQuery = $academicSession->programmes()
             ->with(['school'])
-            ->select([
-                'programmes.id',
-                'programmes.name',
-                'programmes.programme_code',
-                'programmes.school_id',
-                'programmes.created_at',
-                'programmes.updated_at',
-                \DB::raw('(SELECT COUNT(*) FROM course_unit_programme_mappings 
-                          WHERE course_unit_programme_mappings.programme_id = programmes.id 
-                          AND course_unit_programme_mappings.academic_session_id = ' . $academicSession->id . ') as course_units_count')
+            ->withCount([
+                'courseUnitMappings as course_units_count' => function($q) use ($academicSession) {
+                    $q->where('academic_session_id', $academicSession->id);
+                },
+                'courseUnitMappings as incomplete_mappings' => function($q) use ($academicSession) {
+                    $q->where('academic_session_id', $academicSession->id)
+                      ->where(function($query) {
+                          $query->whereNull('user_id')
+                                ->orWhereNull('day_id')
+                                ->orWhereNull('morning_start_time')
+                                ->orWhereNull('morning_duration')
+                                ->orWhereNull('evening_start_time')
+                                ->orWhereNull('evening_duration');
+                      });
+                }
+            ])
+            ->select('programmes.*')
+            ->addSelect([
+                'has_timetable' => \App\Models\Timetable::selectRaw('COUNT(*)')
+                    ->join('programme_timetable', 'timetables.id', '=', 'programme_timetable.timetable_id')
+                    ->whereColumn('programme_timetable.programme_id', 'programmes.id')
+                    ->where('timetables.academic_session_id', $academicSession->id)
             ]);
             
-        // Check if this is an AJAX request
-        if (request()->ajax()) {
-            $schoolId = request('school_id');
+        // For AJAX requests, handle filtering and pagination
+        if (request()->ajax() && request()->has('tab')) {
+            $tab = request('tab');
             
-            // Filter by school if specified and not 'all'
-            if (!empty($schoolId) && $schoolId !== 'all') {
-                $programmesQuery->where('programmes.school_id', $schoolId);
+            if ($tab === 'timetables') {
+                if (request()->has('school_id') && request('school_id') !== 'all') {
+                    $timetableQuery->where('school_id', request('school_id'));
+                }
+                
+                $programmes = $timetableQuery->paginate(10);
+                
+                // Eager load timetables with pivot data for the current academic session
+                $programmes->load(['timetables' => function($query) use ($academicSession) {
+                    $query->withPivot(['status', 'published_at', 'academic_session_id'])
+                          ->wherePivot('academic_session_id', $academicSession->id);
+                }]);
+                
+                // Ensure each programme has the timetables relationship properly loaded
+                $programmes->each(function($programme) use ($academicSession) {
+                    if (!$programme->relationLoaded('timetables')) {
+                        $programme->setRelation('timetables', collect([]));
+                    }
+                    
+                    // Ensure pivot data is accessible
+                    $programme->timetables->each(function($timetable) {
+                        if (!isset($timetable->pivot)) {
+                            $timetable->setRelation('pivot', (object) [
+                                'status' => 'draft',
+                                'published_at' => null,
+                                'academic_session_id' => null
+                            ]);
+                        }
+                    });
+                });
+                
+                return response()->json([
+                    'html' => view('admin.academic-sessions.partials.timetables-table', [
+                        'programmes' => $programmes,
+                        'academicSession' => $academicSession
+                    ])->render(),
+                    'pagination' => (string) $programmes->links()
+                ]);
+            } else if ($tab === 'programmes') {
+                $programmesQuery = $academicSession->programmes()
+                    ->with(['school', 'courseUnitMappings' => function($q) use ($academicSession) {
+                        $q->where('academic_session_id', $academicSession->id);
+                    }]);
+                
+                if (request()->has('school_id') && request('school_id') !== 'all') {
+                    $programmesQuery->where('school_id', request('school_id'));
+                }
+                
+                $programmes = $programmesQuery->paginate(10);
+                
+                return response()->json([
+                    'html' => view('admin.academic-sessions.partials.programmes-table', [
+                        'programmes' => $programmes,
+                        'academicSession' => $academicSession
+                    ])->render(),
+                    'pagination' => (string) $programmes->links()
+                ]);
             }
-            
-            $programmes = $programmesQuery->paginate(10);
-            
-            return response()->json([
-                'html' => view('admin.academic-sessions.partials.programmes-table', [
-                    'academicSession' => $academicSession,
-                    'programmes' => $programmes
-                ])->render(),
-                'pagination' => (string) $programmes->links()
-            ]);
         }
         
-        // For initial page load, get all programmes (will be replaced by AJAX)
-        $programmes = $programmesQuery->paginate(10);
+        // For initial page load, get all programmes with timetable status (paginated)
+        $programmes = $timetableQuery->paginate(10);
+        $programmes->each(function($programme) {
+            $programme->timetable_status = $this->getTimetableStatus($programme);
+        });
+        
+        // Get programmes that can have timetables added (have mappings but no timetable)
+        $programmesForTimetable = $academicSession->programmes()
+            ->whereNotExists(function($query) use ($academicSession) {
+                $query->select(DB::raw(1))
+                      ->from('programme_timetable')
+                      ->join('timetables', 'timetables.id', '=', 'programme_timetable.timetable_id')
+                      ->whereColumn('programme_timetable.programme_id', 'programmes.id')
+                      ->where('timetables.academic_session_id', $academicSession->id);
+            })
+            ->whereHas('courseUnitMappings', function($q) use ($academicSession) {
+                $q->where('academic_session_id', $academicSession->id);
+            })
+            ->get();
         
         return view('admin.academic-sessions.show', [
             'academicSession' => $academicSession,
-            'programmes' => $programmes,
+            'programmes' => $programmes->isEmpty() ? collect() : $programmes,
+            'programmesForTimetable' => $programmesForTimetable,
             'schools' => $schools,
             'selectedSchool' => $firstSchoolId
         ]);
+    }
+    
+    /**
+     * Get timetable status for a programme
+     */
+    protected function getTimetableStatus($programme)
+    {
+        // Check if programme has any timetables
+        if ($programme->timetables->isNotEmpty()) {
+            $timetable = $programme->timetables->first();
+            $isPublished = $timetable->pivot->status === 'published' && $timetable->pivot->published_at !== null;
+            
+            if ($isPublished) {
+                return [
+                    'status' => 'published',
+                    'label' => 'Published',
+                    'class' => 'success',
+                    'has_timetable' => true,
+                    'progress' => 100
+                ];
+            }
+            
+            // Check if all required fields are filled
+            $requiredFields = [
+                'exam_dates' => !empty($timetable->exam_dates),
+                'exam_venues' => !empty($timetable->exam_venues),
+                'exam_times' => !empty($timetable->exam_times),
+                'timetable_file' => !empty($timetable->timetable_file)
+            ];
+            
+            $completedFields = count(array_filter($requiredFields));
+            $totalFields = count($requiredFields);
+            $progress = round(($completedFields / $totalFields) * 100);
+            
+            if ($progress === 100) {
+                return [
+                    'status' => 'ready',
+                    'label' => 'Ready to Publish',
+                    'class' => 'info',
+                    'has_timetable' => true,
+                    'progress' => $progress
+                ];
+            }
+            
+            return [
+                'status' => 'in_progress',
+                'label' => 'In Progress',
+                'class' => 'warning',
+                'has_timetable' => true,
+                'progress' => $progress
+            ];
+        }
+        
+        // No timetable exists yet
+        return [
+            'status' => 'not_started',
+            'label' => 'Not Started',
+            'class' => 'secondary',
+            'has_timetable' => false,
+            'progress' => 0
+        ];
     }
 
     public function edit(AcademicSession $academicSession)

@@ -43,6 +43,13 @@
                         </a>
                     </li>
                     <li class="nav-item">
+                        <a class="nav-link text-white {{ request()->routeIs('admin.users.*') ? 'active' : '' }}" 
+                           href="{{ route('admin.users.index') }}">
+                            <i class="bi bi-person-gear me-2"></i>
+                            User Management
+                        </a>
+                    </li>
+                    <li class="nav-item">
                         <a class="nav-link text-white" 
                            href="#">
                             <i class="bi bi-building me-2"></i>

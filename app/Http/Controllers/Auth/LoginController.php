@@ -56,4 +56,20 @@ class LoginController extends Controller
     {
         return view('auth.login');
     }
+    
+    /**
+     * The user has been authenticated.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  mixed  $user
+     * @return mixed
+     */
+    protected function authenticated($request, $user)
+    {
+        $user->update([
+            'last_login_at' => now()
+        ]);
+        
+        return redirect()->intended($this->redirectPath());
+    }
 }

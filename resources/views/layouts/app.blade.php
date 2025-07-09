@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>@yield('title')</title>
     <link rel="icon" href="{{ asset('ouk-logo-fav.png') }}" type="image/png">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
 
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
     <!-- Select2 CSS -->
@@ -186,12 +187,23 @@
             padding: 10px 20px;
             font-size: 0.75rem;
             font-weight: 600;
-            color: #7f8c8d;
             text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-top: 15px;
-            white-space: nowrap;
-            overflow: hidden;
+            color: rgba(255, 255, 255, 0.7);
+            letter-spacing: 0.5px;
+            margin: 15px 0 10px 0;
+            text-align: left;
+            position: relative;
+            padding-bottom: 12px;
+        }
+        
+        .menu-title:after {
+            content: '';
+            position: absolute;
+            left: 20px;
+            right: 20px;
+            bottom: 0;
+            height: 1px;
+            background: rgba(255, 255, 255, 0.1);
         }
 
         .sidebar.collapsed .menu-title {
@@ -285,15 +297,6 @@
             display: block;
         }
         
-        .menu-title {
-            padding: 1rem 1rem 0.5rem;
-            font-size: 0.75rem;
-            font-weight: 600;
-            text-transform: uppercase;
-            color: rgba(255, 255, 255, 0.6);
-            letter-spacing: 0.5px;
-        }
-
         .submenu {
             list-style: none;
             padding: 0;
@@ -311,12 +314,79 @@
         
         /* Remove the old menu-open style as it's replaced by the more specific one above */
 
-        .submenu .menu-link {
-            padding-left: 56px;
-            font-size: 0.9rem;
-            padding-top: 8px;
-            padding-bottom: 8px;
+        /* Submenu Item Styles */
+        .submenu-item {
+            position: relative;
+            margin-bottom: 2px;
         }
+
+        .submenu-link {
+            display: flex;
+            align-items: center;
+            padding: 0.6rem 1.5rem 0.6rem 3.5rem;
+            color: rgba(255, 255, 255, 0.7);
+            text-decoration: none;
+            font-size: 0.875rem;
+            font-weight: 400;
+            transition: all 0.2s ease;
+            border-left: 3px solid transparent;
+            position: relative;
+        }
+
+        .submenu-link:hover {
+            background: rgba(255, 255, 255, 0.05);
+            color: white;
+            padding-left: 3.7rem;
+        }
+
+        .submenu-link i {
+            margin-right: 10px;
+            font-size: 0.9em;
+            width: 20px;
+            text-align: center;
+            opacity: 0.8;
+        }
+
+        .submenu-link:hover i {
+            opacity: 1;
+            transform: translateX(2px);
+        }
+
+        /* Active state for submenu items */
+        .submenu-item.active .submenu-link {
+            background: rgba(3, 181, 170, 0.15);
+            color: var(--secondary);
+            border-left-color: var(--secondary);
+        }
+
+        /* Add a subtle indicator for the active submenu item */
+        .submenu-item.active .submenu-link:before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 3px;
+            background: var(--secondary);
+            border-radius: 0 3px 3px 0;
+        }
+
+        /* Animation for submenu items */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateX(-5px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        .submenu-item {
+            animation: fadeIn 0.3s ease-out forwards;
+            opacity: 0;
+        }
+
+        /* Delay the animation for each submenu item */
+        .submenu-item:nth-child(1) { animation-delay: 0.05s; }
+        .submenu-item:nth-child(2) { animation-delay: 0.1s; }
+        .submenu-item:nth-child(3) { animation-delay: 0.15s; }
+        .submenu-item:nth-child(4) { animation-delay: 0.2s; }
 
         .menu-item.has-submenu > .menu-link:after {
             content: '\f282';
@@ -337,18 +407,40 @@
             padding-left: 20px;
         }
 
+        /* Main Content Wrapper */
+        .main-content-wrapper {
+            margin-left: var(--sidebar-width);
+            width: calc(100% - var(--sidebar-width));
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            transition: all 0.3s ease;
+            background-color: var(--content-bg);
+            position: relative;
+        }
+        
+        /* Content Wrapper */
+        .content-wrapper {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+        
         /* Main Content */
         .main-content {
-            margin-left: var(--sidebar-width);
-            margin-top: var(--topbar-height);
-            padding: 1.5rem;
-            min-height: calc(100vh - var(--topbar-height));
-            transition: all 0.3s ease;
-            background-color: var(--body-bg);
+            flex: 1 0 auto;
+            width: 100%;
+            padding-bottom: 2rem;
+        }
+        
+        .container-fluid {
+            padding: 0 2rem;
+            max-width: 100%;
         }
 
-        .main-content.expanded {
+        .main-content-wrapper.expanded {
             margin-left: var(--sidebar-collapsed-width);
+            width: calc(100% - var(--sidebar-collapsed-width));
         }
         
         .content-wrapper {
@@ -356,6 +448,21 @@
             border-radius: 8px;
             padding: 1.5rem;
             box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+            width: 100%;
+            box-sizing: border-box;
+            flex: 1;
+            margin-bottom: 1rem;
+        }
+        
+        .main-footer {
+            width: 100%;
+            background: #fff;
+            border-top: 1px solid #e9ecef;
+            padding: 1.5rem 2rem;
+            margin-top: auto;
+            flex-shrink: 0;
+            position: relative;
+            z-index: 10;
         }
 
         /* Top Bar */
@@ -363,20 +470,39 @@
             position: fixed;
             top: 0;
             right: 0;
-            left: 0;
+            left: var(--sidebar-width);
             height: var(--topbar-height);
-            background: white;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-            z-index: 100;
+            background: var(--topbar-bg);
+            box-shadow: var(--topbar-shadow);
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 0 1.5rem 0 calc(var(--sidebar-width) + 1.5rem);
-            transition: all 0.3s ease;
+            padding: 0 1.5rem;
+            z-index: 900;
+            transition: left 0.3s ease;
             border-bottom: 1px solid #e9ecef;
         }
         
-        .sidebar.collapsed ~ .top-bar {
+        /* Add padding to the main content to account for fixed top bar */
+        .main-content-wrapper {
+            margin-left: var(--sidebar-width);
+            padding-top: var(--topbar-height);
+            min-height: 100vh;
+            transition: margin-left 0.3s ease;
+        }
+        
+        /* Adjust content wrapper padding */
+        .content-wrapper {
+            padding: 2rem;
+            min-height: calc(100vh - var(--topbar-height));
+        }
+        
+        .sidebar.collapsed ~ .main-content-wrapper {
+            margin-left: var(--sidebar-collapsed-width);
+            width: calc(100% - var(--sidebar-collapsed-width));
+        }
+        
+        .sidebar.collapsed ~ .main-content-wrapper .top-bar {
             padding-left: calc(var(--sidebar-collapsed-width) + 1.5rem);
         }
 
@@ -531,9 +657,16 @@
 
         /* Content Area */
         .content-wrapper {
-            flex: 1;
-            padding: 25px;
-            background-color: var(--content-bg);
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        /* Ensure cards have proper spacing */
+        .card {
+            margin-bottom: 1.5rem;
         }
 
         /* Responsive */
@@ -692,13 +825,12 @@
             @endauth
 
             {{-- Users - Admin only --}}
-            {{-- Temporarily disabled until user management is implemented --}}
             @auth
             @if(auth()->user()->hasRole('admin'))
             <li class="menu-item {{ request()->routeIs('admin.users.*') ? 'active' : '' }}">
-                <a href="#" class="menu-link">
+                <a href="{{ route('admin.users.index') }}" class="menu-link">
                     <i class="bi bi-people"></i>
-                    <span>Users (Coming Soon)</span>
+                    <span>User Management</span>
                 </a>
             </li>
             @endif
@@ -712,7 +844,6 @@
                 <a href="#" class="menu-link">
                     <i class="bi bi-gear"></i>
                     <span>Academic Setup</span>
-                    <i class="bi bi-chevron-down"></i>
                 </a>
                 <ul class="submenu">
                     {{-- Schools - Using non-admin route since it's defined at root --}}
@@ -770,8 +901,8 @@
         </ul>
     </div>
 
-    <!-- Main Content -->
-    <div class="main-content" id="mainContent">
+    <!-- Main Content Wrapper -->
+    <div class="main-content-wrapper">
         <!-- Top Bar -->
         <header class="top-bar">
             <div class="d-flex align-items-center">
@@ -847,13 +978,50 @@
                 <div class="dropdown">
                     <a class="d-flex align-items-center text-decoration-none dropdown-toggle" href="#" role="button" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">
                         @if(Auth::check() && Auth::user())
-                        <div class="user-avatar me-2">
-                            {{ strtoupper(substr(Auth::user()->name, 0, 1)) }}
+                        <div class="user-avatar me-2 position-relative">
+                            @php
+                                $user = Auth::user();
+                                $avatarContent = strtoupper(substr($user->name, 0, 1));
+                                
+                                // Check if image exists in storage
+                                $hasImage = false;
+                                $imageUrl = null;
+                                
+                                if ($user->image_path) {
+                                    // Try different possible paths
+                                    $possiblePaths = [
+                                        $user->image_path,
+                                        'storage/' . $user->image_path,
+                                        'storage/app/public/' . $user->image_path,
+                                        'storage/app/public/profile-photos/' . basename($user->image_path)
+                                    ];
+                                    
+                                    foreach ($possiblePaths as $path) {
+                                        if (file_exists(public_path($path))) {
+                                            $imageUrl = asset($path);
+                                            $hasImage = true;
+                                            break;
+                                        }
+                                    }
+                                }
+                            @endphp
+                            
+                            @if($hasImage && $imageUrl)
+                                <img src="{{ $imageUrl }}" 
+                                     alt="{{ $user->name }}" 
+                                     class="img-fluid rounded-circle" 
+                                     style="width: 100%; height: 100%; object-fit: cover;"
+                                     onerror="this.style.display='none'; this.parentNode.innerHTML='{$avatarContent}';">
+                            @else
+                                <span class="d-flex align-items-center justify-content-center w-100 h-100">
+                                    {{ $avatarContent }}
+                                </span>
+                            @endif
                         </div>
                         <div class="d-none d-md-block">
-                            <div class="fw-semibold">{{ Auth::user()->name }}</div>
+                            <div class="fw-semibold">{{ $user->name }}</div>
                             <div class="small text-muted">
-                                {{ Auth::user()->roles->first() ? ucfirst(Auth::user()->roles->first()->name) : 'User' }}
+                                {{ $user->roles->first() ? ucfirst($user->roles->first()->name) : 'User' }}
                             </div>
                         </div>
                         @else
@@ -876,8 +1044,13 @@
                         </li>
                         <li><hr class="dropdown-divider"></li>
                         <li>
+                            <a class="dropdown-item" href="{{ route('profile.show') }}">
+                                <i class="bi bi-person me-2"></i> View Profile
+                            </a>
+                        </li>
+                        <li>
                             <a class="dropdown-item" href="{{ route('profile.edit') }}">
-                                <i class="bi bi-person me-2"></i> Profile
+                                <i class="bi bi-pencil me-2"></i> Edit Profile
                             </a>
                         </li>
                         <li>
@@ -909,13 +1082,19 @@
             </div>
         </header>
 
-        <!-- Main Content Area -->
-        <main class="content-wrapper">
-            @yield('content')
-        </main>
-        
-        <!-- Footer -->
-        <x-footer />
+        <div class="content-wrapper">
+            <!-- Main Content Area -->
+            <main class="main-content">
+                <div class="container-fluid py-4">
+                    @yield('content')
+                </div>
+            </main>
+            
+            <!-- Footer -->
+            <footer class="main-footer">
+                <x-footer />
+            </footer>
+        </div>
     </div>
 
     <!-- Scripts -->
