@@ -23,11 +23,13 @@
 
         .page-header {
             text-align: left;
-            margin: 0 0 15px 15px;
+            margin: 0 0 10px 15px;
             color: #037b90;
-            font-size: 24px;
+            font-size: 1.1rem;
             font-weight: 600;
             padding-top: 15px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
         .filter-section {
@@ -467,12 +469,9 @@
                 $startTimeInMinutes = $startHour * 60;
                 // --- FIX ENDS HERE ---
             @endphp
-            <h2 class="page-header" style="text-align: left; margin-top: 0;">
-                Teaching &amp; Learning Schedule
-                @if ($selectedProgramme)
-                    - {{ $selectedProgramme->programme_name ?? '' }}
-                @endif
-            </h2>
+            <h6 class="page-header">
+                Teaching &amp; Learning Schedule for {{ $selectedProgramme->name ?? 'Selected Programme' }}
+            </h6>
 
             <div class="d-none d-md-block px-3 py-2">
                 <table class="table table-bordered m-0" style="table-layout: fixed; width: 100%;">
