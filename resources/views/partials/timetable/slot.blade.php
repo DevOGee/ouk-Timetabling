@@ -21,8 +21,36 @@
         $imagePath = 'https://planner.ouk.ac.ke/storage/' . $imgPath;
     }
 
-    // Cleans up session and mode variables.
-    $session = $lesson->session ?? ($lesson->active_slot_type ?? 'Not specified');
+    // Determine session based on start time (morning if before 1PM, otherwise evening)
+    // --- USER'S SESSION LOGIC INTEGRATED HERE ---
+    $session = 'Not Specified'; // Default value
+    // This logic uses the specific start time of the rendered slot.
+    $timeToCheck = $lesson->session_start_time ?? ($lesson->start_time ?? null);
+
+    if (!empty($timeToCheck)) {
+        try {
+            $startTime = \Carbon\Carbon::parse($timeToCheck);
+            $hour = (int)$startTime->format('H'); // Get hour in 24-hour format.
+            
+            if ($hour < 13) { // Before 1 PM is Morning
+                $session = 'Morning';
+            } else {
+                $session = 'Evening';
+            }
+        } catch (\Exception $e) {
+            // Fallback to session or slot type if time parsing fails.
+            if (!empty($lesson->session)) {
+                $session = $lesson->session;
+            } elseif (!empty($lesson->active_slot_type)) {
+                $session = $lesson->active_slot_type;
+            }
+        }
+    } elseif (!empty($lesson->session)) {
+        $session = $lesson->session; // Fallback 1
+    } elseif (!empty($lesson->active_slot_type)) {
+        $session = $lesson->active_slot_type; // Fallback 2
+    }
+    
     $mode = $lesson->mode ?? 'Synchronous online';
 @endphp
 
