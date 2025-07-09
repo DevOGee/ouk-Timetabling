@@ -84,13 +84,29 @@ class ProgrammeMappingController extends Controller
         $yearsOfStudy = YearOfStudy::orderBy('id')->get();
         $semesters = Semester::orderBy('id')->get();
         
+        // Get all mappings for this programme and academic session
         $mappings = $programme->sessionMappings($academicSession->id)
             ->with(['courseUnit', 'yearOfStudy', 'semester'])
             ->get();
+            
+        // Group mappings by year and semester (e.g., 1.1, 1.2, 2.1, etc.)
+        $groupedMappings = $mappings->groupBy(function($mapping) {
+            return $mapping->yearOfStudy->name . '.' . $mapping->semester->name;
+        })->sortBy(function($items, $key) {
+            // Sort by year and semester (e.g., 1.1 comes before 1.2, 2.1, etc.)
+            list($year, $semester) = explode('.', $key);
+            return (int)$year * 10 + (int)$semester;
+        });
 
-        return view('admin.academic-sessions.map-course-units', 
-            compact('academicSession', 'programme', 'courseUnits', 'yearsOfStudy', 'semesters', 'mappings')
-        );
+        return view('admin.academic-sessions.map-course-units', [
+            'academicSession' => $academicSession,
+            'programme' => $programme,
+            'courseUnits' => $courseUnits,
+            'yearsOfStudy' => $yearsOfStudy,
+            'semesters' => $semesters,
+            'groupedMappings' => $groupedMappings,
+            'mappings' => $mappings // Keep original mappings for backward compatibility if needed
+        ]);
     }
 
     /**

@@ -52,26 +52,44 @@
         <div class="card-body">
             <form id="mapping-form" action="{{ route('admin.academic-sessions.programmes.course-units.store', ['academicSession' => $academicSession, 'programme' => $programme]) }}" method="POST">
                 @csrf
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle" id="mappings-table">
-                        <thead class="table-light">
-                            <tr>
-                                <th>Course Unit</th>
-                                <th>Code</th>
-                                <th>Year</th>
-                                <th>Semester</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody id="mappings-container">
-                            @foreach($mappings as $index => $mapping)
-                                @include('admin.academic-sessions.partials.course-unit-mapping-row', [
-                                    'index' => $index,
-                                    'mapping' => $mapping
-                                ])
-                            @endforeach
-                        </tbody>
-                    </table>
+                <div id="mappings-container">
+                    @forelse($groupedMappings as $groupName => $mappingsGroup)
+                        @php
+                            list($year, $semester) = explode('.', $groupName);
+                            $groupLabel = "Level {$year}.{$semester}";
+                        @endphp
+                        <div class="card mb-4">
+                            <div class="card-header bg-light">
+                                <h5 class="mb-0">{{ $groupLabel }}</h5>
+                            </div>
+                            <div class="card-body p-0">
+                                <div class="table-responsive">
+                                    <table class="table table-hover align-middle mb-0">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th>Code</th>
+                                                <th>Course Unit</th>
+                                                <th class="text-center">Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach($mappingsGroup as $index => $mapping)
+                                                @include('admin.academic-sessions.partials.course-unit-mapping-row', [
+                                                    'index' => $index,
+                                                    'mapping' => $mapping,
+                                                    'showYearSemester' => false
+                                                ])
+                                            @endforeach
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    @empty
+                        <div class="alert alert-info">
+                            No course unit mappings found. Add some using the button below.
+                        </div>
+                    @endforelse
                 </div>
 
                 <div class="d-flex justify-content-between mt-3">
@@ -152,18 +170,16 @@
 
 <!-- Template for new row -->
 <template id="mapping-row-template">
-    <tr data-course-id="">
+    <tr id="mapping-new-INDEX" data-course-id="">
+        <td class="course-unit-code fw-bold"></td>
         <td class="course-unit-name"></td>
-        <td class="course-unit-code"></td>
-        <td class="course-year"></td>
-        <td class="course-semester"></td>
-        <td>
+        <td class="text-center">
+            <button type="button" class="btn btn-sm btn-outline-danger remove-mapping" data-bs-toggle="tooltip" title="Remove">
+                <i class="bi bi-trash"></i>
+            </button>
             <input type="hidden" name="mappings[INDEX][course_unit_id]" class="course-unit-id">
             <input type="hidden" name="mappings[INDEX][year_of_study_id]" class="year-id">
             <input type="hidden" name="mappings[INDEX][semester_id]" class="semester-id">
-            <button type="button" class="btn btn-sm btn-outline-danger remove-mapping">
-                <i class="bi bi-trash"></i>
-            </button>
         </td>
     </tr>
 </template>
@@ -177,31 +193,66 @@ console.log('=== COURSE MAPPING SCRIPT LOADED ===');
 document.addEventListener('DOMContentLoaded', function() {
     console.log('DOM fully loaded');
     
-    // Debug: Check if Bootstrap is available
-    if (typeof bootstrap === 'undefined') {
-        console.error('Bootstrap is not loaded!');
-    } else {
-        console.log('Bootstrap is available');
-    }
+    // Initialize tooltips
+    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
     
     // Get all necessary elements
     const addSelectedBtn = document.getElementById('addSelectedCourses');
     const yearSelect = document.getElementById('year_select');
     const semesterSelect = document.getElementById('semester_select');
-    const mappingsContainer = document.getElementById('mappings-container');
     const courseSearch = document.getElementById('courseSearch');
     const modalElement = document.getElementById('addCourseUnitsModal');
     const modal = modalElement ? new bootstrap.Modal(modalElement) : null;
     
-    // Debug: Log elements
-    console.log('Elements:', {
-        addSelectedBtn: addSelectedBtn ? 'Found' : 'Not found',
-        yearSelect: yearSelect ? 'Found' : 'Not found',
-        semesterSelect: semesterSelect ? 'Found' : 'Not found',
-        mappingsContainer: mappingsContainer ? 'Found' : 'Not found',
-        courseSearch: courseSearch ? 'Found' : 'Not found',
-        modal: modal ? 'Initialized' : 'Failed to initialize'
-    });
+    // Function to find or create a group container for a year.semester
+    function getOrCreateGroupContainer(year, semester) {
+        const groupId = `group-${year}-${semester}`;
+        let groupContainer = document.getElementById(groupId);
+        
+        if (!groupContainer) {
+            // Create a new group container
+            const groupLabel = `Level ${year}.${semester}`;
+            groupContainer = document.createElement('div');
+            groupContainer.id = groupId;
+            groupContainer.className = 'card mb-4';
+            groupContainer.innerHTML = `
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">${groupLabel}</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Course Unit</th>
+                                    <th>Code</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody class="mapping-group" data-year="${year}" data-semester="${semester}">
+                                <!-- Mappings will be added here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+            
+            // Insert the new group before the "No mappings" message or at the end
+            const mappingsContainer = document.getElementById('mappings-container');
+            const noMappingsAlert = mappingsContainer.querySelector('.alert');
+            
+            if (noMappingsAlert) {
+                noMappingsAlert.remove();
+            }
+            
+            mappingsContainer.insertBefore(groupContainer, mappingsContainer.firstChild);
+        }
+        
+        return groupContainer.querySelector('.mapping-group');
+    }
     
     // Handle course unit selection
     document.querySelectorAll('.course-unit-item').forEach(item => {
@@ -237,89 +288,91 @@ document.addEventListener('DOMContentLoaded', function() {
             console.log('Add Selected button clicked');
             
             const yearId = yearSelect?.value;
-            const semesterId = semesterSelect?.value;
-            
-            console.log('Selected values:', { yearId, semesterId });
+            const semesterId = semesterSelect?.selectedOptions[0]?.value;
+            const yearName = yearSelect?.selectedOptions[0]?.text;
+            const semesterName = semesterSelect?.selectedOptions[0]?.text;
             
             if (!yearId || !semesterId) {
                 alert('Please select both year and semester');
                 return;
             }
             
-            const selectedCourses = document.querySelectorAll('.course-unit-item input[type="checkbox"]:checked');
-            console.log('Selected courses count:', selectedCourses.length);
+            // Get selected course units
+            const selectedCourses = Array.from(document.querySelectorAll('.course-unit-item input[type="checkbox"]:checked'));
             
             if (selectedCourses.length === 0) {
                 alert('Please select at least one course unit');
                 return;
             }
             
-            // Get current row count for unique indices
-            const currentRowCount = document.querySelectorAll('#mappings-container tr').length;
+            // Get the next available index for new mappings
+            const existingMappings = document.querySelectorAll('input[name^="mappings["]');
+            let maxIndex = -1;
+            existingMappings.forEach(input => {
+                const match = input.name.match(/mappings\[(\d+)\]/);
+                if (match) {
+                    const index = parseInt(match[1]);
+                    if (index > maxIndex) maxIndex = index;
+                }
+            });
             
-            // Process each selected course
-            selectedCourses.forEach((checkbox, index) => {
-                const item = checkbox.closest('.course-unit-item');
-                const courseId = item?.dataset?.id;
-                const label = item?.querySelector('label')?.textContent?.trim() || '';
-                const [courseCode, ...nameParts] = label.split(' - ');
-                const courseName = nameParts.join(' - ').trim();
-                const yearName = yearSelect.options[yearSelect.selectedIndex]?.text || '';
-                const semesterName = semesterSelect.options[semesterSelect.selectedIndex]?.text || '';
+            // Get or create the group container for this year and semester
+            const groupTbody = getOrCreateGroupContainer(yearName, semesterName);
+            
+            // Add each selected course unit
+            selectedCourses.forEach((checkbox, i) => {
+                const courseItem = checkbox.closest('.course-unit-item');
+                const courseId = courseItem.dataset.id;
+                const courseLabel = courseItem.querySelector('label');
+                const courseCode = courseLabel.querySelector('strong').textContent;
+                const courseName = courseLabel.textContent.replace(courseCode, '').replace(' - ', '').trim();
                 
-                console.log(`Processing course ${index + 1}:`, {
-                    courseId,
-                    courseCode,
-                    courseName,
-                    yearId,
-                    yearName,
-                    semesterId,
-                    semesterName
-                });
-                
-                // Check if this course already exists with the same year and semester
-                const exists = Array.from(document.querySelectorAll('tr[data-course-id]')).some(row => {
-                    return row.dataset.courseId === courseId &&
-                           row.querySelector('.year-id')?.value === yearId &&
-                           row.querySelector('.semester-id')?.value === semesterId;
-                });
-                
-                if (!exists) {
-                    // Create a new row
-                    const newRow = document.createElement('tr');
-                    newRow.dataset.courseId = courseId;
+                // Check if this course is already mapped to this year and semester
+                const existingMapping = document.querySelector(`tr[data-course-id="${courseId}"]`);
+                if (existingMapping) {
+                    const existingYear = existingMapping.closest('.mapping-group')?.dataset.year;
+                    const existingSemester = existingMapping.closest('.mapping-group')?.dataset.semester;
                     
-                    // Get the index for this new row
-                    const rowIndex = currentRowCount + index;
-                    
-                    // Create the row HTML
-                    newRow.innerHTML = `
-                        <td class="course-unit-name">${courseName}</td>
-                        <td class="course-unit-code">${courseCode || ''}</td>
-                        <td class="course-year">${yearName}</td>
-                        <td class="course-semester">${semesterName}</td>
-                        <td>
-                            <input type="hidden" name="mappings[${rowIndex}][course_unit_id]" class="course-unit-id" value="${courseId}">
-                            <input type="hidden" name="mappings[${rowIndex}][year_of_study_id]" class="year-id" value="${yearId}">
-                            <input type="hidden" name="mappings[${rowIndex}][semester_id]" class="semester-id" value="${semesterId}">
-                            <button type="button" class="btn btn-sm btn-outline-danger remove-mapping">
-                                <i class="bi bi-trash"></i>
-                            </button>
-                        </td>
-                    `;
-                    
-                    // Add the new row to the container
-                    if (mappingsContainer) {
-                        mappingsContainer.appendChild(newRow);
-                        console.log('Added new row for course:', courseId);
+                    if (existingYear === yearName && existingSemester === semesterName) {
+                        console.log(`Course ${courseCode} is already mapped to ${yearName} ${semesterName}`);
+                        return; // Skip this course as it's already mapped
                     }
-                } else {
-                    console.log('Course already exists, skipping:', courseId);
                 }
                 
-                // Reset the checkbox
+                // Create a new row
+                const index = maxIndex + i + 1;
+                const rowTemplate = document.getElementById('mapping-row-template').content.cloneNode(true);
+                const row = rowTemplate.querySelector('tr');
+                
+                // Update row data and content
+                row.dataset.courseId = courseId;
+                row.id = `mapping-${index}`;
+                
+                // Set code and name in the correct order
+                row.querySelector('.course-unit-code').textContent = courseCode;
+                row.querySelector('.course-unit-name').textContent = courseName;
+                
+                // Update form fields
+                const fields = row.querySelectorAll('input[type="hidden"]');
+                fields.forEach(field => {
+                    field.name = field.name.replace('INDEX', index);
+                    if (field.classList.contains('course-unit-id')) field.value = courseId;
+                    if (field.classList.contains('year-id')) field.value = yearId;
+                    if (field.classList.contains('semester-id')) field.value = semesterId;
+                });
+                
+                // Add to the group container
+                groupTbody.appendChild(row);
+                
+                // Initialize tooltip for the new row
+                const tooltipTriggerList = [].slice.call(row.querySelectorAll('[data-bs-toggle="tooltip"]'));
+                tooltipTriggerList.map(function (tooltipTriggerEl) {
+                    return new bootstrap.Tooltip(tooltipTriggerEl);
+                });
+                
+                // Uncheck the checkbox
                 checkbox.checked = false;
-                item.classList.remove('selected');
+                courseItem.classList.remove('selected');
             });
             
             // Reset the form
@@ -340,9 +393,26 @@ document.addEventListener('DOMContentLoaded', function() {
         if (e.target.closest('.remove-mapping')) {
             e.preventDefault();
             const row = e.target.closest('tr');
-            if (row) {
-                console.log('Removing row:', row);
+            if (row && confirm('Are you sure you want to remove this course unit?')) {
+                const groupTbody = row.closest('tbody');
                 row.remove();
+                
+                // If no more rows in this group, remove the entire group
+                if (groupTbody && groupTbody.querySelectorAll('tr').length === 0) {
+                    const groupCard = groupTbody.closest('.card');
+                    if (groupCard) {
+                        groupCard.remove();
+                        
+                        // If no more groups, show the "No mappings" message
+                        const mappingsContainer = document.getElementById('mappings-container');
+                        if (mappingsContainer && mappingsContainer.children.length === 0) {
+                            const noMappingsAlert = document.createElement('div');
+                            noMappingsAlert.className = 'alert alert-info';
+                            noMappingsAlert.textContent = 'No course unit mappings found. Add some using the button below.';
+                            mappingsContainer.appendChild(noMappingsAlert);
+                        }
+                    }
+                }
             }
         }
     });

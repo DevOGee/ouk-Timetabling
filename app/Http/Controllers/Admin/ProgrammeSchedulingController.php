@@ -15,11 +15,24 @@ class ProgrammeSchedulingController extends Controller
     public function show(AcademicSession $academicSession, Programme $programme)
     {
         // Get all course unit mappings for this programme in the current academic session
-        $mappings = CourseUnitProgrammeMapping::with(['courseUnit', 'instructor', 'day', 'semester', 'yearOfStudy'])
+        $mappings = CourseUnitProgrammeMapping::with(['courseUnit', 'instructor.title', 'day', 'semester', 'yearOfStudy'])
             ->where('programme_id', $programme->id)
             ->where('academic_session_id', $academicSession->id)
-            ->get()
-            ->groupBy('year_of_study_id');
+            ->get();
+            
+        // Group mappings by year and semester (e.g., 1.1, 1.2, 2.1, etc.)
+        $groupedMappings = $mappings->groupBy(function($mapping) {
+            $year = $mapping->yearOfStudy->name ?? '0';
+            $semester = $mapping->semester->name ?? '0';
+            return "{$year}.{$semester}";
+        })->sortBy(function($items, $key) {
+            // Sort by year and semester (e.g., 1.1 comes before 1.2, 2.1, etc.)
+            if (str_contains($key, '.')) {
+                list($year, $semester) = explode('.', $key, 2);
+                return ((int)$year * 10) + (int)$semester;
+            }
+            return 999; // Put invalid formats at the end
+        });
 
         // Get all instructors for selection
         $instructors = User::role('instructor')
@@ -30,7 +43,7 @@ class ProgrammeSchedulingController extends Controller
         return view('admin.programmes.scheduling.show', [
             'programme' => $programme,
             'academicSession' => $academicSession,
-            'groupedMappings' => $mappings,
+            'groupedMappings' => $groupedMappings,
             'instructors' => $instructors,
         ]);
     }

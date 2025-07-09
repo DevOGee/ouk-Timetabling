@@ -118,49 +118,69 @@ $(document).ready(function() {
     const editModal = document.getElementById('editSlotModal');
     if (editModal) {
         editModal.addEventListener('show.bs.modal', function(event) {
-            const button = event.relatedTarget;
-            const mappingId = button.getAttribute('data-mapping-id');
-            const courseCode = button.getAttribute('data-course-code');
-            const dayId = button.getAttribute('data-day-id');
-            const morningStart = button.getAttribute('data-morning-start');
-            const morningDuration = button.getAttribute('data-morning-duration');
-            const eveningStart = button.getAttribute('data-evening-start');
-            const eveningDuration = button.getAttribute('data-evening-duration');
+            const button = $(event.relatedTarget);
+            const row = button.closest('tr');
+            const mappingId = row.attr('data-mapping-id');
+            const courseCode = row.find('td:first').text().trim();
+            const dayId = row.attr('data-day-id');
+            const morningStart = row.attr('data-morning-start');
+            const morningDuration = row.attr('data-morning-duration') || '60';
+            const eveningStart = row.attr('data-evening-start');
+            const eveningDuration = row.attr('data-evening-duration') || '60';
             
-            const form = editModal.querySelector('form');
+            console.log('Edit modal opened with data:', {
+                mappingId,
+                courseCode,
+                dayId,
+                morningStart,
+                morningDuration,
+                eveningStart,
+                eveningDuration
+            });
+            
+            const $form = $(this).find('form');
             const actionUrl = `{{ route('admin.academic-sessions.programmes.scheduling.update-slot', [$academicSession, $programme, '']) }}/${mappingId}`;
             
+            // Reset form first
+            $form[0].reset();
+            
             // Update form action and method
-            form.action = actionUrl;
-            form.querySelector('input[name="mapping_id"]').value = mappingId;
+            $form.attr('action', actionUrl);
+            $form.find('input[name="mapping_id"]').val(mappingId);
             
             // Update title
-            document.getElementById('editCourseCodeTitle').textContent = `Edit Schedule - ${courseCode}`;
+            $('#editCourseCodeTitle').text(`Edit Schedule - ${courseCode}`);
             
-            // Reset form
-            form.reset();
-            
-            // Set day
+            // Set day first
             if (dayId) {
-                $(`#edit_day_id`).val(dayId).trigger('change');
+                $('#edit_day_id').val(dayId);
+                console.log('Set day_id to:', dayId);
             }
             
             // Set morning session
-            if (morningStart && morningDuration) {
-                $('#edit_enable_morning').prop('checked', true).trigger('change');
-                $('#edit_morning_start').val(morningStart);
-                $('#edit_morning_duration').val(morningDuration);
+            if (morningStart) {
+                $('#edit_enable_morning').prop('checked', true);
+                $('#edit_morning_start').val(morningStart).prop('disabled', false);
+                $('#edit_morning_duration').val(morningDuration).prop('disabled', false);
+                console.log('Set morning session:', morningStart, 'Duration:', morningDuration);
             } else {
-                $('#edit_enable_morning').prop('checked', false).trigger('change');
+                $('#edit_enable_morning').prop('checked', false);
+                $('#edit_morning_start, #edit_morning_duration').val('').prop('disabled', true);
+                console.log('Morning session disabled');
             }
             
             // Set evening session
-            if (eveningStart && eveningDuration) {
-                $('#edit_enable_evening').prop('checked', true).trigger('change');
-                $('#edit_evening_start').val(eveningStart);
-                $('#edit_evening_duration').val(eveningDuration);
+            if (eveningStart) {
+                $('#edit_enable_evening').prop('checked', true);
+                $('#edit_evening_start').val(eveningStart).prop('disabled', false);
+                $('#edit_evening_duration').val(eveningDuration).prop('disabled', false);
+                $('#edit_evening_fields').show();
+                console.log('Set evening session:', eveningStart, 'Duration:', eveningDuration);
             } else {
-                $('#edit_enable_evening').prop('checked', false).trigger('change');
+                $('#edit_enable_evening').prop('checked', false);
+                $('#edit_evening_start, #edit_evening_duration').val('').prop('disabled', true);
+                $('#edit_evening_fields').hide();
+                console.log('Evening session disabled');
             }
             
             // Set up delete button

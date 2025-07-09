@@ -93,139 +93,181 @@
                     </a>
                 </div>
             @else
-                <div class="table-responsive">
-                    <table class="table table-bordered">
-                        <thead class="table-light">
-                            <tr>
-                                <th>Year/Semester</th>
-                                <th>Course Code</th>
-                                <th>Course Name</th>
-                                <th>Instructor</th>
-                                <th>Schedule</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach($groupedMappings as $yearId => $yearMappings)
-                                @php $year = $yearMappings->first()->yearOfStudy; @endphp
-                                @foreach($yearMappings->groupBy('semester_id') as $semesterId => $mappings)
-                                    @php $semester = $mappings->first()->semester; @endphp
-                                    @foreach($mappings as $mapping)
+                @foreach($groupedMappings as $groupName => $mappingsGroup)
+                    @php
+                        $year = 'N/A';
+                        $semester = 'N/A';
+                        $groupLabel = 'Other';
+                        
+                        if (str_contains($groupName, '.')) {
+                            $parts = explode('.', $groupName, 2);
+                            $year = $parts[0] ?? 'N/A';
+                            $semester = $parts[1] ?? 'N/A';
+                            $groupLabel = "Level {$year}.{$semester}";
+                        } else if (!empty($groupName)) {
+                            $groupLabel = $groupName;
+                        }
+                    @endphp
+                    <div class="card mb-4">
+                        <div class="card-header bg-light">
+                            <h5 class="mb-0">{{ $groupLabel }}</h5>
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="table-responsive">
+                                <table class="table table-hover align-middle mb-0">
+                                    <thead class="table-light">
                                         <tr>
-                                            @if($loop->first)
-                                                <td rowspan="{{ $mappings->count() }}" class="align-middle">
-                                                    <strong>Year {{ $year->year_number }}</strong><br>
-                                                    <small>{{ $semester->name }}</small>
-                                                </td>
-                                            @endif
-                                            <td data-course-unit-id="{{ $mapping->course_unit_id }}">{{ $mapping->courseUnit->code }}</td>
-                                            <td>{{ $mapping->courseUnit->name }}</td>
-                                            <td class="align-middle">
-                                                @php
-                                                    $hasInstructor = $mapping->user_id !== null;
-                                                    $instructor = $mapping->instructor;
-                                                @endphp
-                                                @if($hasInstructor && $instructor)
-                                                    <div class="d-flex align-items-center">
-                                                        <span class="me-2">
-                                                            @if($instructor->title && $instructor->title->abbreviation)
-                                                                {{ $instructor->title->abbreviation }} 
-                                                            @endif
-                                                            {{ $instructor->name }}
-                                                        </span>
-                                                        <button type="button" 
-                                                                class="btn btn-outline-danger btn-sm" 
-                                                                onclick="event.preventDefault(); document.getElementById('remove-instructor-form-{{ $mapping->id }}').submit();"
-                                                                title="Remove Instructor">
-                                                            <i class="bi bi-person-dash"></i> Remove
-                                                        </button>
-                                                        <form id="remove-instructor-form-{{ $mapping->id }}" 
-                                                              action="{{ route('admin.academic-sessions.programmes.scheduling.remove-instructor', [$academicSession, $programme]) }}" 
-                                                              method="POST" style="display: none;">
-                                                            @csrf
-                                                            @method('DELETE')
-                                                            <input type="hidden" name="mapping_id" value="{{ $mapping->id }}">
-                                                        </form>
-                                                    </div>
-                                                @else
-                                                    <button type="button" 
-                                                            class="btn btn-outline-primary btn-sm" 
-                                                            data-bs-toggle="modal" 
-                                                            data-bs-target="#assignInstructorModal"
-                                                            data-mapping-id="{{ $mapping->id }}"
-                                                            data-course-unit-id="{{ $mapping->course_unit_id }}"
-                                                            title="Add Instructor">
-                                                        <i class="bi bi-person-plus"></i> Add Instructor
-                                                    </button>
-                                                @endif
-                                            </td>
-                                            <td class="time-slot">
-                                                @if($mapping->day)
-                                                    <div class="schedule-slots">
-                                                        <div class="mb-2">
-                                                            <strong>{{ $mapping->day->name }}</strong>
-                                                        </div>
-                                                        @if($mapping->morning_start_time)
-                                                            <div class="mb-2">
-                                                                <span class="badge bg-primary">
-                                                                    <i class="bi bi-sunrise me-1"></i>
-                                                                    {{ \Carbon\Carbon::parse($mapping->morning_start_time)->format('H:i') }}
-                                                                    ({{ $mapping->morning_duration }} mins)
-                                                                </span>
-                                                            </div>
-                                                        @endif
-                                                        @if($mapping->evening_start_time)
-                                                            <div>
-                                                                <span class="badge bg-info text-dark">
-                                                                    <i class="bi bi-moon-stars me-1"></i>
-                                                                    {{ \Carbon\Carbon::parse($mapping->evening_start_time)->format('H:i') }}
-                                                                    ({{ $mapping->evening_duration }} mins)
-                                                                </span>
-                                                            </div>
-                                                        @endif
-                                                        @if(!$mapping->morning_start_time && !$mapping->evening_start_time)
-                                                            <span class="text-muted">No sessions scheduled</span>
-                                                        @endif
-                                                    </div>
-                                                @else
-                                                    <span class="text-muted">Not scheduled</span>
-                                                @endif
-                                            </td>
-                                            <td class="align-middle">
-                                                @if($mapping->day_id)
-                                                    <button type="button" 
-                                                            class="btn btn-outline-primary btn-sm" 
-                                                            data-bs-toggle="modal" 
-                                                            data-bs-target="#editSlotModal"
-                                                            data-mapping-id="{{ $mapping->id }}"
-                                                            data-course-code="{{ $mapping->courseUnit->code }}"
-                                                            data-day-id="{{ $mapping->day_id }}"
-                                                            data-morning-start="{{ $mapping->morning_start_time }}"
-                                                            data-morning-duration="{{ $mapping->morning_duration }}"
-                                                            data-evening-start="{{ $mapping->evening_start_time }}"
-                                                            data-evening-duration="{{ $mapping->evening_duration }}"
-                                                            title="Edit Time Slot">
-                                                        <i class="bi bi-pencil"></i> Edit Slot
-                                                    </button>
-                                                @else
-                                                    <button type="button" 
-                                                            class="btn btn-outline-primary btn-sm" 
-                                                            data-bs-toggle="modal" 
-                                                            data-bs-target="#assignSlotModal"
-                                                            data-mapping-id="{{ $mapping->id }}"
-                                                            data-course-code="{{ $mapping->courseUnit->code }}"
-                                                            title="Add Time Slot">
-                                                        <i class="bi bi-plus-circle"></i> Add Slot
-                                                    </button>
-                                                @endif
-                                            </td>
+                                            <th>Code</th>
+                                            <th>Course Unit</th>
+                                            <th>Instructor</th>
+                                            <th>Schedule</th>
+                                            <th class="text-center">Actions</th>
                                         </tr>
-                                    @endforeach
-                                @endforeach
-                            @endforeach
-                        </tbody>
-                    </table>
-                </div>
+                                    </thead>
+                                    <tbody>
+                                        @foreach($mappingsGroup as $mapping)
+                                            @if(!is_object($mapping) || !isset($mapping->courseUnit))
+                                                @continue
+                                            @endif
+                                            <tr data-mapping-id="{{ $mapping->id }}" 
+                                                data-day-id="{{ $mapping->day_id }}"
+                                                data-morning-start="{{ $mapping->morning_start_time ? \Carbon\Carbon::parse($mapping->morning_start_time)->format('H:i') : '' }}"
+                                                data-morning-duration="{{ $mapping->morning_duration ?? '' }}"
+                                                data-evening-start="{{ $mapping->evening_start_time ? \Carbon\Carbon::parse($mapping->evening_start_time)->format('H:i') : '' }}"
+                                                data-evening-duration="{{ $mapping->evening_duration ?? '' }}">
+                                                <td class="fw-bold">{{ $mapping->courseUnit->code ?? 'N/A' }}</td>
+                                                <td>{{ $mapping->courseUnit->name ?? 'N/A' }}</td>
+                                                <td>
+                                                    @if($mapping->instructor)
+                                                        {{ $mapping->instructor->name }}
+                                                    @else
+                                                        <span class="text-muted">Not assigned</span>
+                                                    @endif
+                                                </td>
+                                                <td class="time-slot">
+                                                    @if($mapping->day_id && ($mapping->morning_start_time || $mapping->evening_start_time))
+                                                        <div class="schedule-slots">
+                                                            @php
+                                                                // Format time to 12-hour format with AM/PM
+                                                                $formatTime = function($time) {
+                                                                    if (!$time) return '';
+                                                                    return \Carbon\Carbon::parse($time)->format('h:i A');
+                                                                };
+                                                                
+                                                                $dayShown = false;
+                                                            @endphp
+                                                            
+                                                            @if($mapping->morning_start_time)
+                                                            <div class="mb-2">
+                                                                @if(!$dayShown)
+                                                                    <strong>{{ $mapping->day->name }}</strong>
+                                                                    @php $dayShown = true; @endphp
+                                                                @endif
+                                                                <span class="badge bg-primary">
+                                                                    Morning: {{ $formatTime($mapping->morning_start_time) }} ({{ $mapping->morning_duration }} mins)
+                                                                </span>
+                                                            </div>
+                                                            @endif
+                                                            
+                                                            @if($mapping->evening_start_time)
+                                                            <div class="mb-2">
+                                                                @if(!$dayShown)
+                                                                    <strong>{{ $mapping->day->name }}</strong>
+                                                                    @php $dayShown = true; @endphp
+                                                                @endif
+                                                                <span class="badge bg-info">
+                                                                    Evening: {{ $formatTime($mapping->evening_start_time) }} ({{ $mapping->evening_duration }} mins)
+                                                                </span>
+                                                            </div>
+                                                            @endif
+                                                        </div>
+                                                    @else
+                                                        <span class="text-muted">Not scheduled</span>
+                                                    @endif
+                                                </td>
+                                                <td class="text-center">
+                                                    <div class="dropdown">
+                                                        <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                                            <i class="bi bi-gear"></i>
+                                                        </button>
+                                                        <ul class="dropdown-menu dropdown-menu-end">
+                                                            @if(!$mapping->instructor)
+                                                                <li>
+                                                                    <a class="dropdown-item" href="#" data-bs-toggle="modal" 
+                                                                       data-bs-target="#assignInstructorModal"
+                                                                       data-course-unit-id="{{ $mapping->course_unit_id }}">
+                                                                        <i class="bi bi-person-plus me-2"></i>Assign Instructor
+                                                                    </a>
+                                                                </li>
+                                                            @else
+                                                                <li>
+                                                                    <a class="dropdown-item" href="#" data-bs-toggle="modal" 
+                                                                       data-bs-target="#assignInstructorModal"
+                                                                       data-course-unit-id="{{ $mapping->course_unit_id }}"
+                                                                       data-current-instructor="{{ $mapping->instructor->id }}">
+                                                                        <i class="bi bi-person-check me-2"></i>Edit Instructor
+                                                                    </a>
+                                                                </li>
+                                                                <li>
+                                                                    <a class="dropdown-item text-danger" href="#" 
+                                                                       onclick="if(confirm('Remove this instructor?')) { document.getElementById('remove-instructor-{{ $mapping->id }}').submit(); }">
+                                                                        <i class="bi bi-person-dash me-2"></i>Remove Instructor
+                                                                    </a>
+                                                                    <form id="remove-instructor-{{ $mapping->id }}" 
+                                                                          action="{{ route('admin.academic-sessions.programmes.scheduling.remove-instructor', ['academicSession' => $academicSession, 'programme' => $programme]) }}" 
+                                                                          method="POST" style="display: none;">
+                                                                        @csrf
+                                                                        @method('DELETE')
+                                                                        <input type="hidden" name="course_unit_id" value="{{ $mapping->course_unit_id }}">
+                                                                    </form>
+                                                                </li>
+                                                            @endif
+
+                                                            <li><hr class="dropdown-divider"></li>
+
+                                                            @if(!$mapping->day_id)
+                                                                <li>
+                                                                    <a class="dropdown-item" href="#" data-bs-toggle="modal" 
+                                                                       data-bs-target="#assignSlotModal"
+                                                                       data-course-unit-id="{{ $mapping->course_unit_id }}"
+                                                                       data-mapping-id="{{ $mapping->id }}">
+                                                                        <i class="bi bi-calendar-plus me-2"></i>Schedule Time
+                                                                    </a>
+                                                                </li>
+                                                            @else
+                                                                <li>
+                                                                    <a class="dropdown-item" href="#" data-bs-toggle="modal" 
+                                                                       data-bs-target="#assignSlotModal"
+                                                                       data-course-unit-id="{{ $mapping->course_unit_id }}"
+                                                                       data-mapping-id="{{ $mapping->id }}"
+                                                                       data-edit="true">
+                                                                        <i class="bi bi-calendar-check me-2"></i>Edit Schedule
+                                                                    </a>
+                                                                </li>
+                                                                <li>
+                                                                    <a class="dropdown-item text-danger" href="#" 
+                                                                       onclick="if(confirm('Remove this schedule?')) { document.getElementById('delete-slot-{{ $mapping->id }}').submit(); }">
+                                                                        <i class="bi bi-trash me-2"></i>Remove Schedule
+                                                                    </a>
+                                                                    <form id="delete-slot-{{ $mapping->id }}" 
+                                                                          action="{{ route('admin.academic-sessions.programmes.scheduling.delete-slot', ['academicSession' => $academicSession, 'programme' => $programme, 'mapping' => $mapping]) }}" 
+                                                                          method="POST" style="display: none;">
+                                                                        @csrf
+                                                                        @method('DELETE')
+                                                                    </form>
+                                                                </li>
+                                                            @endif
+                                                        </ul>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        @endforeach
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                @endforeach
             @endif
         </div>
     </div>
@@ -258,6 +300,8 @@
         tooltipTriggerList.forEach(function (tooltipTriggerEl) {
             return new bootstrap.Tooltip(tooltipTriggerEl);
         });
+        
+
 
         // Handle assign instructor modal
         const assignInstructorModal = document.getElementById('assignInstructorModal');
