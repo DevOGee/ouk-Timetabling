@@ -623,6 +623,7 @@
             </li>
 
             {{-- Academic Sessions - Admin and Dean only --}}
+            @auth
             @if(auth()->user()->hasRole(['admin', 'dean']))
             <li class="menu-item {{ request()->routeIs('admin.academic-sessions.index') && !request()->routeIs('admin.academic-sessions.show') ? 'active' : '' }}">
                 <a href="{{ route('admin.academic-sessions.index') }}" class="menu-link">
@@ -631,8 +632,10 @@
                 </a>
             </li>
             @endif
+            @endauth
 
             {{-- Course Mapping - Admin, Dean, and Timetabler --}}
+            @auth
             @if(auth()->user()->hasRole(['admin', 'dean', 'timetabler']))
             <li class="menu-item {{ request()->routeIs('admin.academic-sessions.show') ? 'active' : '' }}">
                 <a href="{{ isset($activeSession) ? url('/admin/academic-sessions/' . $activeSession->id) : '#' }}" class="menu-link {{ !isset($activeSession) ? 'disabled' : '' }}" {{ !isset($activeSession) ? 'aria-disabled="true"' : '' }}>
@@ -644,12 +647,16 @@
                 </a>
             </li>
             @endif
+            @endauth
 
+            @auth
             @if(auth()->user()->hasRole(['admin', 'dean', 'timetabler']))
             <li class="menu-title">Setup</li>
             @endif
+            @endauth
 
             {{-- Courses - All roles except maybe basic instructor --}}
+            @auth
             @if(auth()->user()->hasRole(['admin', 'dean', 'timetabler', 'instructor']))
             <li class="menu-item {{ request()->routeIs('course_units.*') ? 'active' : '' }}">
                 <a href="{{ route('course_units.index') }}" class="menu-link">
@@ -658,8 +665,10 @@
                 </a>
             </li>
             @endif
+            @endauth
 
             {{-- Instructors - Admin, Dean, and Timetabler --}}
+            @auth
             @if(auth()->user()->hasRole(['admin', 'dean', 'timetabler']))
             <li class="menu-item {{ request()->routeIs('instructors.*') ? 'active' : '' }}">
                 <a href="{{ route('instructors.index') }}" class="menu-link">
@@ -668,8 +677,10 @@
                 </a>
             </li>
             @endif
+            @endauth
 
             {{-- Programmes - Admin and Dean only --}}
+            @auth
             @if(auth()->user()->hasRole(['admin', 'dean']))
             <li class="menu-item {{ request()->routeIs('programmes.*') ? 'active' : '' }}">
                 <a href="{{ route('programmes.index') }}" class="menu-link">
@@ -678,9 +689,11 @@
                 </a>
             </li>
             @endif
+            @endauth
 
             {{-- Users - Admin only --}}
             {{-- Temporarily disabled until user management is implemented --}}
+            @auth
             @if(auth()->user()->hasRole('admin'))
             <li class="menu-item {{ request()->routeIs('admin.users.*') ? 'active' : '' }}">
                 <a href="#" class="menu-link">
@@ -689,9 +702,11 @@
                 </a>
             </li>
             @endif
+            @endauth
            
 
             {{-- Academic Setup - Admin and Dean only --}}
+            @auth
             @if(auth()->user()->hasRole(['admin', 'dean']))
             <li class="menu-item has-submenu">
                 <a href="#" class="menu-link">
@@ -751,6 +766,7 @@
                 </ul>
             </li>
             @endif
+            @endauth
         </ul>
     </div>
 
@@ -827,8 +843,10 @@
                 </div>
 
                 <!-- User Dropdown -->
+                @auth
                 <div class="dropdown">
                     <a class="d-flex align-items-center text-decoration-none dropdown-toggle" href="#" role="button" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                        @if(Auth::check() && Auth::user())
                         <div class="user-avatar me-2">
                             {{ strtoupper(substr(Auth::user()->name, 0, 1)) }}
                         </div>
@@ -838,6 +856,15 @@
                                 {{ Auth::user()->roles->first() ? ucfirst(Auth::user()->roles->first()->name) : 'User' }}
                             </div>
                         </div>
+                        @else
+                        <div class="user-avatar me-2">
+                            <i class="bi bi-person"></i>
+                        </div>
+                        <div class="d-none d-md-block">
+                            <div class="fw-semibold">Guest</div>
+                            <div class="small text-muted">Not logged in</div>
+                        </div>
+                        @endif
                         <i class="bi bi-chevron-down ms-2 small"></i>
                     </a>
                     <ul class="dropdown-menu dropdown-menu-end shadow-sm" aria-labelledby="userDropdown" style="min-width: 220px;">
@@ -878,6 +905,7 @@
                         </li>
                     </ul>
                 </div>
+                @endauth
             </div>
         </header>
 
