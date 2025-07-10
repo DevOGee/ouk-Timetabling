@@ -243,18 +243,6 @@
             const mappingId = modal.id.replace('assignInstructorModal', '');
             const select = $(`#user_id_${mappingId}`);
             
-            // Initialize Select2 for this modal
-            if (select.length && !select.hasClass('select2-hidden-accessible')) {
-                select.select2({
-                    dropdownParent: $(`#assignInstructorModal${mappingId}`),
-                    width: '100%',
-                    placeholder: 'Search for an instructor...',
-                    allowClear: true,
-                    theme: 'bootstrap-5',
-                    dropdownAutoWidth: true
-                });
-            }
-            
             // Handle modal show event
             modal.addEventListener('show.bs.modal', function (event) {
                 const button = event.relatedTarget;
@@ -265,43 +253,6 @@
                 if (titleElement && !titleElement.textContent.includes(courseCode)) {
                     titleElement.textContent = `Assign Instructor to ${courseCode}`;
                 }
-                
-                // Reset the selection
-                if (select.length) {
-                    select.val(null).trigger('change');
-                }
-            });
-            
-            // Clean up Select2 when modal is hidden
-            modal.addEventListener('hidden.bs.modal', function () {
-                if (select.length && select.hasClass('select2-hidden-accessible')) {
-                    select.select2('destroy');
-                }
-            });
-        });
-        
-        // Keep the old code for backward compatibility
-        const assignInstructorModal = document.getElementById('assignInstructorModal');
-        if (assignInstructorModal && !assignInstructorModal._select2Initialized) {
-            // Initialize Select2 when modal is about to be shown
-            assignInstructorModal.addEventListener('show.bs.modal', function (event) {
-                const button = event.relatedTarget;
-                const mappingId = button.getAttribute('data-mapping-id');
-                const courseUnitId = button.getAttribute('data-course-unit-id');
-                const courseCode = button.closest('tr').querySelector('td:nth-child(2)').textContent.trim();
-                const modalForm = assignInstructorModal.querySelector('form');
-                
-                console.log('Opening instructor modal for mapping:', mappingId, 'course unit:', courseUnitId);
-                
-                // Set the mapping ID and course unit ID
-                modalForm.querySelector('input[name="mapping_id"]').value = mappingId || '';
-                modalForm.querySelector('input[name="course_unit_id"]').value = courseUnitId || '';
-                
-                // Set the course code in the modal title
-                document.getElementById('courseCodeDisplay').textContent = courseCode;
-                
-                // Initialize or reinitialize Select2
-                const select = $(`#user_id_${mappingId}`);
                 
                 // Destroy existing Select2 if it exists
                 if (select.hasClass('select2-hidden-accessible')) {
@@ -323,15 +274,14 @@
             });
             
             // Clean up Select2 when modal is hidden
-            assignInstructorModal.addEventListener('hidden.bs.modal', function () {
-                const modalId = this.id;
-                const mappingId = modalId.replace('assignInstructorModal', '');
-                const select = $(`#user_id_${mappingId}`);
+            modal.addEventListener('hidden.bs.modal', function () {
                 if (select.length && select.hasClass('select2-hidden-accessible')) {
                     select.select2('destroy');
                 }
             });
-        }
+        });
+        
+        // Old duplicate initialization code has been removed
 
         // Handle edit slot modal
         const editSlotModal = document.getElementById('editSlotModal');
