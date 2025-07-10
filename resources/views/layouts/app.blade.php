@@ -702,6 +702,10 @@
             font-size: 0.85rem;
             border-left: 3px solid var(--secondary);
             transition: all 0.2s ease;
+            text-align: left;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
         }
         
         .active-session-badge:hover {
@@ -738,7 +742,6 @@
 
         <ul class="sidebar-menu">
             <li class="menu-title">Main</li>
-            
             {{-- Dashboard - Visible to all authenticated users --}}
             <li class="menu-item {{ request()->routeIs('dashboard') ? 'active' : '' }}">
                 <a href="{{ route('dashboard') }}" class="menu-link">
@@ -777,6 +780,17 @@
                     @if(!isset($activeSession))
                         <span class="badge bg-warning mt-1">No active session</span>
                     @endif
+                </a>
+            </li>
+            @endif
+            @endauth
+
+            @auth
+            @if(auth()->user()->hasRole(['admin', 'dean']))
+            <li class="menu-item {{ request()->routeIs('admin.timetables.*') ? 'active' : '' }}">
+                <a href="{{ route('admin.timetables.manage') }}" class="menu-link">
+                    <i class="bi bi-calendar-check"></i>
+                    <span>Timetable Management</span>
                 </a>
             </li>
             @endif
@@ -840,12 +854,6 @@
             {{-- Academic Setup - Admin and Dean only --}}
             @auth
             @if(auth()->user()->hasRole(['admin', 'dean']))
-            <li class="menu-item {{ request()->routeIs('admin.timetables.*') ? 'active' : '' }}">
-                <a href="{{ route('admin.timetables.manage') }}" class="menu-link">
-                    <i class="bi bi-calendar-check"></i>
-                    <span>Timetable Management</span>
-                </a>
-            </li>
             
             <li class="menu-item has-submenu">
                 <a href="#" class="menu-link">
