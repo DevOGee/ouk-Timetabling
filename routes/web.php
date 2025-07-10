@@ -1,5 +1,8 @@
 <?php
 
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\AcademicYearController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\CourseMappingController;
@@ -21,7 +24,33 @@ use App\Http\Controllers\Admin\AcademicSessionController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\TimetableManagementController;
 use App\Models\User;
-use Illuminate\Support\Facades\Route;
+
+// Clear rate limiter - Remove this in production
+Route::get('/clear-limiter', function () {
+    $throttleKey = 'password.request|' . request()->ip();
+    cache()->forget($throttleKey);
+    return 'Rate limiter cleared for IP: ' . request()->ip();
+});
+
+// Test email route - Remove this in production
+Route::get('/test-email', function () {
+    try {
+        Mail::raw('This is a test email from OUK Timetable System', function($message) {
+            $message->to('bentito@ouk.ac.ke')
+                    ->subject('Test Email from OUK Timetable');
+        });
+        return 'Test email sent successfully!';
+    } catch (\Exception $e) {
+        return 'Error: ' . $e->getMessage();
+    }
+});
+
+// Authentication Routes
+Auth::routes(['verify' => true]);
+
+// Google OAuth Routes
+Route::get('/login/google', [\App\Http\Controllers\Auth\GoogleAuthController::class, 'redirectToGoogle'])->name('login.google');
+Route::get('/login/google/callback', [\App\Http\Controllers\Auth\GoogleAuthController::class, 'handleGoogleCallback']);
 
 Route::get('/', function () {
     return redirect()->route('timetable.index');

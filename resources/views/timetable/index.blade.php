@@ -34,7 +34,7 @@
 
         .filter-section {
             padding: 1.5rem 1rem;
-            background-color: #037b90;
+            background-color: #E3F2FD;
             margin: 0 0 2rem 0;
             box-shadow: 0 2px 8px rgba(0,0,0,0.1);
         }
@@ -48,9 +48,9 @@
         }
         
         .form-control, .form-select {
-            border: 1px solid rgba(255,255,255,0.2);
-            background-color: rgba(255,255,255,0.95);
-            color: #333;
+            background-color: #f8f9fa !important;
+            color: #000 !important;
+            border: 1px solid #ced4da !important;
             height: 48px;
             border-radius: 6px;
             font-size: 15px;
@@ -58,9 +58,10 @@
         }
         
         .form-control:focus, .form-select:focus {
-            border-color: #fff;
-            box-shadow: 0 0 0 0.25rem rgba(255, 255, 255, 0.3);
-            background-color: #fff;
+            border-color: #80bdff !important;
+            box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25) !important;
+            background-color: #fff !important;
+            color: #000 !important;
         }
         
         .form-label {
@@ -182,7 +183,9 @@
             -webkit-appearance: none;
             -moz-appearance: none;
             appearance: none;
-            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='rgba(255,255,255,0.7)' viewBox='0 0 16 16'%3E%3Cpath fill-rule='evenodd' d='M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z'/%3E%3C/svg%3E");
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%23000000' viewBox='0 0 16 16'%3E%3Cpath fill-rule='evenodd' d='M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z'/%3E%3C/svg%3E");
+            background-color: #f8f9fa !important;
+            color: #000 !important;
             background-repeat: no-repeat;
             background-position: right 1.25rem center;
             background-size: 14px 10px;
@@ -405,7 +408,7 @@
         @endphp
 
         <div class="container">
-            <h2 class="filter-title">Timetable Viewer</h2>
+            {{-- <h2 class="filter-title">Timetable Viewer</h2> --}}
 
             <form method="GET" action="{{ route('timetable.index') }}" class="filter-form">
                 <div class="row g-4">

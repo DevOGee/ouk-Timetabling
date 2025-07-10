@@ -37,7 +37,8 @@ class User extends Authenticatable
         'image_path',
         'status',
         'phone',
-        'last_login_at'
+        'last_login_at',
+        'google_id'
     ];
 
     /**
