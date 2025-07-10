@@ -77,6 +77,17 @@ class LessonSlotController extends Controller
             'evening_duration' => $request->evening_duration,
         ]);
 
+        // Get the academic session from the request or any other source if available
+        $academicSessionId = $request->input('academic_session_id') ?? session('current_academic_session_id');
+        
+        if ($academicSessionId) {
+            return redirect()->route('admin.academic-sessions.programmes.scheduling.show', [
+                'academicSession' => $academicSessionId,
+                'programme' => $programme->id
+            ])->with('success', 'Slot updated successfully.');
+        }
+        
+        // Fallback to the programme show page if no academic session is available
         return redirect()->route('programmes.show', $programme)->with('success', 'Slot updated successfully.');
     }
 }

@@ -7,6 +7,7 @@ use App\Models\AcademicSession;
 use App\Models\Programme;
 use App\Models\CourseUnitProgrammeMapping;
 use App\Models\User;
+use App\Models\Day;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -40,11 +41,15 @@ class ProgrammeSchedulingController extends Controller
             ->orderBy('name')
             ->get();
 
+        // Get all days for the day dropdown
+        $days = Day::orderBy('id')->get();
+
         return view('admin.programmes.scheduling.show', [
             'programme' => $programme,
             'academicSession' => $academicSession,
             'groupedMappings' => $groupedMappings,
             'instructors' => $instructors,
+            'days' => $days,
         ]);
     }
 
@@ -155,7 +160,10 @@ class ProgrammeSchedulingController extends Controller
 
         $mapping->update($updateData);
 
-        return back()->with('success', 'Schedule updated successfully');
+        return redirect()->route('admin.academic-sessions.programmes.scheduling.show', [
+            'academicSession' => $academicSession->id,
+            'programme' => $programme->id
+        ])->with('success', 'Schedule updated successfully');
     }
 
     public function deleteSlot(AcademicSession $academicSession, Programme $programme, $mappingId)
