@@ -275,6 +275,9 @@ Route::prefix('admin')->middleware(['auth'])->group(function () {
         Route::delete('delete-slot/{mapping}', [\App\Http\Controllers\Admin\ProgrammeSchedulingController::class, 'deleteSlot'])->name('scheduling.delete-slot');
         Route::post('bulk-schedule', [\App\Http\Controllers\Admin\ProgrammeSchedulingController::class, 'bulkSchedule'])->name('scheduling.bulk-schedule');
         Route::get('download-courses', [\App\Http\Controllers\Admin\ProgrammeSchedulingController::class, 'downloadCourses'])->name('scheduling.download-courses');
+        Route::get('export-schedule', [\App\Http\Controllers\Admin\ProgrammeSchedulingController::class, 'exportSchedule'])
+            ->name('scheduling.export')
+            ->where('format', 'pdf|excel');
     });
 
     // Programme Course Unit Instructor routes

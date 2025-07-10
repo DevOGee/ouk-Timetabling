@@ -3,7 +3,8 @@
     aria-labelledby="assignSlotLabel{{ $mapping->id }}" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
-            <form action="{{ route('admin.lesson_slots.store', ['programme' => $programme->id, 'courseUnit' => $course->id]) }}" method="POST">
+            <form action="{{ route('admin.academic-sessions.programmes.scheduling.assign-slot', ['academicSession' => $academicSession->id, 'programme' => $programme->id]) }}" method="POST">
+    <input type="hidden" name="mapping_id" value="{{ $mapping->id }}">
                 @csrf
                 <div class="modal-header">
                     <h5 class="modal-title" id="assignSlotLabel{{ $mapping->id }}">
@@ -26,11 +27,17 @@
                         <div class="row g-2">
                             <div class="col-md-6">
                                 <label class="form-label">Start Time</label>
-                                <input type="time" name="morning_start_time" class="form-control">
+                                <input type="time" name="morning_start" class="form-control @error('morning_start') is-invalid @enderror">
+                                @error('morning_start')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label">Duration (minutes)</label>
-                                <input type="number" name="morning_duration" class="form-control" min="1">
+                                <input type="number" name="morning_duration" class="form-control @error('morning_duration') is-invalid @enderror" min="1">
+                                @error('morning_duration')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
                             </div>
                         </div>
                     </div>
@@ -40,11 +47,17 @@
                         <div class="row g-2">
                             <div class="col-md-6">
                                 <label class="form-label">Start Time</label>
-                                <input type="time" name="evening_start_time" class="form-control">
+                                <input type="time" name="evening_start" class="form-control @error('evening_start') is-invalid @enderror">
+                                @error('evening_start')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label">Duration (minutes)</label>
-                                <input type="number" name="evening_duration" class="form-control" min="1">
+                                <input type="number" name="evening_duration" class="form-control @error('evening_duration') is-invalid @enderror" min="1">
+                                @error('evening_duration')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
                             </div>
                         </div>
                     </div>

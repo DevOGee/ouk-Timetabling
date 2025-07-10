@@ -3,8 +3,50 @@
 @section('title', "Scheduling: $programme->programme_code")
 
 @section('content')
-    <div class="container mt-5">
-        <h2 class="mb-4">{{ $programme->name }} ({{ $programme->programme_code }}) - Scheduling</h2>
+    <div class="container mt-4">
+        <div class="card shadow-sm mb-4 border-0">
+            <div class="card-body p-4">
+                <!-- Title Section -->
+                <div class="mb-3">
+                    <h2 class="h4 mb-1 fw-bold text-dark">{{ $programme->name }} <span class="text-muted">({{ $programme->programme_code }})</span></h2>
+                    <p class="text-muted small mb-0">Academic Session: {{ $academicSession->name }}</p>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="d-flex justify-content-between align-items-center flex-wrap border-top pt-3">
+                    <div class="d-flex flex-wrap gap-2 mb-2 mb-md-0">
+                        <a href="{{ route('admin.academic-sessions.show', $academicSession) }}" class="btn btn-outline-secondary btn-sm">
+                            <i class="bi bi-arrow-left me-1"></i> Back to Session
+                        </a>
+                        <a href="{{ url("/admin/academic-sessions/{$academicSession->id}/programmes/{$programme->id}/map-course-units") }}" class="btn btn-outline-primary btn-sm">
+                            <i class="bi bi-pencil-square me-1"></i> Edit Curriculum
+                        </a>
+                    </div>
+                    <div class="d-flex flex-wrap gap-2">
+                        <div class="dropdown">
+                            <button class="btn btn-outline-primary btn-sm dropdown-toggle" type="button" id="exportDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="bi bi-download me-1"></i> Export
+                            </button>
+                            <ul class="dropdown-menu" aria-labelledby="exportDropdown">
+                                <li>
+                                    <a class="dropdown-item" href="{{ route('admin.academic-sessions.programmes.scheduling.export', ['academicSession' => $academicSession->id, 'programme' => $programme->id, 'format' => 'pdf']) }}" target="_blank">
+                                        <i class="bi bi-file-pdf text-danger me-2"></i> Export as PDF
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" href="{{ route('admin.academic-sessions.programmes.scheduling.export', ['academicSession' => $academicSession->id, 'programme' => $programme->id, 'format' => 'excel']) }}">
+                                        <i class="bi bi-file-excel text-success me-2"></i> Export as Excel
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
+                        <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#bulkScheduleModal">
+                            <i class="bi bi-upload me-1"></i> Bulk Upload
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
 
         @if ($errors->any())
             <div class="alert alert-danger">
@@ -20,16 +62,15 @@
         @endif
 
         @foreach ($groupedMappings as $group => $mappings)
-            <div class="mt-5">
-                <h4 class="text-primary">{{ $group }}</h4>
-                <table class="table table-bordered">
-                    <thead class="bg-light">
+            <div class="mt-4">
+                <h4 class="text-primary">Level {{ $group }}</h4>
+                <table class="table table-borderless table-hover w-100">
+                    <thead class="table-light">
                         <tr>
-                            <th>Course Code</th>
-                            <th>Course Name</th>
-                            <th>Instructor</th>
-                            <th>Scheduled Slot</th>
-                            <th>Actions</th>
+                            <th class="w-35">Course</th>
+                            <th class="w-25">Instructor</th>
+                            <th class="w-30">Schedule</th>
+                            <th class="w-10 text-end">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -39,67 +80,90 @@
                                 $instructor = $mapping->instructor;
                             @endphp
                             <tr>
-                                <td>{{ $course->code }}</td>
-                                <td>{{ $course->name }}</td>
-                                <td>
+                                <td class="align-middle">
+                                    <div class="fw-bold">{{ $course->code }}</div>
+                                    <div class="text-muted small">{{ $course->name }}</div>
+                                </td>
+                                <td class="align-middle">
                                     @if ($instructor)
                                         {{ $instructor->name }}
                                     @else
                                         <span class="text-muted">No Instructor Assigned</span>
                                     @endif
                                 </td>
-                                <td>
+                                <td class="align-middle">
                                     @if ($mapping->morning_start_time || $mapping->evening_start_time)
-                                        <span class="badge bg-info">
-                                            {{ $mapping->day->name ?? 'N/A' }}
+                                        <div class="d-flex flex-column gap-1">
+                                            @if ($mapping->day)
+                                                <div class="fw-semibold">{{ $mapping->day->name }}</div>
+                                            @endif
+                                            
                                             @if ($mapping->morning_start_time)
-                                                - {{ \Carbon\Carbon::parse($mapping->morning_start_time)->format('h:i A') }}
-                                                ({{ $mapping->morning_duration }} min)
+                                                <div class="d-flex align-items-center gap-2">
+                                                    <span class="badge bg-primary">
+                                                        <i class="bi bi-sun me-1"></i>
+                                                        {{ \Carbon\Carbon::parse($mapping->morning_start_time)->format('h:i A') }}
+                                                        ({{ $mapping->morning_duration }} min)
+                                                    </span>
+                                                </div>
                                             @endif
+                                            
                                             @if ($mapping->evening_start_time)
-                                                / {{ \Carbon\Carbon::parse($mapping->evening_start_time)->format('h:i A') }}
-                                                ({{ $mapping->evening_duration }} min)
+                                                <div class="d-flex align-items-center gap-2">
+                                                    <span class="badge bg-dark text-white">
+                                                        <i class="bi bi-moon-stars me-1"></i>
+                                                        {{ \Carbon\Carbon::parse($mapping->evening_start_time)->format('h:i A') }}
+                                                        ({{ $mapping->evening_duration }} min)
+                                                    </span>
+                                                </div>
                                             @endif
-                                        </span>
+                                        </div>
                                     @else
-                                        <span class="text-muted">No Slot Assigned</span>
+                                        <span class="text-muted small">No slot assigned</span>
                                     @endif
                                 </td>
 
-                                <td>
-                                    {{-- Assign/Unassign Instructor --}}
-                                    @if ($mapping->user_id)
-                                        <form
-                                            action="{{ route('admin.academic-sessions.programmes.scheduling.remove-instructor', [
-                                                'academicSession' => $academicSession->id,
-                                                'programme' => $programme->id
-                                            ]) }}"
-                                            method="POST" class="d-inline"
-                                            onsubmit="return confirm('Are you sure you want to unassign this instructor?')">
-                                            @csrf
-                                            @method('DELETE')
-                                            <input type="hidden" name="mapping_id" value="{{ $mapping->id }}">
-                                            <button type="submit" class="btn btn-warning btn-sm">Unassign</button>
-                                        </form>
-                                    @else
-                                        <button class="btn btn-success btn-sm" data-bs-toggle="modal"
-                                            data-bs-target="#assignInstructorModal{{ $mapping->id }}">
-                                            Assign Instructor
-                                        </button>
-                                    @endif
+                                <td class="text-end align-middle">
+                                    <div class="d-flex gap-2 justify-content-end">
+                                        {{-- Assign/Unassign Instructor --}}
+                                        @if ($mapping->user_id)
+                                            <form
+                                                action="{{ route('admin.academic-sessions.programmes.scheduling.remove-instructor', [
+                                                    'academicSession' => $academicSession->id,
+                                                    'programme' => $programme->id
+                                                ]) }}"
+                                                method="POST" class="d-inline"
+                                                onsubmit="return confirm('Are you sure you want to unassign this instructor?')">
+                                                @csrf
+                                                @method('DELETE')
+                                                <input type="hidden" name="mapping_id" value="{{ $mapping->id }}">
+                                                <button type="submit" class="btn btn-warning btn-sm">
+                                                    <i class="bi bi-person-dash"></i>
+                                                </button>
+                                            </form>
+                                        @else
+                                            <button class="btn btn-success btn-sm" data-bs-toggle="modal"
+                                                data-bs-target="#assignInstructorModal{{ $mapping->id }}" 
+                                                data-toggle="tooltip" title="Assign Instructor">
+                                                <i class="bi bi-person-plus"></i>
+                                            </button>
+                                        @endif
 
-                                    {{-- Assign/Edit Slot --}}
-                                    @if (!$mapping->morning_start_time && !$mapping->evening_start_time)
-                                        <button class="btn btn-info btn-sm" data-bs-toggle="modal"
-                                            data-bs-target="#assignSlotModal{{ $mapping->id }}">
-                                            Assign Slot
-                                        </button>
-                                    @else
-                                        <button class="btn btn-primary btn-sm" data-bs-toggle="modal"
-                                            data-bs-target="#editSlotModal{{ $mapping->id }}">
-                                            Edit Slot
-                                        </button>
-                                    @endif
+                                        {{-- Assign/Edit Slot --}}
+                                        @if (!$mapping->morning_start_time && !$mapping->evening_start_time)
+                                            <button class="btn btn-primary btn-sm" data-bs-toggle="modal"
+                                                data-bs-target="#assignSlotModal{{ $mapping->id }}"
+                                                data-toggle="tooltip" title="Assign Time Slot">
+                                                <i class="bi bi-clock"></i>
+                                            </button>
+                                        @else
+                                            <button class="btn btn-info btn-sm" data-bs-toggle="modal"
+                                                data-bs-target="#editSlotModal{{ $mapping->id }}"
+                                                data-toggle="tooltip" title="Edit Time Slot">
+                                                <i class="bi bi-pencil"></i>
+                                            </button>
+                                        @endif
+                                    </div>
                                 </td>
                             </tr>
                             
@@ -129,11 +193,7 @@
             </div>
         @endforeach
 
-        <div class="mt-4">
-            <a href="{{ route('admin.academic-sessions.show', $academicSession) }}" class="btn btn-secondary">
-                <i class="bi bi-arrow-left"></i> Back to Academic Session
-            </a>
-        </div>
+
 
 {{-- Modals are included individually for each mapping --}}
 

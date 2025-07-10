@@ -8,6 +8,10 @@ use App\Models\Programme;
 use App\Models\CourseUnitProgrammeMapping;
 use App\Models\User;
 use App\Models\Day;
+use App\Exports\ProgrammeScheduleExport;
+use App\Exports\ProgrammeSchedulePdfExport;
+use Maatwebsite\Excel\Facades\Excel;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -288,6 +292,40 @@ class ProgrammeSchedulingController extends Controller
     /**
      * Handle bulk scheduling from CSV upload
      */
+    /**
+     * Export programme schedule to different formats
+     */
+    public function exportSchedule(Request $request, AcademicSession $academicSession, Programme $programme)
+    {
+        $format = $request->query('format', 'pdf');
+        $baseFileName = str_replace(' ', '_', $programme->name) . '_Schedule_' . now()->format('Y-m-d');
+
+        $mappings = CourseUnitProgrammeMapping::with(['courseUnit', 'day', 'instructor', 'yearOfStudy', 'semester'])
+            ->where('programme_id', $programme->id)
+            ->where('academic_session_id', $academicSession->id)
+            ->orderBy('year_of_study_id')
+            ->orderBy('semester_id')
+            ->orderBy('day_id')
+            ->get()
+            ->groupBy(['year_of_study_id', 'semester_id']);
+
+        if ($format === 'excel') {
+            return Excel::download(
+                new ProgrammeScheduleExport($programme->id, $academicSession->id, $programme, $academicSession),
+                $baseFileName . '.xlsx'
+            );
+        }
+
+        // Default to PDF
+        $pdf = PDF::loadView('exports.programme-schedule-pdf', [
+            'mappings' => $mappings,
+            'programme' => $programme,
+            'academicSession' => $academicSession
+        ]);
+
+        return $pdf->download($baseFileName . '.pdf');
+    }
+
     public function bulkSchedule(Request $request, AcademicSession $academicSession, Programme $programme)
     {
         $request->validate([
@@ -461,9 +499,15 @@ class ProgrammeSchedulingController extends Controller
         }
         
         if (!empty($errors)) {
-            return back()->withErrors($errors)->with('error', 'Some errors occurred while processing the file. See details below.');
+            return redirect()->route('admin.academic-sessions.programmes.scheduling.show', [
+                'academicSession' => $academicSession->id,
+                'programme' => $programme->id
+            ])->withErrors($errors)->with('error', 'Some errors occurred while processing the file. See details below.');
         }
         
-        return back()->with('success', 'Bulk scheduling completed successfully. ' . count($schedules) . ' schedules were updated.');
+        return redirect()->route('admin.academic-sessions.programmes.scheduling.show', [
+            'academicSession' => $academicSession->id,
+            'programme' => $programme->id
+        ])->with('success', 'Bulk scheduling completed successfully. ' . count($schedules) . ' schedules were updated.');
     }
 }
