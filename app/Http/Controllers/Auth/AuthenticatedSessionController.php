@@ -28,7 +28,12 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerate();
 
-        return redirect()->intended(route('dashboard', absolute: false));
+        // Redirect to admin dashboard if user is admin, otherwise to timetable
+        if (auth()->user()->hasRole('admin')) {
+            return redirect()->intended(route('admin.dashboard'));
+        }
+        
+        return redirect()->intended(route('timetable.index'));
     }
 
     /**
@@ -42,6 +47,6 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerateToken();
 
-        return redirect()->route('timetable.index');
+        return redirect()->route('login');
     }
 }

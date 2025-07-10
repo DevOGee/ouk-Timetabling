@@ -31,7 +31,8 @@ class GoogleAuthController extends Controller
 
             Auth::login($user);
             
-            return redirect()->intended('dashboard');
+            // Always redirect to dashboard after Google login
+            return redirect()->intended('/dashboard');
             
         } catch (\Exception $e) {
             return redirect('/login')->with('error', 'Something went wrong with Google authentication');
