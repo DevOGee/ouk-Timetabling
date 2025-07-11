@@ -29,31 +29,39 @@
                             ->where('academic_session_id', $academicSessionId)
                             ->get();
                             
-                        $total = $mappings->count();
-                        $completed = 0;
-                        $inProgress = 0;
+                        $totalMappings = $mappings->count();
+                        $totalPossibleFields = $totalMappings * 2; // user_id and day_id for each mapping
+                        $filledFields = 0;
+                        $completedMappings = 0;
                         
                         foreach ($mappings as $mapping) {
-                            $hasMorning = $mapping->morning_start_time !== null && $mapping->morning_duration !== null;
-                            $hasEvening = $mapping->evening_start_time !== null && $mapping->evening_duration !== null;
+                            // Count filled fields
+                            if ($mapping->user_id !== null) $filledFields++;
+                            if ($mapping->day_id !== null) $filledFields++;
                             
-                            if ($hasMorning || $hasEvening) {
-                                $completed++;
-                            } elseif ($mapping->day_id !== null || $mapping->user_id !== null) {
-                                $inProgress++;
+                            // Count completed mappings (both fields filled)
+                            if ($mapping->user_id !== null && $mapping->day_id !== null) {
+                                $completedMappings++;
                             }
                         }
                         
-                        $notStarted = $total - $completed - $inProgress;
-                        $progress = $total > 0 ? round(($completed / $total) * 100) : 0;
+                        // Calculate progress based on filled fields
+                        $progress = $totalPossibleFields > 0 
+                            ? round(($filledFields / $totalPossibleFields) * 100) 
+                            : 0;
+                            
+                        // For backward compatibility with the view
+                        $completed = $completedMappings;
+                        $inProgress = $filledFields - ($completedMappings * 2); // Partially filled mappings
+                        $notStarted = $totalMappings - $completedMappings - ceil($inProgress / 2);
                         
-                        if ($total === 0) {
+                        if ($totalMappings === 0) {
                             $status = 'No Mappings';
                             $statusClass = 'secondary';
-                        } elseif ($completed === $total) {
+                        } elseif ($filledFields === $totalPossibleFields) {
                             $status = 'Done';
                             $statusClass = 'success';
-                        } elseif ($completed > 0 || $inProgress > 0) {
+                        } elseif ($filledFields > 0) {
                             $status = 'In Progress';
                             $statusClass = 'warning';
                         } else {
@@ -64,7 +72,7 @@
                     <tr>
                         <td>{{ $programme->id }}</td>
                         <td>{{ $programme->name }}</td>
-                        <td>{{ $total }}</td>
+                        <td>{{ $totalMappings }}</td>
                         <td class="table-success">{{ $completed }}</td>
                         <td class="table-warning">{{ $inProgress }}</td>
                         <td class="table-secondary">{{ $notStarted }}</td>

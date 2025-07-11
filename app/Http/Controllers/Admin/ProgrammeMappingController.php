@@ -333,35 +333,87 @@ class ProgrammeMappingController extends Controller
     }
 
     /**
-     * Save the course unit mappings for a programme in an academic session.
+     * Add a course unit to a programme in an academic session.
      */
-    public function storeCourseUnits(Request $request, AcademicSession $academicSession, Programme $programme)
+    public function addCourseUnit(Request $request, AcademicSession $academicSession, Programme $programme)
     {
         $request->validate([
-            'mappings' => 'required|array',
-            'mappings.*.course_unit_id' => 'required|exists:course_units,id',
-            'mappings.*.year_of_study_id' => 'required|exists:years_of_study,id',
-            'mappings.*.semester_id' => 'required|exists:semesters,id'
+            'course_unit_id' => 'required|exists:course_units,id',
+            'year_of_study_id' => 'required|exists:years_of_study,id',
+            'semester_id' => 'required|exists:semesters,id'
         ]);
 
-        DB::transaction(function () use ($academicSession, $programme, $request) {
-            // Delete existing mappings
-            $programme->sessionMappings($academicSession->id)->delete();
-            
-            // Add new mappings
-            foreach ($request->mappings as $mapping) {
-                $programme->courseUnitMappings()->create([
+        try {
+            // Check if this course unit is already mapped to this programme in this session
+            $existingMapping = $programme->sessionMappings($academicSession->id)
+                ->where('course_unit_id', $request->course_unit_id)
+                ->first();
+
+            if ($existingMapping) {
+                // Update existing mapping
+                $existingMapping->update([
+                    'year_of_study_id' => $request->year_of_study_id,
+                    'semester_id' => $request->semester_id,
+                    'updated_at' => now()
+                ]);
+                $message = 'Course unit mapping updated successfully';
+            } else {
+                // Create new mapping
+                $mapping = $programme->courseUnitMappings()->create([
                     'academic_session_id' => $academicSession->id,
-                    'course_unit_id' => $mapping['course_unit_id'],
-                    'year_of_study_id' => $mapping['year_of_study_id'],
-                    'semester_id' => $mapping['semester_id']
+                    'course_unit_id' => $request->course_unit_id,
+                    'year_of_study_id' => $request->year_of_study_id,
+                    'semester_id' => $request->semester_id
+                ]);
+                $message = 'Course unit added successfully';
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => $message,
+                'course_unit' => [
+                    'id' => $request->course_unit_id,
+                    'year_of_study_id' => $request->year_of_study_id,
+                    'semester_id' => $request->semester_id
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to add course unit: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Remove a course unit from a programme in an academic session.
+     */
+    public function removeCourseUnit(AcademicSession $academicSession, Programme $programme, $courseUnitId)
+    {
+        try {
+            $deleted = $programme->sessionMappings($academicSession->id)
+                ->where('course_unit_id', $courseUnitId)
+                ->delete();
+
+            if ($deleted) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Course unit removed successfully'
                 ]);
             }
-        });
 
-        return redirect()
-            ->route('admin.academic-sessions.show', $academicSession)
-            ->with('success', 'Course unit mappings updated successfully');
+            return response()->json([
+                'success' => false,
+                'message' => 'Course unit mapping not found'
+            ], 404);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to remove course unit: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
     /**

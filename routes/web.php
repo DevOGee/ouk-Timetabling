@@ -235,8 +235,10 @@ Route::prefix('admin')->middleware(['auth'])->group(function () {
         Route::prefix('programmes/{programme}')->name('programmes.')->group(function () {
             Route::get('map-course-units', [\App\Http\Controllers\Admin\ProgrammeMappingController::class, 'mapCourseUnits'])
                 ->name('map-course-units');
-            Route::post('course-units', [\App\Http\Controllers\Admin\ProgrammeMappingController::class, 'storeCourseUnits'])
-                ->name('course-units.store');
+            Route::post('course-units', [\App\Http\Controllers\Admin\ProgrammeMappingController::class, 'addCourseUnit'])
+                ->name('course-units.add');
+            Route::delete('course-units/{courseUnit}', [\App\Http\Controllers\Admin\ProgrammeMappingController::class, 'removeCourseUnit'])
+                ->name('course-units.remove');
             Route::delete('detach', [\App\Http\Controllers\Admin\ProgrammeMappingController::class, 'detach'])
                 ->name('detach');
         });

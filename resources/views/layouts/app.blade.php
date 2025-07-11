@@ -704,8 +704,8 @@
             transition: all 0.2s ease;
             text-align: left;
             display: flex;
-            flex-direction: column;
-            align-items: flex-start;
+            align-items: center;
+            gap: 8px;
         }
         
         .active-session-badge:hover {

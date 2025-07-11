@@ -1,32 +1,31 @@
 @php
+    // Make sure $mapping is not null
     $mapping = $mapping ?? null;
-    $index = $index ?? 0;
-    $isNew = $mapping === null;
-    $showYearSemester = $showYearSemester ?? true;
     
-    $courseUnit = $mapping ? $mapping->courseUnit : null;
-    $yearOfStudy = $mapping ? $mapping->yearOfStudy : null;
-    $semester = $mapping ? $mapping->semester : null;
+    // Get related models
+    $courseUnit = $mapping->courseUnit ?? null;
+    $yearOfStudy = $mapping->yearOfStudy ?? null;
+    $semester = $mapping->semester ?? null;
     
+    // Get IDs
     $courseUnitId = $courseUnit->id ?? '';
     $yearOfStudyId = $yearOfStudy->id ?? '';
     $semesterId = $semester->id ?? '';
     
-    $courseUnitName = $courseUnit ? $courseUnit->name : '';
+    // Get display values
+    $courseUnitName = $courseUnit->name ?? '';
     $courseUnitCode = $courseUnit->code ?? '';
     $yearName = $yearOfStudy->name ?? '';
     $semesterName = $semester->name ?? '';
     
-    // Generate a unique identifier for this row
+    // Generate a unique row ID
     $rowId = 'mapping-' . ($mapping->id ?? 'new-' . uniqid());
+    
+    // Check if year/semester should be shown (default to true if not set)
+    $showYearSemester = $showYearSemester ?? true;
 @endphp
 
-<tr id="mapping-{{ $index }}" class="mapping-row" data-course-id="{{ $courseUnitId }}">
-    @if($showYearSemester)
-        <td class="course-year">{{ $yearName }}</td>
-        <td class="course-semester">{{ $semesterName }}</td>
-    @endif
-    
+<tr id="{{ $rowId }}" class="mapping-row" data-course-id="{{ $courseUnitId }}">
     <td class="course-unit-code fw-bold">
         {{ $courseUnitCode }}
     </td>
@@ -38,11 +37,5 @@
         <button type="button" class="btn btn-sm btn-outline-danger remove-mapping" data-bs-toggle="tooltip" title="Remove">
             <i class="bi bi-trash"></i>
         </button>
-        <input type="hidden" name="mappings[{{ $index }}][course_unit_id]" class="course-unit-id" value="{{ $courseUnitId }}">
-        <input type="hidden" name="mappings[{{ $index }}][year_of_study_id]" class="year-id" value="{{ $yearOfStudyId }}">
-        <input type="hidden" name="mappings[{{ $index }}][semester_id]" class="semester-id" value="{{ $semesterId }}">
-        @if(!$isNew && isset($mapping->id))
-            <input type="hidden" name="mappings[{{ $index }}][id]" value="{{ $mapping->id }}">
-        @endif
     </td>
 </tr>
