@@ -52,13 +52,15 @@ Auth::routes(['verify' => true]);
 Route::get('/login/google', [\App\Http\Controllers\Auth\GoogleAuthController::class, 'redirectToGoogle'])->name('login.google');
 Route::get('/login/google/callback', [\App\Http\Controllers\Auth\GoogleAuthController::class, 'handleGoogleCallback']);
 
+// Welcome page route (root URL)
 Route::get('/', function () {
-    return redirect()->route('timetable.index');
-});
-
-// Welcome page route
-Route::get('/welcome', function () {
-    return view('welcome');
+    return view('welcome', [
+        'programmes' => \App\Models\Programme::all(),
+        'courseUnits' => \App\Models\CourseUnit::all(),
+        'instructors' => \App\Models\User::role('instructor')->get(),
+        'schools' => \App\Models\School::all(),
+        'levels' => \App\Models\YearOfStudy::all()
+    ]);
 })->name('welcome');
 
 // Main dashboard route
