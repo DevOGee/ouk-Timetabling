@@ -12,6 +12,12 @@ use Illuminate\View\View;
 class AuthenticatedSessionController extends Controller
 {
     /**
+     * Where to redirect users after login.
+     *
+     * @var string
+     */
+    protected $redirectTo = '/dashboard';
+    /**
      * Display the login view.
      */
     public function create(): View
@@ -28,8 +34,8 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerate();
 
-        // Use the intended URL or fallback to the default redirect path
-        return redirect()->intended($this->redirectPath());
+        // Redirect to the intended URL or the default path
+        return redirect()->intended($this->redirectTo);
     }
 
     /**
