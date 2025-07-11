@@ -217,6 +217,10 @@ Route::prefix('admin')->middleware(['auth'])->group(function () {
         ]
     ]);
     
+    // Route for copying course unit mappings from another session
+    Route::post('academic-sessions/{academicSession}/copy-mappings', [\App\Http\Controllers\Admin\AcademicSessionController::class, 'copyMappings'])
+        ->name('admin.academic-sessions.copy-mappings');
+    
     Route::prefix('academic-sessions/{academicSession}')->name('admin.academic-sessions.')->group(function () {
         Route::get('select-programmes', [\App\Http\Controllers\Admin\ProgrammeMappingController::class, 'selectProgrammes'])
             ->name('select-programmes');

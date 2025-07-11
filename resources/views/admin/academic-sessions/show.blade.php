@@ -55,7 +55,11 @@
 
                     <div class="mt-4">
                         <h5>Quick Actions</h5>
-                        <div class="d-flex gap-2">
+                        <div class="d-flex gap-2 flex-wrap">
+                            <button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#copyFromPreviousSessionModal">
+                                <i class="bi bi-files"></i> Use Previous Session
+                            </button>
+                            
                             @if(!$academicSession->is_current)
                                 <form action="{{ route('admin.academic-sessions.set-current', $academicSession) }}" method="POST">
                                     @csrf
@@ -116,28 +120,29 @@
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">Programmes</h5>
                     <div class="d-flex align-items-center">
-                        <!-- School Filter Dropdown -->
-                        @if(isset($schools) && $schools->count() > 0)
-                            <div class="me-3">
-                                <label for="schoolFilter" class="form-label mb-0 me-2">Filter by School:</label>
-                                <select id="schoolFilter" class="form-select form-select-sm" style="width: auto; display: inline-block;">
-                                    <option value="all" {{ !request()->has('school_id') ? 'selected' : '' }}>All Schools</option>
-                                    @foreach($schools as $school)
-                                        <option value="{{ $school->id }}" {{ request('school_id') == $school->id ? 'selected' : '' }}>
-                                            {{ $school->name }}
-                                        </option>
-                                    @endforeach
-                                </select>
+                        <div class="d-flex align-items-center">
+                            @if(isset($schools) && $schools->count() > 0)
+                                <div class="me-3">
+                                    <label for="schoolFilter" class="form-label mb-0 me-2">Filter by School:</label>
+                                    <select id="schoolFilter" class="form-select form-select-sm" style="width: auto; display: inline-block;">
+                                        <option value="all" {{ !request()->has('school_id') ? 'selected' : '' }}>All Schools</option>
+                                        @foreach($schools as $school)
+                                            <option value="{{ $school->id }}" {{ request('school_id') == $school->id ? 'selected' : '' }}>
+                                                {{ $school->name }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                            @endif
+                            
+                            <div class="d-flex gap-2">
+                                <a href="{{ route('admin.academic-sessions.select-programmes', $academicSession) }}" class="btn btn-primary btn-sm">
+                                    <i class="bi bi-plus-lg"></i> Add Programmes
+                                </a>
+                                <a href="{{ route('admin.programmes.create') }}" class="btn btn-outline-secondary btn-sm">
+                                    <i class="bi bi-plus-circle"></i> New Programme
+                                </a>
                             </div>
-                        @endif
-                        
-                        <div>
-                            <a href="{{ route('admin.academic-sessions.select-programmes', $academicSession) }}" class="btn btn-sm btn-primary me-2">
-                                <i class="bi bi-plus"></i> Add/Manage Programmes
-                            </a>
-                            <a href="{{ route('admin.programmes.create') }}" class="btn btn-sm btn-outline-secondary">
-                                <i class="bi bi-plus-circle"></i> New Programme
-                            </a>
                         </div>
                     </div>
                 </div>
@@ -215,6 +220,37 @@
         </div>
     </div>
 </div>
+<!-- Copy From Previous Session Modal -->
+<div class="modal fade" id="copyFromPreviousSessionModal" tabindex="-1" aria-labelledby="copyFromPreviousSessionModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="copyFromPreviousSessionModalLabel">Copy From Previous Session</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="copyFromPreviousSessionForm" action="{{ route('admin.academic-sessions.copy-mappings', $academicSession) }}" method="POST">
+                @csrf
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="source_session_id" class="form-label">Select Source Session</label>
+                        <select class="form-select" id="source_session_id" name="source_session_id" required>
+                            <option value="">-- Select a session --</option>
+                            @foreach($otherSessions as $session)
+                                <option value="{{ $session->id }}">{{ $session->name }}</option>
+                            @endforeach
+                        </select>
+                        <div class="form-text">This will copy all programme mappings from the selected session to the current session.</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Copy Mappings</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function() {

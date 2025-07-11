@@ -67,6 +67,11 @@ class AcademicSessionController extends Controller
                 $q->where('academic_session_id', $academicSession->id);
             });
         })->orderBy('name')->get();
+        
+        // Get all other academic sessions (excluding the current one)
+        $otherSessions = AcademicSession::where('id', '!=', $academicSession->id)
+            ->orderBy('start_date', 'desc')
+            ->get();
 
         // Get the first school ID for default selection
         $firstSchoolId = $schools->first() ? $schools->first()->id : null;
@@ -211,7 +216,8 @@ class AcademicSessionController extends Controller
             'programmesWithTimetable' => $programmesWithTimetable,
             'programmesForTimetable' => $programmesForTimetable,
             'schools' => $schools,
-            'selectedSchool' => $firstSchoolId
+            'selectedSchool' => $firstSchoolId,
+            'otherSessions' => $otherSessions
         ]);
     }
     
@@ -250,6 +256,224 @@ class AcademicSessionController extends Controller
             'label' => 'Draft',
             'class' => 'warning'
         ];
+    }
+
+    /**
+     * Copy programme and timetable data from one academic session to another
+     */
+    public function copyMappings(Request $request, AcademicSession $academicSession)
+    {
+        \Log::info('Starting copyMappings', [
+            'target_session_id' => $academicSession->id,
+            'source_session_id' => $request->input('source_session_id'),
+            'all_input' => $request->all()
+        ]);
+
+        $request->validate([
+            'source_session_id' => ['required', 'exists:academic_sessions,id', 
+                function ($attribute, $value, $fail) use ($academicSession) {
+                    if ($value == $academicSession->id) {
+                        $fail('Source session cannot be the same as the target session.');
+                    }
+                }
+            ]
+        ]);
+
+        $sourceSessionId = $request->input('source_session_id');
+        
+        // Begin database transaction
+        DB::beginTransaction();
+        
+        try {
+            $now = now();
+            
+            // 1. Copy programme mappings (academic_session_programme)
+            \Log::info('Fetching source programme mappings', ['source_session_id' => $sourceSessionId]);
+            
+            $sourceProgrammeMappings = DB::table('academic_session_programme')
+                ->where('academic_session_id', $sourceSessionId)
+                ->get();
+                
+            \Log::info('Found source programme mappings', ['count' => $sourceProgrammeMappings->count()]);
+                
+            $programmeMappingsToInsert = [];
+            $skippedProgrammeMappings = 0;
+            
+            foreach ($sourceProgrammeMappings as $mapping) {
+                // Check if this mapping already exists in the target session
+                $exists = DB::table('academic_session_programme')
+                    ->where('academic_session_id', $academicSession->id)
+                    ->where('programme_id', $mapping->programme_id)
+                    ->exists();
+                    
+                if (!$exists) {
+                    $programmeMappingsToInsert[] = [
+                        'academic_session_id' => $academicSession->id,
+                        'programme_id' => $mapping->programme_id,
+                        'created_at' => $now,
+                        'updated_at' => $now
+                    ];
+                } else {
+                    $skippedProgrammeMappings++;
+                }
+            }
+            
+            \Log::info('Programme mappings to insert', [
+                'to_insert' => count($programmeMappingsToInsert),
+                'skipped' => $skippedProgrammeMappings
+            ]);
+            
+            // Insert new programme mappings in bulk
+            if (!empty($programmeMappingsToInsert)) {
+                $inserted = DB::table('academic_session_programme')->insert($programmeMappingsToInsert);
+                \Log::info('Inserted programme mappings', ['success' => $inserted]);
+            }
+            
+            // 2. Copy programme timetables (programme_timetable)
+            \Log::info('Fetching source timetables', ['source_session_id' => $sourceSessionId]);
+            
+            $sourceTimetables = DB::table('programme_timetable')
+                ->where('academic_session_id', $sourceSessionId)
+                ->get();
+                
+            \Log::info('Found source timetables', ['count' => $sourceTimetables->count()]);
+                
+            $timetablesToInsert = [];
+            $skippedTimetables = 0;
+            $programmeNotInSession = 0;
+            
+            foreach ($sourceTimetables as $timetable) {
+                // Only copy if the programme is in the target session
+                $programmeInSession = DB::table('academic_session_programme')
+                    ->where('academic_session_id', $academicSession->id)
+                    ->where('programme_id', $timetable->programme_id)
+                    ->exists();
+                    
+                if ($programmeInSession) {
+                    // Check if this timetable already exists in the target session
+                    $exists = DB::table('programme_timetable')
+                        ->where('academic_session_id', $academicSession->id)
+                        ->where('programme_id', $timetable->programme_id)
+                        ->exists();
+                        
+                    if (!$exists) {
+                        $timetablesToInsert[] = [
+                            'academic_session_id' => $academicSession->id,
+                            'programme_id' => $timetable->programme_id,
+                            'status' => $timetable->status ?? 'active',
+                            'created_at' => $now,
+                            'updated_at' => $now
+                        ];
+                    } else {
+                        $skippedTimetables++;
+                    }
+                } else {
+                    $programmeNotInSession++;
+                }
+            }
+            
+            \Log::info('Timetables processing summary', [
+                'to_insert' => count($timetablesToInsert),
+                'skipped_duplicates' => $skippedTimetables,
+                'skipped_programme_not_in_session' => $programmeNotInSession
+            ]);
+            
+            // Insert new timetables in bulk
+            if (!empty($timetablesToInsert)) {
+                $inserted = DB::table('programme_timetable')->insert($timetablesToInsert);
+                \Log::info('Inserted timetables', ['success' => $inserted]);
+            }
+            
+            // 3. Copy course unit programme mappings (this contains the actual timetable data)
+            \Log::info('Fetching source course unit programme mappings', ['source_session_id' => $sourceSessionId]);
+            
+            $sourceCourseUnitMappings = DB::table('course_unit_programme_mappings')
+                ->where('academic_session_id', $sourceSessionId)
+                ->get();
+                
+            \Log::info('Found source course unit programme mappings', ['count' => $sourceCourseUnitMappings->count()]);
+                
+            $mappingsToInsert = [];
+            $skippedMappings = 0;
+            $programmeNotInSession = 0;
+            
+            foreach ($sourceCourseUnitMappings as $mapping) {
+                // Only copy if the programme is in the target session
+                $programmeInSession = DB::table('academic_session_programme')
+                    ->where('academic_session_id', $academicSession->id)
+                    ->where('programme_id', $mapping->programme_id)
+                    ->exists();
+                    
+                if ($programmeInSession) {
+                    // Check if this mapping already exists in the target session
+                    $exists = DB::table('course_unit_programme_mappings')
+                        ->where('academic_session_id', $academicSession->id)
+                        ->where('programme_id', $mapping->programme_id)
+                        ->where('course_unit_id', $mapping->course_unit_id)
+                        ->where('year_of_study_id', $mapping->year_of_study_id)
+                        ->where('semester_id', $mapping->semester_id)
+                        ->exists();
+                        
+                    if (!$exists) {
+                        $mappingsToInsert[] = [
+                            'academic_session_id' => $academicSession->id,
+                            'programme_id' => $mapping->programme_id,
+                            'course_unit_id' => $mapping->course_unit_id,
+                            'year_of_study_id' => $mapping->year_of_study_id,
+                            'semester_id' => $mapping->semester_id,
+                            'user_id' => $mapping->user_id, // Instructor
+                            'day_id' => $mapping->day_id,
+                            'morning_start_time' => $mapping->morning_start_time,
+                            'morning_duration' => $mapping->morning_duration,
+                            'evening_start_time' => $mapping->evening_start_time,
+                            'evening_duration' => $mapping->evening_duration,
+                            'created_by' => auth()->id(),
+                            'created_at' => $now,
+                            'updated_at' => $now
+                        ];
+                    } else {
+                        $skippedMappings++;
+                    }
+                } else {
+                    $programmeNotInSession++;
+                }
+            }
+            
+            // Insert new course unit programme mappings in bulk
+            if (!empty($mappingsToInsert)) {
+                $inserted = DB::table('course_unit_programme_mappings')->insert($mappingsToInsert);
+                \Log::info('Inserted course unit programme mappings', [
+                    'success' => $inserted,
+                    'inserted_count' => count($mappingsToInsert)
+                ]);
+            }
+            
+            DB::commit();
+            
+            \Log::info('Successfully copied all data', [
+                'target_session_id' => $academicSession->id,
+                'source_session_id' => $sourceSessionId,
+                'programmes_copied' => count($programmeMappingsToInsert),
+                'timetables_copied' => count($timetablesToInsert),
+                'course_unit_mappings_copied' => count($mappingsToInsert)
+            ]);
+            
+            return redirect()
+                ->back()
+                ->with('success', 'Programme mappings, timetables, and course unit mappings copied successfully from the selected session.');
+                
+        } catch (\Exception $e) {
+            DB::rollBack();
+            $errorMessage = 'Error copying session data: ' . $e->getMessage();
+            \Log::error($errorMessage, [
+                'exception' => $e,
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return redirect()
+                ->back()
+                ->with('error', $errorMessage);
+        }
     }
 
     public function edit(AcademicSession $academicSession)
