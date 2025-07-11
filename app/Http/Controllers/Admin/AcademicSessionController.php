@@ -144,32 +144,50 @@ class AcademicSessionController extends Controller
             $tab = request('tab');
             
             if ($tab === 'timetables') {
+                $filteredProgrammes = $programmes;
+                
                 if (request()->has('school_id') && request('school_id') !== 'all') {
-                    $programmes = $programmes->filter(function($programme) {
-                        return $programme->school_id == request('school_id');
-                    });
+                    $schoolId = request('school_id');
+                    $filteredProgrammes = new \Illuminate\Pagination\LengthAwarePaginator(
+                        $programmes->filter(function($programme) use ($schoolId) {
+                            return $programme->school_id == $schoolId;
+                        }),
+                        $programmes->where('school_id', $schoolId)->count(),
+                        $programmes->perPage(),
+                        $programmes->currentPage(),
+                        ['path' => \Illuminate\Pagination\Paginator::resolveCurrentPath()]
+                    );
                 }
                 
                 return response()->json([
                     'html' => view('admin.academic-sessions.partials.timetables-table', [
-                        'programmes' => $programmes,
+                        'programmes' => $filteredProgrammes,
                         'academicSession' => $academicSession
                     ])->render(),
-                    'pagination' => (string) $programmes->links()
+                    'pagination' => (string) $filteredProgrammes->links()
                 ]);
             } else if ($tab === 'programmes') {
+                $filteredProgrammes = $programmes;
+                
                 if (request()->has('school_id') && request('school_id') !== 'all') {
-                    $programmes = $programmes->filter(function($programme) {
-                        return $programme->school_id == request('school_id');
-                    });
+                    $schoolId = request('school_id');
+                    $filteredProgrammes = new \Illuminate\Pagination\LengthAwarePaginator(
+                        $programmes->filter(function($programme) use ($schoolId) {
+                            return $programme->school_id == $schoolId;
+                        }),
+                        $programmes->where('school_id', $schoolId)->count(),
+                        $programmes->perPage(),
+                        $programmes->currentPage(),
+                        ['path' => \Illuminate\Pagination\Paginator::resolveCurrentPath()]
+                    );
                 }
                 
                 return response()->json([
                     'html' => view('admin.academic-sessions.partials.programmes-table', [
-                        'programmes' => $programmes,
+                        'programmes' => $filteredProgrammes,
                         'academicSession' => $academicSession
                     ])->render(),
-                    'pagination' => (string) $programmes->links()
+                    'pagination' => (string) $filteredProgrammes->links()
                 ]);
             }
         }
