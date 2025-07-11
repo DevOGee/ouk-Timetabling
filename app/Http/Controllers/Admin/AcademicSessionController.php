@@ -62,18 +62,19 @@ class AcademicSessionController extends Controller
     public function show(AcademicSession $academicSession)
     {
         // Get all schools that have programmes in this academic session
-        $schools = \App\Models\School::whereHas('programmes', function($query) use ($academicSession) {
+        $schools = School::with(['programmes' => function($query) use ($academicSession) {
             $query->whereHas('academicSessions', function($q) use ($academicSession) {
-                $q->where('academic_session_id', $academicSession->id);
+                $q->where('academic_sessions.id', $academicSession->id);
             });
-        })->orderBy('name')->get();
-        
-        // Get all other academic sessions (excluding the current one)
-        $otherSessions = AcademicSession::where('id', '!=', $academicSession->id)
-            ->orderBy('start_date', 'desc')
-            ->get();
+        }])->get();
 
-        // Get the first school ID for default selection
+        $otherSessions = AcademicSession::where('id', '!=', $academicSession->id)
+            ->orderBy('name', 'desc')
+            ->get();
+            
+        // Check if current session has any programmes
+        $hasProgrammes = $academicSession->programmes()->exists();
+
         $firstSchoolId = $schools->first() ? $schools->first()->id : null;
         
         // Get all programmes for this academic session with their school

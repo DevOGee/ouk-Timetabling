@@ -56,9 +56,11 @@
                     <div class="mt-4">
                         <h5>Quick Actions</h5>
                         <div class="d-flex gap-2 flex-wrap">
-                            <button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#copyFromPreviousSessionModal">
-                                <i class="bi bi-files"></i> Use Previous Session
-                            </button>
+                            @if(!$hasProgrammes && $otherSessions->isNotEmpty())
+                                <button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#copyFromPreviousSessionModal">
+                                    <i class="bi bi-files"></i> Use Previous Session
+                                </button>
+                            @endif
                             
                             @if(!$academicSession->is_current)
                                 <form action="{{ route('admin.academic-sessions.set-current', $academicSession) }}" method="POST">
