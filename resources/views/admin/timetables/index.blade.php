@@ -10,8 +10,22 @@
 @section('content')
 <div class="container-fluid">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1 class="h3 mb-0">Timetable Publication - {{ $currentSession ? $currentSession->name : 'No Active Session' }}</h1>
+        <h1 class="h3 mb-0">
+    @if($academicSession)
+        Timetable Publication - {{ $academicSession->name }}
+        <span class="badge bg-success">Active Session</span>
+    @else
+        Timetable Publication - No Active Session
+    @endif
+</h1>
     </div>
+    
+    @if(!$academicSession)
+        <div class="alert alert-warning">
+            <i class="bi bi-exclamation-triangle me-2"></i>
+            No active academic session found. Please set an academic session as active to view timetables.
+        </div>
+    @endif
 
     <div class="row">
         <!-- Programs List -->
@@ -33,7 +47,7 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                @if($currentSession)
+                                @if($academicSession)
                                     @forelse($programs as $program)
                                         @php
                                             // Get the timetable and mapping status for this program
@@ -41,7 +55,7 @@
                                             
                                             // Get mapping counts for this program in the current session
                                             $mappings = $program->courseUnitMappings()
-                                                ->where('academic_session_id', $currentSession->id)
+                                                ->where('academic_session_id', $academicSession->id)
                                                 ->get();
                                             
                                             // Count completed and in-progress mappings based on actual scheduled times
@@ -105,7 +119,7 @@
                                             </td>
                                             <td class="text-end">
                                                 @if($status === 'in_progress' && !$timetable)
-                                                    <a href="{{ route('admin.timetables.create', ['programme_id' => $program->id, 'academic_session_id' => $currentSession->id]) }}" class="btn btn-sm btn-primary">
+                                                    <a href="{{ route('admin.timetables.create', ['programme_id' => $program->id, 'academic_session_id' => $academicSession->id]) }}" class="btn btn-sm btn-primary">
                                                         <i class="bi bi-plus-circle"></i> Create Timetable
                                                     </a>
                                                 @else
@@ -127,7 +141,7 @@
                                                         @endif
                                                         
                                                         @if($timetable)
-                                                            <a href="/academic-sessions/{{ $currentSession->id }}/programmes/{{ $program->id }}/scheduling" class="btn btn-sm btn-outline-primary" title="Edit">
+                                                            <a href="/academic-sessions/{{ $academicSession->id }}/programmes/{{ $program->id }}/scheduling" class="btn btn-sm btn-outline-primary" title="Edit">
                                                                 <i class="bi bi-pencil"></i> Edit
                                                             </a>
                                                         @endif
@@ -142,7 +156,7 @@
                                                     <i class="bi bi-info-circle me-1"></i>
                                                     No programs are mapped to the current academic session.
                                                 </div>
-                                                <a href="{{ route('admin.academic-sessions.show', $currentSession) }}" class="btn btn-sm btn-outline-primary mt-2">
+                                                <a href="{{ route('admin.academic-sessions.show', $academicSession) }}" class="btn btn-sm btn-outline-primary mt-2">
                                                     <i class="bi bi-plus-circle me-1"></i> Map Programs to This Session
                                                 </a>
                                             </td>

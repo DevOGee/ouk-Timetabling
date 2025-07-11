@@ -14,12 +14,23 @@ class TimetableManagementController extends Controller
 {
     public function index()
     {
-        // Get the current academic session
-        $currentSession = AcademicSession::where('is_current', true)->first();
-        
-        // If no current session is set, fall back to the most recent one
-        if (!$currentSession) {
-            $currentSession = AcademicSession::orderBy('start_date', 'desc')->first();
+        // Get the active academic session
+        $academicSession = AcademicSession::where('status', 'active')
+            ->orderBy('start_date', 'desc')
+            ->first();
+            
+        if (!$academicSession) {
+            return view('admin.timetables.index', [
+                'programs' => collect(),
+                'academicSession' => null,
+                'chartData' => [
+                    'published' => 0,
+                    'pending' => 0,
+                    'not_assigned' => 0,
+                    'labels' => ['Published (0)', 'Pending (0)', 'Not Assigned (0)'],
+                    'colors' => ['#28a745', '#ffc107', '#dc3545']
+                ]
+            ]);
         }
         
         // Initialize chart data
@@ -33,13 +44,13 @@ class TimetableManagementController extends Controller
         
         $programs = collect();
         
-        if ($currentSession) {
+        if ($academicSession) {
             // Get all programs mapped to this session with their timetable status
-            $programs = Programme::with(['programmeTimetables' => function($query) use ($currentSession) {
-                $query->where('academic_session_id', $currentSession->id);
+            $programs = Programme::with(['programmeTimetables' => function($query) use ($academicSession) {
+                $query->where('academic_session_id', $academicSession->id);
             }])
-            ->whereHas('academicSessions', function($query) use ($currentSession) {
-                $query->where('academic_session_id', $currentSession->id);
+            ->whereHas('academicSessions', function($query) use ($academicSession) {
+                $query->where('academic_session_id', $academicSession->id);
             })
             ->orderBy('name')
             ->get();
@@ -78,7 +89,7 @@ class TimetableManagementController extends Controller
         
         return view('admin.timetables.index', [
             'programs' => $programs,
-            'currentSession' => $currentSession,
+            'academicSession' => $academicSession,
             'chartData' => $chartData
         ]);
     }
