@@ -89,6 +89,82 @@
         </div>
     </div>
 
+    <!-- Academic Session Status -->
+    <div class="row g-4 mb-4">
+        <!-- Active Academic Session -->
+        @php
+            $activeSession = $academicSessions->where('status', 'active')->first();
+            $currentSession = $academicSessions->where('is_current', true)->first();
+        @endphp
+        
+        @if($activeSession)
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white border-0 border-start border-success border-4 py-3">
+                    <h5 class="mb-0 fw-bold text-success">
+                        <i class="bi bi-broadcast me-2"></i>Active Academic Session
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="bg-success bg-opacity-10 p-3 rounded-circle me-4">
+                            <i class="bi bi-check-circle-fill text-success" style="font-size: 2rem;"></i>
+                        </div>
+                        <div>
+                            <h4 class="mb-1">{{ $activeSession->name }}</h4>
+                            <p class="text-muted mb-2">This is the live timetable session currently visible to students and staff.</p>
+                            <div class="d-flex align-items-center flex-wrap gap-2">
+                                <span class="badge bg-success bg-opacity-10 text-success me-2">
+                                    <i class="bi bi-calendar3 me-1"></i> 
+                                    {{ $activeSession->start_date->format('M d, Y') }} - {{ $activeSession->end_date->format('M d, Y') }}
+                                </span>
+                                <a href="{{ route('timetable.index', ['academic_session' => $activeSession->id]) }}" class="btn btn-sm btn-success mt-1">
+                                    <i class="bi bi-calendar-week me-1"></i> View Timetable
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        @endif
+
+        <!-- Selected/Current Academic Session -->
+        @if($currentSession)
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white border-0 border-start border-primary border-4 py-3">
+                    <h5 class="mb-0 fw-bold text-primary">
+                        <i class="bi bi-pencil-square me-2"></i>Selected Academic Session
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="bg-primary bg-opacity-10 p-3 rounded-circle me-4">
+                            <i class="bi bi-pencil-square text-primary" style="font-size: 2rem;"></i>
+                        </div>
+                        <div>
+                            <h4 class="mb-1">{{ $currentSession->name }}</h4>
+                            <p class="text-muted mb-2">You are currently viewing and editing this academic session.</p>
+                            <div class="d-flex">
+                                <span class="badge bg-primary bg-opacity-10 text-primary me-2">
+                                    <i class="bi bi-calendar3 me-1"></i> 
+                                    {{ $currentSession->start_date->format('M d, Y') }} - {{ $currentSession->end_date->format('M d, Y') }}
+                                </span>
+                                @if($activeSession && $currentSession->id === $activeSession->id)
+                                <span class="badge bg-success bg-opacity-10 text-success">
+                                    <i class="bi bi-check-circle me-1"></i> Active Session
+                                </span>
+                                @endif
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        @endif
+    </div>
+
     <!-- Stats Cards -->
     <div class="row g-4 mb-4">
         <!-- Academic Sessions Card -->
@@ -99,9 +175,6 @@
                         <div>
                             <h6 class="text-uppercase text-muted mb-2 small fw-bold">Academic Sessions</h6>
                             <h2 class="mb-0 fw-bold text-primary">{{ $academicSessions->count() }}</h2>
-                            <p class="text-muted small mb-0">
-                                {{ $academicSessions->where('is_current', true)->count() }} active
-                            </p>
                         </div>
                         <div class="bg-primary bg-opacity-10 p-3 rounded-circle">
                             <i class="bi bi-calendar-week text-primary stat-icon"></i>
@@ -119,9 +192,6 @@
                         <div>
                             <h6 class="text-uppercase text-muted mb-2 small fw-bold">Programmes</h6>
                             <h2 class="mb-0 fw-bold text-success">{{ $programmes->count() }}</h2>
-                            <p class="text-muted small mb-0">
-                                {{ $programmes->unique('school_id')->count() }} departments
-                            </p>
                         </div>
                         <div class="bg-success bg-opacity-10 p-3 rounded-circle">
                             <i class="bi bi-journal-bookmark text-success stat-icon"></i>
@@ -139,9 +209,6 @@
                         <div>
                             <h6 class="text-uppercase text-muted mb-2 small fw-bold">Instructors</h6>
                             <h2 class="mb-0 fw-bold text-info">{{ $instructors->count() }}</h2>
-                            <p class="text-muted small mb-0">
-                                {{ $instructors->where('is_active', true)->count() }} active
-                            </p>
                         </div>
                         <div class="bg-info bg-opacity-10 p-3 rounded-circle">
                             <i class="bi bi-people text-info stat-icon"></i>
@@ -159,9 +226,6 @@
                         <div>
                             <h6 class="text-uppercase text-muted mb-2 small fw-bold">Course Units</h6>
                             <h2 class="mb-0 fw-bold text-warning">{{ $courseUnits->count() }}</h2>
-                            <p class="text-muted small mb-0">
-                                {{ $courseUnits->unique('code')->count() }} unique codes
-                            </p>
                         </div>
                         <div class="bg-warning bg-opacity-10 p-3 rounded-circle">
                             <i class="bi bi-book text-warning stat-icon"></i>
