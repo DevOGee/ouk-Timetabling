@@ -219,7 +219,8 @@ class AcademicSessionController extends Controller
             'programmesForTimetable' => $programmesForTimetable,
             'schools' => $schools,
             'selectedSchool' => $firstSchoolId,
-            'otherSessions' => $otherSessions
+            'otherSessions' => $otherSessions,
+            'hasProgrammes' => $hasProgrammes
         ]);
     }
     
