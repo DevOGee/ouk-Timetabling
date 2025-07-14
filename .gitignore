@@ -1,0 +1,50 @@
+# Environment files
+.env
+.env.backup
+.phpunit.result.cache
+
+# Laravel specific
+bootstrap/cache/*
+storage/framework/cache/*
+storage/framework/sessions/*
+storage/framework/views/*
+storage/logs/*
+storage/debugbar/*
+!storage/framework/cache/.gitignore
+!storage/framework/sessions/.gitignore
+!storage/framework/views/.gitignore
+!storage/logs/.gitignore
+!storage/app/.gitignore
+!storage/app/public/.gitignore
+
+# Dependencies
+/vendor/
+/node_modules/
+
+# Build files
+/public/build/
+/public/hot
+/public/storage
+
+# Testing
+/coverage
+.phpunit.result.cache
+
+# IDE specific files
+.idea
+.vscode
+*.sublime-workspace
+*.sublime-project
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Debug
+.phpunit.cache
+.phpunit.result.cache
