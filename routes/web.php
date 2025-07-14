@@ -45,6 +45,12 @@ Route::get('/test-email', function () {
     }
 });
 
+// Test bulk upload form - Remove this in production
+Route::get('/test-bulk-upload', function () {
+    $roles = \Spatie\Permission\Models\Role::all();
+    return view('admin.users.index', compact('roles'));
+})->middleware('auth');
+
 // Authentication Routes
 Auth::routes(['verify' => true]);
 
@@ -140,10 +146,19 @@ Route::controller(CourseUnitController::class)->group(function () {
 });
 Route::resource('course_units', CourseUnitController::class);
 
+use App\Http\Controllers\Admin\UserController;
+
 // Admin routes
 Route::prefix('admin')->middleware(['auth'])->group(function () {
     // Dashboard
     Route::get('dashboard', [DashboardController::class, 'index'])->name('admin.dashboard');
+    
+    // User Management
+    Route::prefix('users')->name('admin.users.')->group(function () {
+        Route::get('/', [UserController::class, 'index'])->name('index');
+        Route::post('/import', [UserController::class, 'import'])->name('import');
+        // Add other user management routes as needed
+    });
     
     // Timetable Management
     Route::prefix('timetables')->name('admin.timetables.')->group(function () {

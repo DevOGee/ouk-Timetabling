@@ -6,9 +6,14 @@
 <div class="container-fluid px-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2 class="mb-0">User Management</h2>
-        <a href="{{ route('admin.users.create') }}" class="btn btn-primary">
-            <i class="bi bi-plus-circle me-1"></i> Add New User
-        </a>
+        <div class="d-flex gap-2">
+            <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#bulkUploadModal">
+                <i class="bi bi-upload me-1"></i> Bulk Upload Users
+            </button>
+            <a href="{{ route('admin.users.create') }}" class="btn btn-primary">
+                <i class="bi bi-plus-circle me-1"></i> Add New User
+            </a>
+        </div>
     </div>
 
     <!-- Filters -->
@@ -163,8 +168,40 @@
 
                 <!-- Pagination -->
                 @if($users->hasPages())
-                    <div class="card-footer bg-white border-top-0">
-                        {{ $users->withQueryString()->links() }}
+                    <div class="card-footer bg-white border-top-0 d-flex justify-content-center">
+                        <nav>
+                            <ul class="pagination mb-0">
+                                {{-- Previous Page Link --}}
+                                @if ($users->onFirstPage())
+                                    <li class="page-item disabled">
+                                        <span class="page-link">« Prev</span>
+                                    </li>
+                                @else
+                                    <li class="page-item">
+                                        <a class="page-link" href="{{ $users->previousPageUrl() }}&{{ http_build_query(request()->except('page')) }}" rel="prev">« Prev</a>
+                                    </li>
+                                @endif
+
+                                {{-- Page Number Links --}}
+                                @for ($page = 1; $page <= $users->lastPage(); $page++)
+                                    <li class="page-item {{ $page == $users->currentPage() ? 'active' : '' }}">
+                                        <a class="page-link"
+                                            href="{{ $users->url($page) }}&{{ http_build_query(request()->except('page')) }}">{{ $page }}</a>
+                                    </li>
+                                @endfor
+
+                                {{-- Next Page Link --}}
+                                @if ($users->hasMorePages())
+                                    <li class="page-item">
+                                        <a class="page-link" href="{{ $users->nextPageUrl() }}&{{ http_build_query(request()->except('page')) }}" rel="next">Next »</a>
+                                    </li>
+                                @else
+                                    <li class="page-item disabled">
+                                        <span class="page-link">Next »</span>
+                                    </li>
+                                @endif
+                            </ul>
+                        </nav>
                     </div>
                 @endif
             @endif
@@ -194,6 +231,43 @@
     .table td {
         vertical-align: middle;
     }
+    
+    /* Pagination Styles */
+    .pagination {
+        display: flex;
+        padding: 0;
+        list-style: none;
+        margin: 0;
+    }
+
+    .pagination .page-item {
+        margin: 0 3px;
+    }
+
+    .pagination .page-item .page-link {
+        color: #037b90;
+        border-radius: 5px;
+        border: 1px solid #037b90;
+        padding: 8px 12px;
+        transition: all 0.3s;
+        text-decoration: none;
+    }
+
+    .pagination .page-item.active .page-link {
+        background-color: #037b90;
+        color: white;
+        border: 1px solid #037b90;
+    }
+
+    .pagination .page-item.disabled .page-link {
+        color: #aaa;
+        cursor: not-allowed;
+        border-color: #dee2e6;
+    }
+    
+    .pagination .page-link:hover:not(.disabled) {
+        background-color: #f8f9fa;
+    }
 </style>
 @endpush
 
@@ -208,4 +282,123 @@
     });
 </script>
 @endpush
+
+<!-- Bulk Upload Modal -->
+<div class="modal fade" id="bulkUploadModal" tabindex="-1" aria-labelledby="bulkUploadModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="bulkUploadModalLabel">Bulk Upload Users</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="{{ route('admin.users.import') }}" method="POST" enctype="multipart/form-data" id="bulkUploadForm">
+                @csrf
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="role" class="form-label">Assign Role</label>
+                        <select class="form-select" id="role" name="role" required>
+                            <option value="">Select Role</option>
+                            @foreach($roles as $role)
+                                <option value="{{ $role->name }}">{{ ucfirst($role->name) }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="csv_file" class="form-label">CSV File</label>
+                        <input type="file" class="form-control" id="csv_file" name="csv_file" accept=".csv" required>
+                        <div class="form-text">
+                            Download the <a href="{{ asset('templates/users_import_template.csv') }}" download>CSV template</a> for the correct format.
+                            Required columns: name, email, title
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" class="form-check-input" id="send_welcome_email" name="send_welcome_email">
+                        <label class="form-check-label" for="send_welcome_email">Send welcome email to users</label>
+                    </div>
+                    
+                    <div id="preview" class="d-none">
+                        <h6>Preview (first 5 rows)</h6>
+                        <div class="table-responsive">
+                            <table class="table table-sm table-bordered">
+                                <thead id="preview-head"></thead>
+                                <tbody id="preview-body"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="uploadBtn">Upload Users</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@push('scripts')
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const fileInput = document.getElementById('csv_file');
+        const preview = document.getElementById('preview');
+        const previewHead = document.getElementById('preview-head');
+        const previewBody = document.getElementById('preview-body');
+        const form = document.getElementById('bulkUploadForm');
+        
+        fileInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const text = e.target.result;
+                const rows = text.split('\n').filter(row => row.trim() !== '');
+                
+                if (rows.length < 2) {
+                    alert('CSV file must have at least one data row');
+                    return;
+                }
+                
+                // Parse headers
+                const headers = rows[0].split(',').map(h => h.trim().replace(/^"|"$/g, ''));
+                
+                // Display headers
+                previewHead.innerHTML = '<tr>' + headers.map(h => `<th>${h}</th>`).join('') + '</tr>';
+                
+                // Display first 5 rows
+                const rowCount = Math.min(5, rows.length - 1);
+                let bodyHtml = '';
+                
+                for (let i = 1; i <= rowCount; i++) {
+                    const cells = rows[i].split(',').map(c => c.trim().replace(/^"|"$/g, ''));
+                    bodyHtml += '<tr>' + cells.map(c => `<td>${c}</td>`).join('') + '</tr>';
+                }
+                
+                previewBody.innerHTML = bodyHtml;
+                preview.classList.remove('d-none');
+            };
+            
+            reader.readAsText(file);
+        });
+        
+        // Form submission handling
+        form.addEventListener('submit', function(e) {
+            const file = fileInput.files[0];
+            if (!file) {
+                e.preventDefault();
+                alert('Please select a CSV file');
+                return false;
+            }
+            
+            const uploadBtn = document.getElementById('uploadBtn');
+            uploadBtn.disabled = true;
+            uploadBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Uploading...';
+            
+            return true;
+        });
+    });
+</script>
+@endpush
+
 @endsection

@@ -77,8 +77,40 @@
     
     <!-- Pagination -->
     @if(method_exists($programmes, 'hasPages') && $programmes->hasPages())
-        <div class="pagination-container mt-3">
-            {{ $programmes->links() }}
+        <div class="mt-3 d-flex justify-content-center">
+            <nav>
+                <ul class="pagination mb-0">
+                    {{-- Previous Page Link --}}
+                    @if ($programmes->onFirstPage())
+                        <li class="page-item disabled">
+                            <span class="page-link">« Prev</span>
+                        </li>
+                    @else
+                        <li class="page-item">
+                            <a class="page-link" href="{{ $programmes->previousPageUrl() }}&{{ http_build_query(request()->except('page', '_token')) }}" rel="prev">« Prev</a>
+                        </li>
+                    @endif
+
+                    {{-- Page Number Links --}}
+                    @for ($page = 1; $page <= $programmes->lastPage(); $page++)
+                        <li class="page-item {{ $page == $programmes->currentPage() ? 'active' : '' }}">
+                            <a class="page-link"
+                                href="{{ $programmes->url($page) }}&{{ http_build_query(request()->except('page', '_token')) }}">{{ $page }}</a>
+                        </li>
+                    @endfor
+
+                    {{-- Next Page Link --}}
+                    @if ($programmes->hasMorePages())
+                        <li class="page-item">
+                            <a class="page-link" href="{{ $programmes->nextPageUrl() }}&{{ http_build_query(request()->except('page', '_token')) }}" rel="next">Next »</a>
+                        </li>
+                    @else
+                        <li class="page-item disabled">
+                            <span class="page-link">Next »</span>
+                        </li>
+                    @endif
+                </ul>
+            </nav>
         </div>
     @endif
 @else

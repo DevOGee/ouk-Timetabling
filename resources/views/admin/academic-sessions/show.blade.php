@@ -285,10 +285,11 @@ document.addEventListener('DOMContentLoaded', function() {
         url.searchParams.set('page', page);
         url.searchParams.set('tab', 'programmes');
         
-        if (schoolId && schoolId !== 'all') {
-            url.searchParams.set('school_id', schoolId);
-        } else if (schoolFilter && schoolFilter.value && schoolFilter.value !== 'all') {
-            url.searchParams.set('school_id', schoolFilter.value);
+        // Use provided schoolId or fall back to filter value
+        const effectiveSchoolId = schoolId || (schoolFilter && schoolFilter.value !== 'all' ? schoolFilter.value : null);
+        
+        if (effectiveSchoolId && effectiveSchoolId !== 'all') {
+            url.searchParams.set('school_id', effectiveSchoolId);
         } else {
             url.searchParams.delete('school_id');
         }
@@ -296,17 +297,18 @@ document.addEventListener('DOMContentLoaded', function() {
         // Update browser URL without reloading the page
         window.history.pushState({}, '', url);
         
-        // Prepare headers with CSRF token
-        const headers = new Headers({
-            'X-Requested-With': 'XMLHttpRequest',
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-            'Accept': 'application/json',
-            'Content-Type': 'application/json'
-        });
-
+        // Get CSRF token from meta tag
+        const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
+        
         // Make AJAX request with proper headers
-        fetch(`{{ route('admin.academic-sessions.show', $academicSession) }}?${url.searchParams.toString()}`, {
-            headers: headers
+        fetch(url, {
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRF-TOKEN': csrfToken,
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            },
+            credentials: 'same-origin'
         })
         .then(async response => {
             if (!response.ok) {
@@ -320,10 +322,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 programmesContainer.innerHTML = data.html;
                 programmesContainer.classList.remove('d-none');
                 
-                // Update pagination links if available
-                if (data.pagination) {
-                    updatePagination(data, 'programmes');
-                }
+                // Update pagination links with new styles
+                updatePaginationLinks('programmes');
             } else {
                 throw new Error('Invalid response format from server');
             }
@@ -353,14 +353,21 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Show loading indicator
         timetablesContainer.classList.add('d-none');
-        timetableLoadingIndicator.classList.remove('d-none');
+        if (timetableLoadingIndicator) {
+            timetableLoadingIndicator.classList.remove('d-none');
+        }
         
         // Build URL with query parameters
         const url = new URL(window.location);
         url.searchParams.set('page', page);
         url.searchParams.set('tab', 'timetables');
-        if (schoolId && schoolId !== 'all') {
-            url.searchParams.set('school_id', schoolId);
+        
+        // Use provided schoolId or fall back to filter value
+        const effectiveSchoolId = schoolId || (timetableSchoolFilter && 
+            timetableSchoolFilter.value !== 'all' ? timetableSchoolFilter.value : null);
+        
+        if (effectiveSchoolId && effectiveSchoolId !== 'all') {
+            url.searchParams.set('school_id', effectiveSchoolId);
         } else {
             url.searchParams.delete('school_id');
         }
@@ -368,17 +375,18 @@ document.addEventListener('DOMContentLoaded', function() {
         // Update browser URL without reloading the page
         window.history.pushState({}, '', url);
         
-        // Prepare headers with CSRF token
-        const headers = new Headers({
-            'X-Requested-With': 'XMLHttpRequest',
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-            'Accept': 'application/json',
-            'Content-Type': 'application/json'
-        });
-
+        // Get CSRF token from meta tag
+        const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
+        
         // Make AJAX request with proper headers
-        fetch(`{{ route('admin.academic-sessions.show', $academicSession) }}?${url.searchParams.toString()}`, {
-            headers: headers
+        fetch(url, {
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRF-TOKEN': csrfToken,
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            },
+            credentials: 'same-origin'
         })
         .then(async response => {
             if (!response.ok) {
@@ -419,33 +427,48 @@ document.addEventListener('DOMContentLoaded', function() {
     // Update pagination for a container
     function updatePagination(data, containerType = 'programmes') {
         const container = containerType === 'programmes' ? programmesContainer : timetablesContainer;
-        const paginationContainer = container.querySelector('.pagination-wrapper') || document.createElement('div');
         
-        if (data.pagination) {
-            paginationContainer.className = 'pagination-wrapper mt-3';
-            paginationContainer.innerHTML = data.pagination;
+        if (data.html) {
+            // Create a temporary div to hold the new content
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = data.html;
             
-            // If pagination wrapper doesn't exist, add it after the table
-            if (!container.querySelector('.pagination-wrapper')) {
-                const table = container.querySelector('table');
-                if (table) {
-                    table.insertAdjacentElement('afterend', paginationContainer);
-                } else {
-                    container.appendChild(paginationContainer);
+            // Find the pagination in the new content
+            const newPagination = tempDiv.querySelector('.pagination');
+            
+            if (newPagination) {
+                // Find or create the pagination container
+                let paginationContainer = container.querySelector('.pagination-container');
+                
+                if (!paginationContainer) {
+                    paginationContainer = document.createElement('div');
+                    paginationContainer.className = 'mt-3 d-flex justify-content-center';
+                    
+                    // Add the container after the table or at the end of the container
+                    const table = container.querySelector('table');
+                    if (table) {
+                        table.insertAdjacentElement('afterend', paginationContainer);
+                    } else {
+                        container.appendChild(paginationContainer);
+                    }
                 }
-            }
-            
-            // Update pagination links
-            updatePaginationLinks(containerType);
-        } else {
-            // Remove pagination if no pages
-            if (paginationContainer.parentNode) {
-                paginationContainer.parentNode.removeChild(paginationContainer);
+                
+                // Update the pagination content
+                paginationContainer.innerHTML = '';
+                const nav = document.createElement('nav');
+                nav.innerHTML = newPagination.outerHTML;
+                paginationContainer.appendChild(nav);
+                
+                // Update pagination links
+                updatePaginationLinks(containerType);
+            } else if (container.querySelector('.pagination-container')) {
+                // Remove pagination if no pages
+                container.querySelector('.pagination-container').remove();
             }
         }
     }
     
-    // Update pagination links to use AJAX
+    // Update pagination links to use AJAX with new styles
     function updatePaginationLinks(containerType = 'programmes') {
         const container = containerType === 'programmes' ? programmesContainer : timetablesContainer;
         const paginationLinks = container.querySelectorAll('.pagination a');
@@ -453,18 +476,59 @@ document.addEventListener('DOMContentLoaded', function() {
         const loadFunction = containerType === 'programmes' ? loadProgrammes : loadTimetables;
         
         paginationLinks.forEach(link => {
-            if (link.getAttribute('href') && !link.hasAttribute('data-handled')) {
-                const url = new URL(link.href);
-                const page = url.searchParams.get('page') || 1;
-                const schoolId = schoolFilterElement ? schoolFilterElement.value : null;
+            // Skip if already processed or doesn't have a href
+            if (!link.getAttribute('href') || link.hasAttribute('data-handled')) {
+                return;
+            }
+            
+            // Get the page number from the URL
+            const url = new URL(link.href);
+            const page = url.searchParams.get('page') || 1;
+            const schoolId = schoolFilterElement ? schoolFilterElement.value : null;
+            
+            // Update the link to include all current query parameters
+            const newUrl = new URL(window.location);
+            newUrl.searchParams.set('page', page);
+            if (schoolId && schoolId !== 'all') {
+                newUrl.searchParams.set('school_id', schoolId);
+            } else {
+                newUrl.searchParams.delete('school_id');
+            }
+            newUrl.searchParams.set('tab', containerType);
+            
+            // Update the link's href
+            link.href = newUrl.toString();
+            
+            // Add click handler
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
                 
-                link.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    loadFunction(page, schoolId);
-                });
+                // Update URL without reloading
+                window.history.pushState({}, '', newUrl);
                 
-                // Mark as handled to prevent duplicate event listeners
-                link.setAttribute('data-handled', 'true');
+                // Load the data
+                loadFunction(page, schoolId);
+                
+                // Scroll to top of container
+                container.scrollIntoView({ behavior: 'smooth' });
+            });
+            
+            // Mark as handled to prevent duplicate event listeners
+            link.setAttribute('data-handled', 'true');
+        });
+        
+        // Update active state based on current page
+        const currentPage = new URL(window.location).searchParams.get('page') || 1;
+        container.querySelectorAll('.page-item').forEach(item => {
+            item.classList.remove('active');
+            const pageLink = item.querySelector('.page-link');
+            if (pageLink && !pageLink.getAttribute('href')) {
+                const pageText = pageLink.textContent.trim();
+                if (pageText === currentPage.toString() || 
+                    (pageText === '« Prev' && currentPage > 1) ||
+                    (pageText === 'Next »' && currentPage < (container.dataset.lastPage || 1))) {
+                    item.classList.add('active');
+                }
             }
         });
     }
