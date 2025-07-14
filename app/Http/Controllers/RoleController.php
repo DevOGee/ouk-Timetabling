@@ -213,8 +213,23 @@ class RoleController extends Controller
         $this->authorize('create', User::class);
         
         $file = $request->file('csv_file');
-        $role = $request->input('role');
+        $roleName = $request->input('role');
         $sendWelcomeEmail = $request->boolean('send_welcome_email');
+        
+        // Verify the role exists
+        $role = Role::where('name', $roleName)->first();
+        if (!$role) {
+            return redirect()->back()->with('error', "The specified role '{$roleName}' does not exist.");
+        }
+        
+        // Initialize detailed report
+        $report = [
+            'total_rows' => 0,
+            'imported' => 0,
+            'skipped' => [],
+            'errors' => [],
+            'successful_imports' => []
+        ];
         
         try {
             // Ensure the file is valid
@@ -232,80 +247,152 @@ class RoleController extends Controller
             // Validate CSV header
             foreach ($requiredFields as $field) {
                 if (!in_array(strtolower($field), $header)) {
-                    return redirect()->back()->with('error', "CSV is missing required field: {$field}");
+                    $error = "CSV is missing required field: {$field}";
+                    \Log::error('Bulk import failed: ' . $error);
+                    return redirect()->back()
+                        ->with('error', $error)
+                        ->withInput();
                 }
             }
             
             $records = $reader->getRecords();
-            $imported = 0;
-            $skipped = [];
-            $rowNumber = 1; // Start from 1 to account for header
+            $report['total_rows'] = count(iterator_to_array($records));
+            $records = $reader->getRecords(); // Reset iterator
             
-            foreach ($records as $record) {
-                $rowNumber++;
-                $record = array_change_key_case($record, CASE_LOWER);
-                
-                // Skip if required fields are empty
-                if (empty($record['name']) || empty($record['email'])) {
-                    $skipped[] = "Row {$rowNumber}: Missing required fields";
-                    continue;
+            // Start a database transaction
+            \DB::beginTransaction();
+            
+            try {
+                foreach ($records as $index => $record) {
+                    $rowNumber = $index + 2; // +2 because of 0-based index and header row
+                    $record = array_change_key_case($record, CASE_LOWER);
+                    
+                    // Skip if required fields are empty
+                    if (empty($record['name']) || empty($record['email'])) {
+                        $error = "Row {$rowNumber}: Missing required fields";
+                        $report['skipped'][] = $error;
+                        \Log::warning($error);
+                        continue;
+                    }
+                    
+                    // Validate email
+                    if (!filter_var($record['email'], FILTER_VALIDATE_EMAIL)) {
+                        $error = "Row {$rowNumber}: Invalid email format: {$record['email']}";
+                        $report['skipped'][] = $error;
+                        \Log::warning($error);
+                        continue;
+                    }
+                    
+                    // Check if user already exists
+                    if (User::where('email', $record['email'])->exists()) {
+                        $error = "Row {$rowNumber}: User with email {$record['email']} already exists";
+                        $report['skipped'][] = $error;
+                        \Log::warning($error);
+                        continue;
+                    }
+                    
+                    try {
+                        // Find or create title
+                        $title = Title::firstOrCreate(
+                            ['name' => ucwords(strtolower(trim($record['title'])))],
+                            ['abbreviation' => strtoupper(substr(trim($record['title']), 0, 3))]
+                        );
+                        
+                        // Generate a random password
+                        $password = Str::random(12);
+                        
+                        // Create the user
+                        $user = User::create([
+                            'name' => $record['name'],
+                            'email' => $record['email'],
+                            'title_id' => $title->id,
+                            'password' => Hash::make($password),
+                            'status' => 'active',
+                        ]);
+                        
+                        // Assign role using the existing relationship
+                        $user->roles()->sync([$role->id]);
+                        
+                        // Verify the role was assigned
+                        if (!$user->roles->contains('id', $role->id)) {
+                            throw new \Exception("Failed to assign role '{$role->name}' to user '{$user->email}'");
+                        }
+                        
+                        // Add to successful imports
+                        $report['successful_imports'][] = [
+                            'name' => $user->name,
+                            'email' => $user->email,
+                            'role' => $role->name,
+                            'password' => $password // Only for display in the report
+                        ];
+                        
+                        // Send welcome email if requested
+                        if ($sendWelcomeEmail) {
+                            // TODO: Uncomment and implement email sending
+                            // Mail::to($user->email)->send(new WelcomeEmail($user, $password));
+                        }
+                        
+                        $report['imported']++;
+                        \Log::info("Successfully imported user: {$user->email} with role: {$role->name}");
+                        
+                    } catch (\Exception $e) {
+                        $error = "Row {$rowNumber}: Error processing user - " . $e->getMessage();
+                        $report['skipped'][] = $error;
+                        $report['errors'][] = $error;
+                        \Log::error($error);
+                        \Log::error($e->getTraceAsString());
+                        continue;
+                    }
                 }
                 
-                // Validate email
-                if (!filter_var($record['email'], FILTER_VALIDATE_EMAIL)) {
-                    $skipped[] = "Row {$rowNumber}: Invalid email format: {$record['email']}";
-                    continue;
+                // Commit the transaction if we got here
+                \DB::commit();
+                
+                // Prepare the response
+                $message = "Import completed. Successfully imported {$report['imported']} out of {$report['total_rows']} users with role '{$role->name}'.";
+                
+                if (!empty($report['skipped'])) {
+                    $message .= " " . count($report['skipped']) . " rows were skipped.";
+                    session()->flash('skipped_rows', $report['skipped']);
                 }
                 
-                // Check if user already exists
-                if (User::where('email', $record['email'])->exists()) {
-                    $skipped[] = "Row {$rowNumber}: User with email {$record['email']} already exists";
-                    continue;
-                }
-                
-                // Find or create title
-                $title = Title::firstOrCreate(
-                    ['name' => ucwords(strtolower(trim($record['title'])))],
-                    ['abbreviation' => strtoupper(substr(trim($record['title']), 0, 3))]
-                );
-                
-                // Generate a random password
-                $password = Str::random(12);
-                
-                // Create the user
-                $user = User::create([
-                    'name' => $record['name'],
-                    'email' => $record['email'],
-                    'title_id' => $title->id,
-                    'password' => Hash::make($password),
-                    'status' => 'active',
+                // Store the detailed report in the session
+                session()->flash('import_report', [
+                    'total' => $report['total_rows'],
+                    'imported' => $report['imported'],
+                    'skipped' => count($report['skipped']),
+                    'successful_imports' => $report['successful_imports'],
+                    'role' => $role->name
                 ]);
                 
-                // Assign role
-                $user->assignRole($role);
-                
-                // Send welcome email if requested
-                if ($sendWelcomeEmail) {
-                    // TODO: Uncomment and implement email sending
-                    // Mail::to($user->email)->send(new WelcomeEmail($user, $password));
-                }
-                
-                $imported++;
+                return redirect()->route('admin.users.index')
+                    ->with('success', $message);
+                    
+            } catch (\Exception $e) {
+                // Rollback the transaction on error
+                \DB::rollBack();
+                throw $e; // Re-throw to be caught by the outer try-catch
             }
-            
-            $message = "Successfully imported {$imported} users.";
-            if (!empty($skipped)) {
-                $message .= " Skipped " . count($skipped) . " rows with issues.";
-                session()->flash('skipped_rows', $skipped);
-            }
-            
-            return redirect()->route('admin.users.index')
-                ->with('success', $message);
                 
         } catch (\Exception $e) {
-            \Log::error('Bulk user import failed: ' . $e->getMessage());
+            $error = 'Bulk user import failed: ' . $e->getMessage();
+            \Log::error($error);
+            \Log::error($e->getTraceAsString());
+            
+            $errorMessage = 'Failed to process the file. ';
+            $errorMessage .= 'Error: ' . $e->getMessage();
+            
+            // Add any additional error context
+            if (!empty($report['errors'])) {
+                $errorMessage .= '\n\nAdditional errors:\n' . implode("\n", array_slice($report['errors'], 0, 5));
+                if (count($report['errors']) > 5) {
+                    $errorMessage .= '\n... and ' . (count($report['errors']) - 5) . ' more errors.';
+                }
+            }
+            
             return redirect()->back()
-                ->with('error', 'Failed to process the file. Please check the format and try again.');
+                ->with('error', $errorMessage)
+                ->withInput();
         }
     }
     

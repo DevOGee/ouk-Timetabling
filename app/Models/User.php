@@ -12,8 +12,7 @@ use App\Models\CourseUnitProgrammeMapping;
 
 class User extends Authenticatable
 {
-    use HasRoles;
-    use HasApiTokens, HasFactory, Notifiable;
+    use HasApiTokens, HasFactory, Notifiable, HasRoles;
 
     /**
      * Get the school that owns the user.

@@ -4,6 +4,8 @@
 
 @section('content')
 <div class="container-fluid px-4">
+    <!-- Import Report -->
+    @include('admin.users.partials.import-report')
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2 class="mb-0">User Management</h2>
         <div class="d-flex gap-2">
