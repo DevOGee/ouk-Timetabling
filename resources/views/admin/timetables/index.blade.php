@@ -33,78 +33,139 @@
             <div class="card shadow mb-4">
                 <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">Programs</h5>
-                    <span class="badge bg-light text-dark">{{ count($programs) }} Programs</span>
+                    <span class="badge bg-light text-dark"><span id="program-count">{{ count($programs) }}</span> Programs</span>
                 </div>
                 <div class="card-body p-0">
-                    <div class="table-responsive">
-                        <table class="table table-hover mb-0">
-                            <thead class="table-light">
-                                <tr>
-                                    <th>#</th>
-                                    <th>Programme</th>
-                                    <th>Status</th>
-                                    <th class="text-end">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @if($academicSession)
-                                    @forelse($programs as $program)
-                                        @php
-                                            // Get the timetable and mapping status for this program
-                                            $timetable = $program->programmeTimetables->first();
-                                            
-                                            // Get mapping counts for this program in the current session
-                                            $mappings = $program->courseUnitMappings()
-                                                ->where('academic_session_id', $academicSession->id)
-                                                ->get();
-                                            
-                                            // Count completed and in-progress mappings based on actual scheduled times
-                                            $completed = 0;
-                                            $inProgress = 0;
-                                            
-                                            foreach ($mappings as $mapping) {
-                                                $hasMorning = $mapping->morning_start_time !== null && $mapping->morning_duration !== null;
-                                                $hasEvening = $mapping->evening_start_time !== null && $mapping->evening_duration !== null;
-                                                
-                                                if ($hasMorning || $hasEvening) {
-                                                    $completed++;
-                                                } elseif ($mapping->day_id !== null || $mapping->user_id !== null) {
-                                                    $inProgress++;
-                                                }
-                                            }
-                                            
-                                            $totalMappings = $mappings->count();
-                                            $notStarted = $totalMappings - $completed - $inProgress;
-                                            
-                                            // Determine status based on mappings and timetable status
-                                            if ($timetable && $timetable->status === 'published') {
-                                                // Published status takes highest priority
-                                                $status = 'published';
-                                                $statusText = 'Published';
-                                                $statusClass = 'success';
-                                            } elseif ($totalMappings === 0) {
-                                                // No mappings exist yet
-                                                $status = 'not_started';
-                                                $statusText = 'Not Started';
-                                                $statusClass = 'secondary';
-                                            } elseif ($completed === $totalMappings) {
-                                                // All mappings are complete - ready for publishing
-                                                $status = 'ready';
-                                                $statusText = 'Ready';
-                                                $statusClass = 'info';
-                                            } elseif ($completed > 0 || $inProgress > 0) {
-                                                // Some progress has been made
-                                                $status = 'in_progress';
-                                                $statusText = 'In Progress';
-                                                $statusClass = 'primary';
-                                            } else {
-                                                // Default case
-                                                $status = 'not_started';
-                                                $statusText = 'Not Started';
-                                                $statusClass = 'secondary';
-                                            }
-                                        @endphp
+                    <!-- Enhanced Tabs Navigation -->
+                    <div class="tabs-container">
+                        <ul class="nav nav-pills nav-fill mb-3" id="timetableTabs" role="tablist">
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link active d-flex align-items-center justify-content-center" id="all-tab" data-bs-toggle="tab" data-bs-target="#all" type="button" role="tab">
+                                    <i class="bi bi-grid-3x3-gap-fill me-2"></i>
+                                    <span>All Programs</span>
+                                    <span class="badge rounded-pill bg-primary ms-2">{{ count($programs) }}</span>
+                                </button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link d-flex align-items-center justify-content-center" id="published-tab" data-bs-toggle="tab" data-bs-target="#published" type="button" role="tab">
+                                    <i class="bi bi-check-circle-fill me-2"></i>
+                                    <span>Published</span>
+                                    <span class="badge rounded-pill bg-success ms-2">{{ $programs->filter(fn($p) => ($p->programmeTimetables->first()?->status ?? '') === 'published')->count() }}</span>
+                                </button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link d-flex align-items-center justify-content-center" id="ready-tab" data-bs-toggle="tab" data-bs-target="#ready" type="button" role="tab">
+                                    <i class="bi bi-check2-all me-2"></i>
+                                    <span>Ready</span>
+                                    <span class="badge rounded-pill bg-info ms-2">{{ $programs->filter(fn($p) => ($p->programmeTimetables->first()?->status ?? '') === 'ready')->count() }}</span>
+                                </button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link d-flex align-items-center justify-content-center" id="pending-tab" data-bs-toggle="tab" data-bs-target="#pending" type="button" role="tab">
+                                    <i class="bi bi-hourglass-split me-2"></i>
+                                    <span>Pending</span>
+                                    <span class="badge rounded-pill bg-warning ms-2">{{ $programs->filter(fn($p) => in_array($p->programmeTimetables->first()?->status ?? '', ['pending', 'draft', 'in_progress', 'not_started']))->count() }}</span>
+                                </button>
+                            </li>
+                        </ul>
+                    </div>
+                    
+                    <!-- Tab Content -->
+                    <div class="tab-content p-3" id="timetableTabsContent">
+                        <div class="tab-pane fade show active" id="all" role="tabpanel" aria-labelledby="all-tab">
+                            <div class="table-responsive">
+                                <table class="table table-hover mb-0">
+                                    <thead class="table-light">
                                         <tr>
+                                            <th>#</th>
+                                            <th>Programme</th>
+                                            <th>Status</th>
+                                            <th class="text-end">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="programs-table-body">
+                                    @if($academicSession)
+                                        @php
+                                            // Store program data for JavaScript
+                                            $programsData = [];
+                                        @endphp
+                                        @forelse($programs as $program)
+                                            @php
+                                                // Get the timetable and mapping status for this program
+                                                $timetable = $program->programmeTimetables->first();
+                                                
+                                                // Get mapping counts for this program in the current session
+                                                $mappings = $program->courseUnitMappings()
+                                                    ->where('academic_session_id', $academicSession->id)
+                                                    ->get();
+                                                
+                                                // Count completed and in-progress mappings based on actual scheduled times
+                                                $completed = 0;
+                                                $inProgress = 0;
+                                                
+                                                foreach ($mappings as $mapping) {
+                                                    $hasMorning = $mapping->morning_start_time !== null && $mapping->morning_duration !== null;
+                                                    $hasEvening = $mapping->evening_start_time !== null && $mapping->evening_duration !== null;
+                                                    
+                                                    if ($hasMorning || $hasEvening) {
+                                                        $completed++;
+                                                    } elseif ($mapping->day_id !== null || $mapping->user_id !== null) {
+                                                        $inProgress++;
+                                                    }
+                                                }
+                                                
+                                                $totalMappings = $mappings->count();
+                                                $notStarted = $totalMappings - $completed - $inProgress;
+                                                
+                                                // Determine status based on mappings and timetable status
+                                                if ($timetable && $timetable->status === 'published') {
+                                                    // Published status takes highest priority
+                                                    $status = 'published';
+                                                    $statusText = 'Published';
+                                                    $statusClass = 'success';
+                                                } elseif ($totalMappings === 0) {
+                                                    // No mappings exist yet
+                                                    $status = 'not_started';
+                                                    $statusText = 'Not Started';
+                                                    $statusClass = 'secondary';
+                                                } elseif ($completed === $totalMappings) {
+                                                    // All mappings are complete - ready for publishing
+                                                    $status = 'ready';
+                                                    $statusText = 'Ready';
+                                                    $statusClass = 'info';
+                                                } elseif ($completed > 0 || $inProgress > 0) {
+                                                    // Some progress has been made
+                                                    $status = 'in_progress';
+                                                    $statusText = 'In Progress';
+                                                    $statusClass = 'primary';
+                                                } else {
+                                                    // Default case
+                                                    $status = 'not_started';
+                                                    $statusText = 'Not Started';
+                                                    $statusClass = 'secondary';
+                                                }
+
+                                                // Store program data for JavaScript
+                                                $programsData[] = [
+                                                    'id' => $program->id,
+                                                    'name' => $program->name,
+                                                    'programme_code' => $program->programme_code,
+                                                    'status' => $status,
+                                                    'statusText' => $statusText,
+                                                    'statusClass' => $statusClass,
+                                                    'timetable' => $timetable ? [
+                                                        'id' => $timetable->id,
+                                                        'status' => $timetable->status
+                                                    ] : null,
+                                                    'mappings' => [
+                                                        'completed' => $completed,
+                                                        'inProgress' => $inProgress,
+                                                        'notStarted' => $notStarted,
+                                                        'total' => $totalMappings
+                                                    ]
+                                                ];
+                                            @endphp
+                                        <tr class="program-row" data-status="{{ $status }}">
                                             <td>{{ $loop->iteration }}</td>
                                             <td>
                                                 <strong>{{ $program->programme_code }}:</strong> {{ $program->name }}
@@ -115,7 +176,6 @@
                                                       title="Scheduled: {{ $completed }} | In Progress: {{ $inProgress }} | Not Started: {{ $notStarted }}">
                                                     {{ $statusText }}
                                                 </span>
-
                                             </td>
                                             <td class="text-end">
                                                 @if($status === 'in_progress' && !$timetable)
@@ -162,6 +222,11 @@
                                             </td>
                                         </tr>
                                     @endforelse
+                                    
+                                    <!-- Store programs data for JavaScript -->
+                                    @if(isset($programsData))
+                                        <div id="programs-data" data-programs='@json($programsData)'></div>
+                                    @endif
                                 @else
                                     <tr>
                                         <td colspan="4" class="text-center py-4">
@@ -175,8 +240,91 @@
                                         </td>
                                     </tr>
                                 @endif
-                            </tbody>
-                        </table>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        
+                        <!-- Published Tab -->
+                        <div class="tab-pane fade" id="published" role="tabpanel" aria-labelledby="published-tab">
+                            <div class="table-responsive">
+                                <table class="table table-hover mb-0">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>#</th>
+                                            <th>Programme</th>
+                                            <th>Status</th>
+                                            <th class="text-end">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="published-programs">
+                                        <!-- Will be populated by JavaScript -->
+                                        <tr>
+                                            <td colspan="4" class="text-center py-4">
+                                                <div class="text-muted">
+                                                    <i class="bi bi-hourglass-split me-1"></i>
+                                                    Loading published programs...
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        
+                        <!-- Ready Tab -->
+                        <div class="tab-pane fade" id="ready" role="tabpanel" aria-labelledby="ready-tab">
+                            <div class="table-responsive">
+                                <table class="table table-hover mb-0">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>#</th>
+                                            <th>Programme</th>
+                                            <th>Status</th>
+                                            <th class="text-end">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="ready-programs">
+                                        <!-- Will be populated by JavaScript -->
+                                        <tr>
+                                            <td colspan="4" class="text-center py-4">
+                                                <div class="text-muted">
+                                                    <i class="bi bi-hourglass-split me-1"></i>
+                                                    Loading ready programs...
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        
+                        <!-- Pending Tab -->
+                        <div class="tab-pane fade" id="pending" role="tabpanel" aria-labelledby="pending-tab">
+                            <div class="table-responsive">
+                                <table class="table table-hover mb-0">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>#</th>
+                                            <th>Programme</th>
+                                            <th>Status</th>
+                                            <th class="text-end">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="pending-programs">
+                                        <!-- Will be populated by JavaScript -->
+                                        <tr>
+                                            <td colspan="4" class="text-center py-4">
+                                                <div class="text-muted">
+                                                    <i class="bi bi-hourglass-split me-1"></i>
+                                                    Loading pending programs...
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -233,6 +381,170 @@
 
 @push('scripts')
 <script>
+// Initialize programs data from PHP
+const programsData = [];
+const programsDataElement = document.getElementById('programs-data');
+if (programsDataElement) {
+    try {
+        programsData.push(...JSON.parse(programsDataElement.dataset.programs));
+    } catch (e) {
+        console.error('Error parsing programs data:', e);
+    }
+}
+
+// Function to render programs in a specific tab
+function renderPrograms(containerId, filterFn) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    
+    const filteredPrograms = programsData.filter(filterFn);
+    
+    if (filteredPrograms.length === 0) {
+        container.innerHTML = `
+            <tr>
+                <td colspan="4" class="text-center py-4">
+                    <div class="text-muted">
+                        <i class="bi bi-inbox me-1"></i>
+                        No programs found in this category.
+                    </div>
+                </td>
+            </tr>
+        `;
+        return;
+    }
+    
+    let html = '';
+    filteredPrograms.forEach((program, index) => {
+        const { id, name, programme_code, status, statusText, statusClass, timetable, mappings } = program;
+        
+        // Generate action buttons based on status
+        let actionButtons = '';
+        
+        if (status === 'in_progress' && !timetable) {
+            actionButtons = `
+                <a href="{{ route('admin.timetables.create', ['programme_id' => '${id}', 'academic_session_id' => '${$academicSession->id}']) }}" class="btn btn-sm btn-primary">
+                    <i class="bi bi-plus-circle"></i> Create Timetable
+                </a>
+            `;
+        } else {
+            actionButtons = `
+                <div class="btn-group" role="group">
+                    ${status === 'published' ? `
+                        <button class="btn btn-sm btn-outline-warning btn-unpublish" 
+                                data-timetable-id="${timetable.id}" 
+                                data-program-name="${name}"
+                                title="Unpublish">
+                            <i class="bi bi-x-circle"></i> Unpublish
+                        </button>
+                    ` : ''}
+                    
+                    ${status === 'ready' ? `
+                        <button class="btn btn-sm btn-success btn-publish" 
+                                data-timetable-id="${timetable.id}" 
+                                data-program-name="${name}"
+                                title="Publish">
+                            <i class="bi bi-check-circle"></i> Publish
+                        </button>
+                    ` : ''}
+                    
+                    ${timetable ? `
+                        <a href="/academic-sessions/{{ $academicSession->id }}/programmes/${id}/scheduling" class="btn btn-sm btn-outline-primary" title="Edit">
+                            <i class="bi bi-pencil"></i> Edit
+                        </a>
+                    ` : ''}
+                </div>
+            `;
+        }
+        
+        // Add program row HTML
+        html += `
+            <tr class="program-row" data-status="${status}">
+                <td>${index + 1}</td>
+                <td><strong>${programme_code}:</strong> ${name}</td>
+                <td>
+                    <span class="badge bg-${statusClass}" 
+                          data-bs-toggle="tooltip" 
+                          title="Scheduled: ${mappings.completed} | In Progress: ${mappings.inProgress} | Not Started: ${mappings.notStarted}">
+                        ${statusText}
+                    </span>
+                </td>
+                <td class="text-end">
+                    ${actionButtons}
+                </td>
+            </tr>
+        `;
+    });
+    
+    container.innerHTML = html;
+    
+    // Reinitialize tooltips for the new elements
+    const tooltipTriggerList = [].slice.call(container.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    tooltipTriggerList.map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl));
+    
+    // Reattach event listeners for publish/unpublish buttons
+    attachPublishHandlers();
+}
+
+// Function to attach event handlers for publish/unpublish buttons
+function attachPublishHandlers() {
+    // Publish button handler
+    document.querySelectorAll('.btn-publish').forEach(button => {
+        button.addEventListener('click', function() {
+            const timetableId = this.dataset.timetableId;
+            const programName = this.dataset.programName;
+            
+            if (confirm(`Are you sure you want to publish the timetable for ${programName}?`)) {
+                publishTimetable(timetableId, this);
+            }
+        });
+    });
+
+    // Unpublish button handler
+    document.querySelectorAll('.btn-unpublish').forEach(button => {
+        button.addEventListener('click', function() {
+            const timetableId = this.dataset.timetableId;
+            const programName = this.dataset.programName;
+            
+            if (confirm(`Are you sure you want to unpublish the timetable for ${programName}?`)) {
+                unpublishTimetable(timetableId, this);
+            }
+        });
+    });
+}
+
+// Initialize tabs and render programs when the page loads
+document.addEventListener('DOMContentLoaded', function() {
+    // Initial render of all programs
+    renderPrograms('programs-table-body', () => true);
+    
+    // Set up tab change handlers
+    const tabEls = document.querySelectorAll('#timetableTabs button[data-bs-toggle="tab"]');
+    tabEls.forEach(tabEl => {
+        tabEl.addEventListener('shown.bs.tab', function (event) {
+            const targetId = event.target.getAttribute('data-bs-target').substring(1);
+            
+            switch(targetId) {
+                case 'published':
+                    renderPrograms('published-programs', p => p.status === 'published');
+                    break;
+                case 'ready':
+                    renderPrograms('ready-programs', p => p.status === 'ready');
+                    break;
+                case 'pending':
+                    renderPrograms('pending-programs', p => ['in_progress', 'not_started'].includes(p.status));
+                    break;
+                default:
+                    renderPrograms('programs-table-body', () => true);
+            }
+        });
+    });
+    
+    // Initial render of published programs (for the first tab that's not active)
+    renderPrograms('published-programs', p => p.status === 'published');
+    renderPrograms('ready-programs', p => p.status === 'ready');
+    renderPrograms('pending-programs', p => ['in_progress', 'not_started'].includes(p.status));
+});
+
 document.addEventListener('DOMContentLoaded', function() {
     // Publish button handler
     document.querySelectorAll('.btn-publish').forEach(button => {
@@ -352,11 +664,119 @@ document.addEventListener('DOMContentLoaded', function() {
 
 @push('styles')
 <style>
+    /* Enhanced Tabs Styling */
+    .tabs-container {
+        background: #fff;
+        padding: 0.5rem 1rem 0;
+        box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.05);
+        border-bottom: 2px solid #f0f0f0;
+    }
+    
+    .nav-pills {
+        --bs-nav-pills-link-active-bg: #037b90;
+        --bs-nav-link-padding-x: 1.5rem;
+        --bs-nav-link-padding-y: 0.75rem;
+        gap: 0.25rem;
+    }
+    
+    .nav-pills .nav-link {
+        border-radius: 0;
+        color: #5a5c69;
+        font-weight: 500;
+        transition: all 0.2s ease;
+        border: none;
+        background-color: transparent;
+        position: relative;
+        overflow: hidden;
+        margin: 0 2px;
+    }
+    
+    .nav-pills .nav-link::after {
+        content: '';
+        position: absolute;
+        bottom: -2px;
+        left: 0;
+        width: 100%;
+        height: 3px;
+        background: transparent;
+        transition: all 0.2s ease;
+    }
+    
+    .nav-pills .nav-link:hover {
+        background-color: rgba(3, 123, 144, 0.1);
+        transform: translateY(-1px);
+    }
+    
+    .nav-pills .nav-link.active {
+        background-color: #037b90;
+        color: white;
+        box-shadow: none;
+        transform: none;
+    }
+    
+    .nav-pills .nav-link.active::after {
+        background: #ff7f50;
+    }
+    
+    .nav-pills .nav-link i {
+        font-size: 1.1em;
+        transition: transform 0.3s ease;
+    }
+    
+    .nav-pills .nav-link:hover i {
+        transform: scale(1.1);
+    }
+    
+    .nav-pills .nav-link.active i {
+        color: white;
+    }
+    
+    .tab-content {
+        background: #fff;
+        box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.1);
+        padding: 1.5rem;
+        border: 1px solid #f0f0f0;
+        border-top: none;
+    }
+    
+    /* Badge styling */
+    .badge {
+        font-weight: 500;
+        padding: 0.35em 0.65em;
+        font-size: 0.7em;
+        border-radius: 2px;
+        background-color: #ff7f50;
+        color: white;
+    }
+    
+    /* Button group styling */
     .btn-group .btn {
         margin-right: 2px;
+        transition: all 0.2s ease;
     }
+    
     .btn-group .btn:last-child {
         margin-right: 0;
+    }
+    
+    .btn-group .btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.1);
+    }
+    
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+        .nav-pills {
+            flex-wrap: nowrap;
+            overflow-x: auto;
+            padding-bottom: 0.5rem;
+            -webkit-overflow-scrolling: touch;
+        }
+        
+        .nav-pills .nav-link {
+            white-space: nowrap;
+            padding: 0.5rem 1rem;
+        }
     }
 </style>
 @endpush
