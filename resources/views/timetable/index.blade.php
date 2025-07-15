@@ -444,17 +444,22 @@
                         </div>
                     </div>
 
-                    {{-- Level of Study --}}
-                    <div class="col-md-4">
-                        <div class="form-group">
-                            <select class="form-control form-control-lg" id="level" name="level" required>
-                                <option value="">Select Level</option>
-                                @foreach ($levels as $level)
-                                    <option value="{{ $level->id }}" {{ request('level') == $level->id ? 'selected' : '' }}>
-                                        {{ $level->name }}
-                                    </option>
-                                @endforeach
-                            </select>
+                    {{-- Level of Study and Export --}}
+                    <div class="col-md-5">
+                        <div class="d-flex align-items-end" style="gap: 10px;">
+                            <div class="form-group flex-grow-1">
+                                <select class="form-control form-control-sm" id="level" name="level" required>
+                                    <option value="">Select Level</option>
+                                    @foreach ($levels as $level)
+                                        <option value="{{ $level->id }}" {{ request('level') == $level->id ? 'selected' : '' }}>
+                                            {{ $level->name }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <button type="button" id="exportPdfBtn" class="btn btn-success btn-sm" style="height: 38px; white-space: nowrap;">
+                                <i class="fas fa-file-export me-1"></i> Export PDF
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -699,18 +704,42 @@
         const exportBtn = document.getElementById('exportPdfBtn');
 
         if (schoolId && programmeId && level) {
-            // Update export button href with current parameters
-            const url = new URL(exportBtn.href.split('?')[0]); // Base URL
-            url.searchParams.set('school_id', schoolId);
-            url.searchParams.set('programme_id', programmeId);
-            url.searchParams.set('level', level);
-            exportBtn.href = url.toString();
+            // Enable export button and update its click handler
+            exportBtn.disabled = false;
+            exportBtn.onclick = function() {
+                // Get the current URL parameters
+                const params = new URLSearchParams(window.location.search);
+                
+                // Construct the export URL
+                let exportUrl = '{{ route("timetable.export.pdf") }}';
+                exportUrl += `?school_id=${schoolId}&programme_id=${programmeId}&level=${level}`;
+                
+                // Add any additional filters that might be present
+                if (params.get('campus')) {
+                    exportUrl += `&campus=${params.get('campus')}`;
+                }
+                
+                // Open the export URL in a new tab
+                window.open(exportUrl, '_blank');
+            };
 
             document.body.classList.add('timetable-loaded');
         } else {
+            // Disable export button if not all required fields are selected
+            exportBtn.disabled = true;
             document.body.classList.remove('timetable-loaded');
         }
     }
+    
+    // Initialize the export button state on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        checkTimetableLoaded();
+        
+        // Add event listeners for form changes
+        document.getElementById('school_id').addEventListener('change', checkTimetableLoaded);
+        document.getElementById('programme_id').addEventListener('change', checkTimetableLoaded);
+        document.getElementById('level').addEventListener('change', checkTimetableLoaded);
+    });
 </script>
 
 </html>
