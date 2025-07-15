@@ -173,16 +173,7 @@ class TimetableManagementController extends Controller
     public function publish(ProgrammeTimetable $timetable)
     {
         try {
-            // Unpublish any currently published timetables for the same academic session
-            ProgrammeTimetable::where('academic_session_id', $timetable->academic_session_id)
-                ->where('status', 'published')
-                ->update([
-                    'status' => 'draft',
-                    'published_at' => null,
-                    'published_by' => null
-                ]);
-            
-            // Publish the selected timetable
+            // Publish the selected timetable without unpublishing others
             $timetable->update([
                 'status' => 'published',
                 'published_at' => now(),
