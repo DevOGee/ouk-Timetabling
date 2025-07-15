@@ -10,22 +10,33 @@
     }
     $instructorName = $titleAbbr . ($lesson->lecturer?->name ?? 'Not Assigned');
 
-    // Implements the dynamic image path logic with a reliable fallback
-    $imagePath = 'https://planner.ouk.ac.ke/storage/facilitators/alt.png';
+    // Set default fallback image URL
+    $fallbackImage = 'https://ouk.ac.ke/sites/default/files/Facilitators/alt.png';
+    $imagePath = $fallbackImage;
+
+    // Process image path if available
     if (!empty($lesson->lecturer?->image_path)) {
         $imgPath = $lesson->lecturer->image_path;
-        // Remove any leading slashes or storage/ prefixes
-        $imgPath = ltrim($imgPath, '/');
-        $imgPath = str_replace('storage/', '', $imgPath);
-        $imgPath = str_replace('public/', '', $imgPath);
-        $imagePath = 'https://planner.ouk.ac.ke/storage/' . $imgPath;
+        
+        // If it's already a full URL, use it directly
+        if (filter_var($imgPath, FILTER_VALIDATE_URL)) {
+            $imagePath = $imgPath;
+        } 
+        // If it's a local path, construct the full URL
+        else {
+            $imgPath = ltrim($imgPath, '/');
+            $imgPath = str_replace(['storage/', 'public/'], '', $imgPath);
+            $imagePath = asset('storage/' . $imgPath);
+        }
     }
 
     // Determine session based on start time (morning if before 1PM, otherwise evening)
-    // --- USER'S SESSION LOGIC INTEGRATED HERE ---
     $session = 'Not Specified'; // Default value
     // This logic uses the specific start time of the rendered slot.
     $timeToCheck = $lesson->session_start_time ?? ($lesson->start_time ?? null);
+    
+    // Debug information
+    echo "<!-- Image Path: " . $imagePath . " -->\n";
 
     if (!empty($timeToCheck)) {
         try {
@@ -58,25 +69,23 @@
    style="background-color: {{ $lesson->courseUnit?->color ?? '#6C3428' }}; color: white; vertical-align: middle; padding: 10px;"
    class="timetable-slot">
    
-    <div class="lesson-container" style="display: flex; align-items: center; gap: 15px;">
-
-        <div class="instructor-img-container" style="flex-shrink: 0;">
-            <img class="instructor-image"
-                src="{{ $imagePath }}"
-                alt="Instructor Image"
-                onerror="this.onerror=null; this.src='https://planner.ouk.ac.ke/storage/facilitators/alt.png';"
+    <div class="lesson-container" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+        <div class="lesson-details" style="flex-grow: 1; min-width: 0; order: 1; margin:10px;">
+            <!-- Text content will go here -->
+        
+        <div class="instructor-avatar" style="width: 80px; height: 80px; flex-shrink: 0; order: 2;">
+            <img 
+                src="{{ $imagePath }}" 
+                alt="{{ $instructorName }}"
+                onerror="this.onerror=null; this.src='{{ $fallbackImage }}'"
                 style="
-                    width: 60px;
-                    height: 60px;
+                    width: 100%;
+                    height: 100%;
                     border-radius: 50%;
                     object-fit: cover;
-                    border: 2px solid white;
-                    background-color: #f0f0f0;
-                    display: block;
+                    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
                 ">
         </div>
-        
-        <div class="lesson-details" style="flex-grow: 1; min-width: 0;">
             <p class="instructor-name" style="font-size: 1rem; font-weight: 600; margin: 0 0 5px 0;">
                 {{ $instructorName }}
             </p>

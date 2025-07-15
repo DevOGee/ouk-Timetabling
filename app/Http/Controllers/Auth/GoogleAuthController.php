@@ -29,13 +29,19 @@ class GoogleAuthController extends Controller
                 ]
             );
 
-            Auth::login($user);
+            // Log the user in and remember them
+            Auth::login($user, true);
             
-            // Always redirect to dashboard after Google login
+            // Regenerate the session to prevent session fixation
+            request()->session()->regenerate();
+            
+            // Redirect to the intended URL or dashboard
             return redirect()->intended('/dashboard');
             
         } catch (\Exception $e) {
-            return redirect('/login')->with('error', 'Something went wrong with Google authentication');
+            \Log::error('Google OAuth Error: ' . $e->getMessage());
+            return redirect('/login')
+                ->with('error', 'Failed to login with Google. Please try again or use another method.');
         }
     }
 }
