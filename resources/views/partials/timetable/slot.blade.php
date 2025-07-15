@@ -97,9 +97,28 @@
                 <hr style="margin: 8px 0; border: 0; height: 2px; background: #fff; opacity: 0.9;">
             </div>
             
-            <div style="font-size: 0.8rem; margin-top: 4px; color: rgba(255,255,255,0.9) !important;">
-                <div>Mode: {{ !empty($mode) ? ucfirst($mode) : 'Synchronous Online' }}</div>
-                <div>Session: {{ !empty($session) ? ucfirst($session) : 'Not Specified' }}</div>
+            <div style="font-size: 0.8rem; margin-top: 8px; color: rgba(255,255,255,0.9) !important;">
+                <div style="display: flex; align-items: center; margin-bottom: 6px;">
+                    <i class="fas fa-laptop" style="width: 16px; margin-right: 8px; text-align: center;"></i>
+                    <span>{{ !empty($mode) ? ucfirst($mode) : 'Synchronous Online' }}</span>
+                </div>
+                <div style="display: flex; align-items: center;">
+                    @if(!empty($session))
+                        @if(strtolower($session) === 'morning')
+                            <i class="fas fa-sun" style="width: 16px; margin-right: 8px; text-align: center;"></i>
+                            <span>Morning</span>
+                        @elseif(strtolower($session) === 'evening')
+                            <i class="fas fa-moon" style="width: 16px; margin-right: 8px; text-align: center;"></i>
+                            <span>Evening</span>
+                        @else
+                            <i class="fas fa-clock" style="width: 16px; margin-right: 8px; text-align: center;"></i>
+                            <span>{{ ucfirst($session) }}</span>
+                        @endif
+                    @else
+                        <i class="fas fa-clock" style="width: 16px; margin-right: 8px; text-align: center;"></i>
+                        <span>Not Specified</span>
+                    @endif
+                </div>
             </div>
         </div>
 
