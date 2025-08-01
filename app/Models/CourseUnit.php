@@ -35,9 +35,14 @@ class CourseUnit extends Model
 
     public function instructors()
     {
-        return $this->belongsToMany(Lecturer::class, 'course_unit_instructor')
-            ->withPivot('programme_id')
-            ->withTimestamps();
+        return $this->hasManyThrough(
+            User::class,
+            CourseUnitProgrammeMapping::class,
+            'course_unit_id', // Foreign key on course_unit_programme_mappings table
+            'id', // Foreign key on users table
+            'id', // Local key on course_units table
+            'user_id' // Local key on course_unit_programme_mappings table
+        )->distinct();
     }
 
     public function lessonSlots()

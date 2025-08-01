@@ -18,9 +18,9 @@ class AcademicSessionController extends Controller
     {
         $this->middleware('auth');
         
-        // Manually check for admin role
+        // Check for admin or school_timetabler role
         $this->middleware(function ($request, $next) {
-            if (!Auth::check() || !Auth::user()->hasRole('admin')) {
+            if (!Auth::check() || !(Auth::user()->hasRole('admin') || Auth::user()->hasRole('timetabler'))) {
                 abort(403, 'Unauthorized action.');
             }
             return $next($request);
@@ -62,12 +62,25 @@ class AcademicSessionController extends Controller
 
     public function show(AcademicSession $academicSession)
     {
-        // Get all schools that have programmes in this academic session
-        $schools = School::with(['programmes' => function($query) use ($academicSession) {
-            $query->whereHas('academicSessions', function($q) use ($academicSession) {
-                $q->where('academic_sessions.id', $academicSession->id);
-            });
-        }])->get();
+        $user = auth()->user();
+        
+        // If user is a school_timetabler, only show their school
+        if ($user->hasRole('school_timetabler')) {
+            $schools = School::where('id', $user->school_id)
+                ->with(['programmes' => function($query) use ($academicSession) {
+                    $query->whereHas('academicSessions', function($q) use ($academicSession) {
+                        $q->where('academic_sessions.id', $academicSession->id);
+                    });
+                }])
+                ->get();
+        } else {
+            // For admin, show all schools
+            $schools = School::with(['programmes' => function($query) use ($academicSession) {
+                $query->whereHas('academicSessions', function($q) use ($academicSession) {
+                    $q->where('academic_sessions.id', $academicSession->id);
+                });
+            }])->get();
+        }
 
         $otherSessions = AcademicSession::where('id', '!=', $academicSession->id)
             ->orderBy('name', 'desc')
@@ -79,9 +92,15 @@ class AcademicSessionController extends Controller
         $firstSchoolId = $schools->first() ? $schools->first()->id : null;
         
         // Get all programmes for this academic session with their school
-        $programmes = $academicSession->programmes()
-            ->with(['school'])
-            ->get();
+        $programmesQuery = $academicSession->programmes()
+            ->with(['school']);
+            
+        // If user is a timetabler, only show programmes from their school
+        if ($user->hasRole('timetabler') || $user->hasRole('school_timetabler')) {
+            $programmesQuery->where('school_id', $user->school_id);
+        }
+        
+        $programmes = $programmesQuery->get();
 
         // Manually count course units for each programme
         $programmes->each(function($programme) use ($academicSession) {
@@ -116,24 +135,31 @@ class AcademicSessionController extends Controller
         });
 
         // Get programmes that can have timetables added (have mappings but no timetable)
-        $programmesWithoutTimetable = $academicSession->programmes()
+        $programmesWithoutTimetableQuery = $academicSession->programmes()
             ->whereDoesntHave('programmeTimetables', function($query) use ($academicSession) {
                 $query->where('academic_session_id', $academicSession->id);
             })
             ->whereHas('courseUnitMappings', function($query) use ($academicSession) {
                 $query->where('academic_session_id', $academicSession->id);
-            })
-            ->get();
+            });
             
         // Get programmes with timetables
-        $programmesWithTimetable = $academicSession->programmes()
+        $programmesWithTimetableQuery = $academicSession->programmes()
             ->whereHas('programmeTimetables', function($query) use ($academicSession) {
                 $query->where('academic_session_id', $academicSession->id);
             })
             ->with(['programmeTimetables' => function($query) use ($academicSession) {
                 $query->where('academic_session_id', $academicSession->id);
-            }])
-            ->get();
+            }]);
+            
+        // Filter by school if user is a timetabler
+        if ($user->hasRole('timetabler') || $user->hasRole('school_timetabler')) {
+            $programmesWithoutTimetableQuery->where('school_id', $user->school_id);
+            $programmesWithTimetableQuery->where('school_id', $user->school_id);
+        }
+        
+        $programmesWithoutTimetable = $programmesWithoutTimetableQuery->get();
+        $programmesWithTimetable = $programmesWithTimetableQuery->get();
 
         // Convert to paginator for consistent interface
         $page = \Illuminate\Pagination\Paginator::resolveCurrentPage('page');

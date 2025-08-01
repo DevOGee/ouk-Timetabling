@@ -55,6 +55,7 @@
                                         title="View Programme (Disabled)">
                                     <i class="bi bi-eye"></i>
                                 </button>
+                                @if(!auth()->user()->hasRole('timetabler'))
                                 <form action="{{ route('admin.academic-sessions.programmes.detach', ['academicSession' => $academicSession, 'programme' => $programme]) }}" 
                                       method="POST" 
                                       class="d-inline">
@@ -67,6 +68,7 @@
                                         <i class="bi bi-trash"></i>
                                     </button>
                                 </form>
+                                @endif
                             </div>
                         </td>
                     </tr>

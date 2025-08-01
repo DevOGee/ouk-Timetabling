@@ -96,11 +96,11 @@ class CourseUnitProgrammeMapping extends Model
     }
     
     /**
-     * @deprecated Use instructor() instead
+     * Get the lecturer (instructor) for this mapping.
      */
     public function lecturer(): BelongsTo
     {
-        return $this->instructor();
+        return $this->belongsTo(User::class, 'user_id');
     }
 
     public function creator(): BelongsTo

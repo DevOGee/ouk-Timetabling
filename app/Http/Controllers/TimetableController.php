@@ -125,33 +125,114 @@ class TimetableController extends Controller
 
     public function exportPDF(Request $request)
     {
-        $programme = Programme::find($request->programme_id);
+        // Get the programme with school relationship
+        $programme = Programme::with('school')
+            ->findOrFail($request->programme_id);
+            
+        // Get all days ordered by ID
         $days = Day::orderBy('id')->get();
         $timetable = collect();
+        $levelName = 'N/A';
+        $semesterName = 'N/A';
+        $yearOfStudy = null;
+        $semester = null;
 
         if ($request->filled(['school_id', 'programme_id', 'level'])) {
             list($yearId, $semesterId) = explode('.', $request->level);
+            
+            // Get level and semester names
+            $yearOfStudy = \App\Models\YearOfStudy::find($yearId);
+            $semester = \App\Models\Semester::find($semesterId);
+            
+            if ($yearOfStudy) {
+                $levelName = $yearOfStudy->name;
+            }
+            
+            if ($semester) {
+                $semesterName = $semester->name;
+            }
+            
+            // Get the timetable data with all necessary relationships
             $timetable = CourseUnitProgrammeMapping::where('programme_id', $request->programme_id)
                 ->where('year_of_study_id', $yearId)
                 ->where('semester_id', $semesterId)
-                ->with(['courseUnit', 'lecturer', 'day'])
-                ->get();
+                ->with([
+                    'courseUnit' => function($query) {
+                        $query->with(['instructors.title']);
+                    },
+                    'day',
+                    'lecturer.title',
+                    'academicSession'
+                ])
+                ->get()
+                ->map(function ($lesson) {
+                    // Add formatted time fields for the view
+                    if ($lesson->morning_start_time) {
+                        $start = \Carbon\Carbon::parse($lesson->morning_start_time);
+                        $end = $start->copy()->addMinutes($lesson->morning_duration);
+                        
+                        $lesson->formatted_start_time = $start->format('g:i A');
+                        $lesson->formatted_end_time = $end->format('g:i A');
+                        $lesson->duration = $lesson->morning_duration;
+                        $lesson->start_minutes = $start->hour * 60 + $start->minute;
+                        $lesson->end_minutes = $end->hour * 60 + $end->minute;
+                        $lesson->session = 'Morning';
+                    } elseif ($lesson->evening_start_time) {
+                        $start = \Carbon\Carbon::parse($lesson->evening_start_time);
+                        $end = $start->copy()->addMinutes($lesson->evening_duration);
+                        
+                        $lesson->formatted_start_time = $start->format('g:i A');
+                        $lesson->formatted_end_time = $end->format('g:i A');
+                        $lesson->duration = $lesson->evening_duration;
+                        $lesson->start_minutes = $start->hour * 60 + $start->minute;
+                        $lesson->end_minutes = $end->hour * 60 + $end->minute;
+                        $lesson->session = 'Evening';
+                    }
+                    
+                    // Add instructor name from the lecturer relationship
+                    if ($lesson->lecturer) {
+                        $lesson->instructor_name = $lesson->lecturer->full_name;
+                    } else {
+                        $lesson->instructor_name = 'TBA';
+                    }
+                    
+                    return $lesson;
+                });
         }
 
-        // Sort the timetable by day
-        $timetable = $timetable->sortBy(function ($lesson) {
-            return $lesson->day->name;
+        // Filter out weekends
+        $weekDays = $days->filter(function($day) {
+            return !in_array(strtolower($day->name), ['saturday', 'sunday']);
         });
 
-        // Group and sort lessons by day
-        $groupedLessons = $timetable->groupBy('day_id')->sortBy(function ($day) {
-            return $day->first()->day->name;  // Sorting days alphabetically
-        });
+        // Prepare data for the view
+        $data = [
+            'programme' => $programme,
+            'days' => $weekDays,
+            'timetable' => $timetable,
+            'levelName' => $levelName,
+            'semesterName' => $semesterName,
+            'academicYear' => now()->format('Y') . '/' . (now()->format('y') + 1),
+            'weekDays' => $weekDays,
+        ];
 
-        // Return the PDF view
-        $pdf = Pdf::loadView('timetable.pdf', compact('programme', 'days', 'timetable', 'groupedLessons'))
-            ->setPaper('A4', 'portrait');
+        // Generate PDF with proper options
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('timetable.pdf', $data)
+            ->setPaper('A4', 'portrait')
+            ->setOption('isHtml5ParserEnabled', true)
+            ->setOption('isRemoteEnabled', true)
+            ->setOption('dpi', 150)
+            ->setOption('defaultFont', 'DejaVu Sans')
+            ->setOption('fontHeightRatio', 0.9);
 
-        return $pdf->download('timetable.pdf');
+        $filename = sprintf(
+            'Timetable_%s_Level_%s_%s_%s.pdf',
+            str_replace(' ', '_', $programme->name),
+            $levelName,
+            $semesterName,
+            now()->format('Y-m-d')
+        );
+        
+        return $pdf->download($filename);
     }
 }

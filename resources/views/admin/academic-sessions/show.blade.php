@@ -53,6 +53,7 @@
                     <h5 class="card-title">Description</h5>
                     <p>{{ $academicSession->description ?? 'No description provided.' }}</p>
 
+                    @if(!auth()->user()->hasRole('timetabler'))
                     <div class="mt-4">
                         <h5>Quick Actions</h5>
                         <div class="d-flex gap-2 flex-wrap">
@@ -64,37 +65,38 @@
                             
                             @if(!$academicSession->is_current)
                                 <form action="{{ route('admin.academic-sessions.set-current', $academicSession) }}" method="POST">
-                                    @csrf
-                                    @method('PATCH')
-                                    <button type="submit" class="btn btn-sm btn-outline-primary">
-                                        <i class="bi bi-check-circle"></i> Set as Current
-                                    </button>
-                                </form>
-                            @endif
+                                        @csrf
+                                        @method('PATCH')
+                                        <button type="submit" class="btn btn-sm btn-outline-primary">
+                                            <i class="bi bi-check-circle"></i> Set as Current
+                                        </button>
+                                    </form>
+                                @endif
 
-                            @if($academicSession->status !== 'archived')
-                                <form action="{{ route('admin.academic-sessions.archive', $academicSession) }}" method="POST">
-                                    @csrf
-                                    @method('PATCH')
-                                    <button type="submit" class="btn btn-sm btn-outline-warning" 
-                                            onclick="return confirm('Are you sure you want to archive this session?')">
-                                        <i class="bi bi-archive"></i> Archive
-                                    </button>
-                                </form>
-                            @endif
+                                @if($academicSession->status !== 'archived')
+                                    <form action="{{ route('admin.academic-sessions.archive', $academicSession) }}" method="POST">
+                                        @csrf
+                                        @method('PATCH')
+                                        <button type="submit" class="btn btn-sm btn-outline-warning" 
+                                                onclick="return confirm('Are you sure you want to archive this session?')">
+                                            <i class="bi bi-archive"></i> Archive
+                                        </button>
+                                    </form>
+                                @endif
 
-                            @if(!$academicSession->timetables()->exists())
-                                <form action="{{ route('admin.academic-sessions.destroy', $academicSession) }}" method="POST" class="d-inline">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit" class="btn btn-sm btn-outline-danger" 
-                                            onclick="return confirm('Are you sure you want to delete this session?')">
-                                        <i class="bi bi-trash"></i> Delete
-                                    </button>
-                                </form>
-                            @endif
+                                @if(!$academicSession->timetables()->exists())
+                                    <form action="{{ route('admin.academic-sessions.destroy', $academicSession) }}" method="POST" class="d-inline">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="btn btn-sm btn-outline-danger" 
+                                                onclick="return confirm('Are you sure you want to delete this session?')">
+                                            <i class="bi bi-trash"></i> Delete
+                                        </button>
+                                    </form>
+                                @endif
                         </div>
                     </div>
+                    @endif
                 </div>
             </div>
         </div>
@@ -121,6 +123,7 @@
             <div class="card mb-4">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">Programmes</h5>
+                    @if(!auth()->user()->hasRole('timetabler'))
                     <div class="d-flex align-items-center">
                         <div class="d-flex align-items-center">
                             @if(isset($schools) && $schools->count() > 0)
@@ -146,6 +149,7 @@
                                 </a>
                             </div>
                         </div>
+                    @endif
                     </div>
                 </div>
                 <div class="card-body">
@@ -171,34 +175,35 @@
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">Programme Timetables</h5>
                     <div class="d-flex align-items-center">
-                        <!-- School Filter Dropdown -->
-                        @if(isset($schools) && $schools->count() > 0)
-                            <div class="me-3">
-                                <label for="timetableSchoolFilter" class="form-label mb-0 me-2">Filter by School:</label>
-                                <select id="timetableSchoolFilter" class="form-select form-select-sm" style="width: auto; display: inline-block;">
-                                    <option value="all">All Schools</option>
-                                    @foreach($schools as $school)
-                                        <option value="{{ $school->id }}">{{ $school->name }}</option>
-                                    @endforeach
-                                </select>
-                            </div>
-                        @endif
-                        
-                        @if($programmesForTimetable->isNotEmpty())
-                            <div class="dropdown">
-                                <button class="btn btn-sm btn-primary dropdown-toggle" type="button" id="addTimetableDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-                                    <i class="bi bi-plus"></i> Add Timetable
-                                </button>
-                                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="addTimetableDropdown">
-                                    @foreach($programmesForTimetable as $programme)
-                                        <li>
-                                            <a class="dropdown-item" href="#" data-programme-id="{{ $programme->id }}">
-                                                {{ $programme->name }} ({{ $programme->programme_code }})
-                                            </a>
-                                        </li>
-                                    @endforeach
-                                </ul>
-                            </div>
+                        @if(!auth()->user()->hasRole('timetabler'))
+                            @if(isset($schools) && $schools->count() > 0)
+                                <div class="me-3">
+                                    <label for="timetableSchoolFilter" class="form-label mb-0 me-2">Filter by School:</label>
+                                    <select id="timetableSchoolFilter" class="form-select form-select-sm" style="width: auto; display: inline-block;">
+                                        <option value="all">All Schools</option>
+                                        @foreach($schools as $school)
+                                            <option value="{{ $school->id }}">{{ $school->name }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                            @endif
+                            
+                            @if($programmesForTimetable->isNotEmpty())
+                                <div class="dropdown">
+                                    <button class="btn btn-sm btn-primary dropdown-toggle" type="button" id="addTimetableDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                        <i class="bi bi-plus"></i> Add Timetable
+                                    </button>
+                                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="addTimetableDropdown">
+                                        @foreach($programmesForTimetable as $programme)
+                                            <li>
+                                                <a class="dropdown-item" href="#" data-programme-id="{{ $programme->id }}">
+                                                    {{ $programme->name }} ({{ $programme->programme_code }})
+                                                </a>
+                                            </li>
+                                        @endforeach
+                                    </ul>
+                                </div>
+                            @endif
                         @endif
                     </div>
                 </div>

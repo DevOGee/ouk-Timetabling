@@ -77,10 +77,14 @@
         @endif
 
         <div class="mb-3 d-flex justify-content-between">
+            @can('create', App\Models\User::class)
             <div>
                 <a href="{{ route('instructors.create') }}" class="btn btn-primary">Add Lecturer</a>
                 <a href="{{ route('instructors.upload') }}" class="btn btn-secondary">Bulk Upload</a>
             </div>
+            @else
+            <div></div> <!-- Empty div to maintain flex layout -->
+            @endcan
             <form method="GET" action="{{ route('instructors.index') }}" class="d-flex">
                 <input type="text" name="search" class="form-control me-2" placeholder="Search by Name or Email"
                     value="{{ request('search') }}">
@@ -113,19 +117,26 @@
                                             style="width: 100%; height: 100%; object-fit: cover;">
                                     @endif
                                 </div>
-                                <span class="text-muted me-1">{{ $instructor->title->abbreviation ?? $instructor->title->name }}.</span> {{ $instructor->name }}
+                                @if($instructor->title)
+                                    <span class="text-muted me-1">{{ $instructor->title->abbreviation ?? $instructor->title->name }}</span>
+                                @endif
+                                {{ $instructor->name }}
                             </div>
                         </td>
                         <td style="">{{ $instructor->email }}</td>
                         <td style="">
-                            <a href="{{ route('instructors.show', $instructor) }}" class="btn btn-info btn-sm">View</a>
+                            @can('view', $instructor)
+                                <a href="{{ route('instructors.show', $instructor) }}" class="btn btn-info btn-sm">View</a>
+                            @endcan
                             <a href="{{ route('instructors.edit', $instructor) }}" class="btn btn-warning btn-sm">Edit</a>
-                            <form action="{{ route('instructors.destroy', $instructor) }}" method="POST" class="d-inline" id="delete-form-{{ $instructor->id }}">
-                                @csrf
-                                @method('DELETE')
-                                <button type="button" class="btn btn-danger btn-sm"
-                                    onclick="confirmDelete({{ $instructor->id }})">Delete</button>
-                            </form>
+                            @can('delete', $instructor)
+                                <form action="{{ route('instructors.destroy', $instructor) }}" method="POST" class="d-inline" id="delete-form-{{ $instructor->id }}">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="button" class="btn btn-danger btn-sm"
+                                        onclick="confirmDelete({{ $instructor->id }})">Delete</button>
+                                </form>
+                            @endcan
                         </td>
                     </tr>
                 @endforeach

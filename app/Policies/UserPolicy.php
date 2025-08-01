@@ -14,7 +14,7 @@ class UserPolicy
      */
     public function viewAny(User $user): bool
     {
-        return $user->hasRole('admin');
+        return $user->hasAnyRole(['admin', 'timetabler']);
     }
 
     /**
@@ -22,7 +22,17 @@ class UserPolicy
      */
     public function view(User $user, User $model): bool
     {
-        return $user->hasRole('admin');
+        if ($user->hasRole('admin')) {
+            return true;
+        }
+        
+        // Timetablers can only view instructors from their school
+        if ($user->hasRole('timetabler')) {
+            return $model->hasRole('instructor') && 
+                   $model->school_id === $user->school_id;
+        }
+        
+        return false;
     }
 
     /**
@@ -38,7 +48,16 @@ class UserPolicy
      */
     public function update(User $user, User $model): bool
     {
-        return $user->hasRole('admin');
+        if ($user->hasRole('admin')) {
+            return true;
+        }
+        
+        // Allow timetablers to edit instructors
+        if ($user->hasRole('timetabler') && $model->hasRole('instructor')) {
+            return true;
+        }
+        
+        return false;
     }
 
     /**

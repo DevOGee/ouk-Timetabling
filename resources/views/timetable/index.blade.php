@@ -411,11 +411,11 @@
             {{-- <h2 class="filter-title">Timetable Viewer</h2> --}}
 
             <form method="GET" action="{{ route('timetable.index') }}" class="filter-form">
-                <div class="row g-4">
+                <div class="d-flex align-items-end flex-wrap" style="gap: 8px;">
                     {{-- School Dropdown --}}
-                    <div class="col-md-4">
-                        <div class="form-group">
-                            <select class="form-control form-control-lg" id="school_id" name="school_id" required>
+                    <div class="flex-grow-1" style="min-width: 200px;">
+                        <div class="form-group mb-0">
+                            <select class="form-control form-control-sm" id="school_id" name="school_id" required style="border-radius: 5px; height: 38px;">
                                 <option value="">Select School</option>
                                 @foreach ($schools as $school)
                                     <option value="{{ $school->id }}" {{ request('school_id') == $school->id ? 'selected' : '' }}>
@@ -427,9 +427,9 @@
                     </div>
 
                     {{-- Programme Dropdown --}}
-                    <div class="col-md-4">
-                        <div class="form-group">
-                            <select class="form-control form-control-lg" id="programme_id" name="programme_id" required>
+                    <div class="flex-grow-1" style="min-width: 250px;">
+                        <div class="form-group mb-0">
+                            <select class="form-control form-control-sm" id="programme_id" name="programme_id" required style="border-radius: 5px; height: 38px;">
                                 <option value="">Select Programme</option>
                                 @foreach ($groupedProgrammes as $schoolId => $schoolProgrammes)
                                     @foreach ($schoolProgrammes as $programme)
@@ -444,27 +444,27 @@
                         </div>
                     </div>
 
-                    {{-- Level of Study and Export --}}
-                    <div class="col-md-5">
-                        <div class="d-flex align-items-end" style="gap: 10px;">
-                            <div class="form-group flex-grow-1">
-                                <select class="form-control form-control-sm" id="level" name="level" required>
-                                    <option value="">Select Level</option>
-                                    @foreach ($levels as $level)
-                                        <option value="{{ $level->id }}" {{ request('level') == $level->id ? 'selected' : '' }}>
-                                            {{ $level->name }}
-                                        </option>
-                                    @endforeach
-                                </select>
-                            </div>
-                            <button type="button" id="exportPdfBtn" class="btn btn-success btn-sm" style="height: 38px; white-space: nowrap;">
-                                <i class="fas fa-file-export me-1"></i> Export PDF
-                            </button>
+                    {{-- Level of Study --}}
+                    <div style="width: 150px;">
+                        <div class="form-group mb-0">
+                            <select class="form-control form-control-sm" id="level" name="level" required style="border-radius: 5px; height: 38px;">
+                                <option value="">Select Level</option>
+                                @foreach ($levels as $level)
+                                    <option value="{{ $level->id }}" {{ request('level') == $level->id ? 'selected' : '' }}>
+                                        {{ $level->name }}
+                                    </option>
+                                @endforeach
+                            </select>
                         </div>
                     </div>
+
+                    {{-- Export Button --}}
+                    <div>
+                        <button type="button" id="exportPdfBtn" class="btn btn-success btn-sm" style="border-radius: 5px; height: 38px; white-space: nowrap;">
+                            <i class="fas fa-file-export me-1"></i> Export PDF
+                        </button>
+                    </div>
                 </div>
-
-
             </form>
         </div>
     </div>

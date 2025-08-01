@@ -82,15 +82,19 @@
                         <td>{{ $courseUnit->code }}</td>
                         <td>{{ $courseUnit->name }}</td>
                         <td>
-                            <a href="{{ route('course_units.show', $courseUnit) }}" class="btn btn-warning btn-sm">View</a>
+                            @can('view', $courseUnit)
+                                <a href="{{ route('course_units.show', $courseUnit) }}" class="btn btn-warning btn-sm">View</a>
+                            @endcan
                             <a href="{{ route('course_units.edit', $courseUnit) }}" class="btn btn-warning btn-sm">Edit</a>
-                            <form action="{{ route('course_units.destroy', $courseUnit) }}" method="POST"
-                                class="d-inline">
-                                @csrf
-                                @method('DELETE')
-                                <button type="submit" class="btn btn-danger btn-sm"
-                                    onclick="return confirm('Are you sure?')">Delete</button>
-                            </form>
+                            @can('delete', $courseUnit)
+                                <form action="{{ route('course_units.destroy', $courseUnit) }}" method="POST"
+                                    class="d-inline">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="btn btn-danger btn-sm"
+                                        onclick="return confirm('Are you sure?')">Delete</button>
+                                </form>
+                            @endcan
                         </td>
                     </tr>
                 @endforeach
