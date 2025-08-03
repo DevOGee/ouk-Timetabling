@@ -405,4 +405,4 @@ Route::middleware(['auth'])->group(function () {
     });
 });
 
-require __DIR__.'/auth.php';
+// require __DIR__.'/auth.php'; // Commented out to prevent duplicate route definitions
