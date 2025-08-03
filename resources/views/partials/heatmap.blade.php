@@ -38,7 +38,7 @@
                                             </div>
                                             <div class="text-truncate">
                                                 <div class="fw-bold">{{ $programme['code'] }}</div>
-                                                <small class="text-muted text-truncate d-block" style="max-width: 200px;">
+                                                <small class="text-muted d-block">
                                                     {{ $programme['name'] }}
                                                 </small>
                                             </div>
@@ -53,7 +53,7 @@
                                             data-programme-id="{{ $programme['id'] }}" 
                                             data-level="{{ $level }}"
                                             data-count="{{ $count }}">
-                                            <div class="heatmap-count">{{ $count > 0 ? $count : '-' }}</div>
+                                            <div class="heatmap-count"></div>
                                             <div class="heatmap-tooltip">
                                                 {{ $programme['code'] }} - Level {{ $level }}
                                             </div>
