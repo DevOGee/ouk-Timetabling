@@ -6,6 +6,7 @@ use Illuminate\Auth\Events\Logout;
 use Illuminate\Auth\Events\Login;
 use Illuminate\Auth\Events\Failed;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Session;
 
 class LogAuthenticationEvents
 {
@@ -14,12 +15,18 @@ class LogAuthenticationEvents
      */
     public function handleLogin(Login $event): void
     {
-        Log::info('User logged in', [
-            'user_id' => $event->user->id,
-            'email' => $event->user->email,
-            'ip' => request()->ip(),
-            'user_agent' => request()->userAgent(),
-        ]);
+        // Only log if this is a fresh login (not a session refresh)
+        if (!Session::has('last_activity')) {
+            Log::info('User logged in', [
+                'user_id' => $event->user->id,
+                'email' => $event->user->email,
+                'ip' => request()->ip(),
+                'user_agent' => request()->userAgent(),
+            ]);
+        }
+        
+        // Update last activity timestamp
+        Session::put('last_activity', now());
     }
 
     /**
@@ -35,6 +42,9 @@ class LogAuthenticationEvents
                 'user_agent' => request()->userAgent(),
             ]);
         }
+        
+        // Clear the session data
+        Session::forget('last_activity');
     }
 
     /**
@@ -43,7 +53,7 @@ class LogAuthenticationEvents
     public function handleFailed(Failed $event): void
     {
         Log::warning('Failed login attempt', [
-            'email' => $event->credentials['email'],
+            'email' => $event->credentials['email'] ?? 'unknown',
             'ip' => request()->ip(),
             'user_agent' => request()->userAgent(),
         ]);
