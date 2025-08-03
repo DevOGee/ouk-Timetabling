@@ -785,8 +785,9 @@
             @endif
             @endauth
 
+            {{-- Timetable Management - Admin, Dean, and Timetabler --}}
             @auth
-            @if(auth()->user()->hasRole(['admin', 'dean']))
+            @if(auth()->user()->hasRole(['admin', 'dean', 'timetabler']))
             <li class="menu-item {{ request()->routeIs('admin.timetables.*') ? 'active' : '' }}">
                 <a href="{{ route('admin.timetables.manage') }}" class="menu-link">
                     <i class="bi bi-calendar-check"></i>

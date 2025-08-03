@@ -48,6 +48,20 @@
         height: 20px;
         display: flex;
         align-items: center;
+    }
+    .stat-number {
+        font-size: 1.5rem;
+        font-weight: 700;
+    }
+    .stat-label {
+        font-size: 0.875rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 0.25rem;
+    }
+    .stat-change {
+        font-size: 0.75rem;
+    }
         justify-content: center;
         font-size: 0.7rem;
     }
@@ -89,14 +103,84 @@
         </div>
     </div>
 
+    <!-- Stats Cards -->
+    <div class="row g-4 mb-4">
+        @if(!$isTimetabler)
+        <!-- Academic Sessions Card -->
+        <div class="col-xl-3 col-md-6">
+            <div class="stat-card card bg-white h-100">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-uppercase text-muted mb-2 small fw-bold">Academic Sessions</h6>
+                            <h2 class="mb-0 fw-bold text-primary">{{ $academicSessions->count() }}</h2>
+                        </div>
+                        <div class="bg-primary bg-opacity-10 p-3 rounded-circle">
+                            <i class="bi bi-calendar-week text-primary stat-icon"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        @endif
+
+        @if(!$isTimetabler)
+        <!-- Programmes Card -->
+        <div class="col-xl-3 col-md-6">
+            <div class="stat-card card bg-white h-100">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-uppercase text-muted mb-2 small fw-bold">Programmes</h6>
+                            <h2 class="mb-0 fw-bold text-success">{{ $programmes->count() }}</h2>
+                        </div>
+                        <div class="bg-success bg-opacity-10 p-3 rounded-circle">
+                            <i class="bi bi-journal-text text-success stat-icon"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        @endif
+
+        <!-- Instructors Card -->
+        <div class="col-xl-3 col-md-6">
+            <div class="stat-card card bg-white h-100">
+                <div class="card-body p-4 position-relative">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-uppercase text-muted mb-2 small fw-bold">Instructors</h6>
+                            <h2 class="mb-0 fw-bold text-info">{{ $instructors->count() }}</h2>
+                        </div>
+                        <div class="bg-info bg-opacity-10 p-3 rounded-circle">
+                            <i class="bi bi-people text-info stat-icon"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Course Units Card -->
+        <div class="col-xl-3 col-md-6">
+            <div class="stat-card card bg-white h-100">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-uppercase text-muted mb-2 small fw-bold">Course Units</h6>
+                            <h2 class="mb-0 fw-bold text-warning">{{ $courseUnits->count() }}</h2>
+                        </div>
+                        <div class="bg-warning bg-opacity-10 p-3 rounded-circle">
+                            <i class="bi bi-book text-warning stat-icon"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Academic Session Status -->
     <div class="row g-4 mb-4">
         <!-- Active Academic Session -->
-        @php
-            $activeSession = $academicSessions->where('status', 'active')->first();
-            $currentSession = $academicSessions->where('is_current', true)->first();
-        @endphp
-        
         @if($activeSession)
         <div class="col-lg-6">
             <div class="card border-0 shadow-sm h-100">
@@ -146,16 +230,14 @@
                         <div>
                             <h4 class="mb-1">{{ $currentSession->name }}</h4>
                             <p class="text-muted mb-2">You are currently viewing and editing this academic session.</p>
-                            <div class="d-flex">
+                            <div class="d-flex align-items-center flex-wrap gap-2">
                                 <span class="badge bg-primary bg-opacity-10 text-primary me-2">
-                                    <i class="bi bi-calendar3 me-1"></i> 
+                                    <i class="bi bi-calendar3 me-1"></i>
                                     {{ $currentSession->start_date->format('M d, Y') }} - {{ $currentSession->end_date->format('M d, Y') }}
                                 </span>
-                                @if($activeSession && $currentSession->id === $activeSession->id)
-                                <span class="badge bg-success bg-opacity-10 text-success">
-                                    <i class="bi bi-check-circle me-1"></i> Active Session
-                                </span>
-                                @endif
+                                <a href="{{ route('timetable.index', ['academic_session' => $currentSession->id]) }}" class="btn btn-sm btn-primary">
+                                    <i class="bi bi-calendar-week me-1"></i> View Timetable
+                                </a>
                             </div>
                         </div>
                     </div>
@@ -165,86 +247,18 @@
         @endif
     </div>
 
-    <!-- Stats Cards -->
-    <div class="row g-4 mb-4">
-        <!-- Academic Sessions Card -->
-        <div class="col-xl-3 col-md-6">
-            <div class="stat-card card bg-white h-100">
-                <div class="card-body p-4">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <h6 class="text-uppercase text-muted mb-2 small fw-bold">Academic Sessions</h6>
-                            <h2 class="mb-0 fw-bold text-primary">{{ $academicSessions->count() }}</h2>
-                        </div>
-                        <div class="bg-primary bg-opacity-10 p-3 rounded-circle">
-                            <i class="bi bi-calendar-week text-primary stat-icon"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Programmes Card -->
-        <div class="col-xl-3 col-md-6">
-            <div class="stat-card card bg-white h-100">
-                <div class="card-body p-4">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <h6 class="text-uppercase text-muted mb-2 small fw-bold">Programmes</h6>
-                            <h2 class="mb-0 fw-bold text-success">{{ $programmes->count() }}</h2>
-                        </div>
-                        <div class="bg-success bg-opacity-10 p-3 rounded-circle">
-                            <i class="bi bi-journal-bookmark text-success stat-icon"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Instructors Card -->
-        <div class="col-xl-3 col-md-6">
-            <div class="stat-card card bg-white h-100">
-                <div class="card-body p-4 position-relative">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <h6 class="text-uppercase text-muted mb-2 small fw-bold">Instructors</h6>
-                            <h2 class="mb-0 fw-bold text-info">{{ $instructors->count() }}</h2>
-                        </div>
-                        <div class="bg-info bg-opacity-10 p-3 rounded-circle">
-                            <i class="bi bi-people text-info stat-icon"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Course Units Card -->
-        <div class="col-xl-3 col-md-6">
-            <div class="stat-card card bg-white h-100">
-                <div class="card-body p-4">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <h6 class="text-uppercase text-muted mb-2 small fw-bold">Course Units</h6>
-                            <h2 class="mb-0 fw-bold text-warning">{{ $courseUnits->count() }}</h2>
-                        </div>
-                        <div class="bg-warning bg-opacity-10 p-3 rounded-circle">
-                            <i class="bi bi-book text-warning stat-icon"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
     <!-- Quick Actions -->
     <div class="row mb-4">
         <div class="col-12">
             <div class="card border-0 shadow-sm mb-4">
                 <div class="card-header bg-white border-0 py-3">
                     <h5 class="mb-0 fw-bold text-primary">
-                        <i class="bi bi-lightning-charge-fill me-2"></i>Quick Actions
+                        <i class="bi bi-lightning-charge-fill text-warning me-2"></i>
+                        Quick Actions
                     </h5>
-                    <p class="text-muted mb-0 small">Quickly access frequently used features</p>
+                    <p class="text-muted mb-0 small">
+                        Quickly access frequently used features
+                    </p>
                 </div>
                 <div class="card-body p-4">
                     <div class="row g-3">
@@ -262,16 +276,31 @@
                         </div>
                         @endif
                         <div class="col-lg-3 col-md-6">
-                            <a href="{{ route('admin.academic-sessions.index') }}" class="btn btn-light w-100 p-3 text-start d-flex align-items-center quick-actions">
-                                <div class="bg-primary bg-opacity-10 p-2 rounded me-3">
-                                    <i class="bi bi-calendar3 text-primary"></i>
-                                </div>
-                                <div>
-                                    <h6 class="mb-0 fw-bold">All Sessions</h6>
-                                    <small class="text-muted">Manage academic years</small>
-                                </div>
-                            </a>
-                        </div>
+                                @if(!$isTimetabler)
+                                <a href="{{ route('admin.academic-sessions.index') }}" class="btn btn-light w-100 p-3 text-start d-flex align-items-center quick-actions">
+                                    <div class="bg-primary bg-opacity-10 p-2 rounded me-3">
+                                        <i class="bi bi-calendar3 text-primary"></i>
+                                    </div>
+                                    <div>
+                                        <h6 class="mb-0 fw-bold">All Sessions</h6>
+                                        <small class="text-muted">Manage academic years</small>
+                                    </div>
+                                </a>
+                                @endif
+                                
+                                        @if($isTimetabler && $currentSession)
+                                <a href="{{ url('/admin/academic-sessions/' . $currentSession->id) }}" class="btn btn-light w-100 p-3 text-start d-flex align-items-center quick-actions">
+                                    <div class="bg-info bg-opacity-10 p-2 rounded me-3">
+                                        <i class="bi bi-diagram-3 text-info"></i>
+                                    </div>
+                                    <div>
+                                        <h6 class="mb-0 fw-bold">Course Mapping</h6>
+                                        <small class="text-muted">Map courses to programmes</small>
+                                    </div>
+                                </a>
+                                @endif
+                            </div>
+                        @if(!$isTimetabler)
                         <div class="col-lg-3 col-md-6">
                             <a href="{{ route('admin.programmes.index') }}" class="btn btn-light w-100 p-3 text-start d-flex align-items-center quick-actions">
                                 <div class="bg-success bg-opacity-10 p-2 rounded me-3">
@@ -283,6 +312,7 @@
                                 </div>
                             </a>
                         </div>
+                        @endif
                         <div class="col-lg-3 col-md-6">
                             <a href="{{ route('instructors.index') }}" class="btn btn-light w-100 p-3 text-start d-flex align-items-center quick-actions">
                                 <div class="bg-info bg-opacity-10 p-2 rounded me-3">
@@ -305,23 +335,38 @@
                                 </div>
                             </a>
                         </div>
+                        @if($isAdmin)
+                        <div class="col-lg-3 col-md-6">
+                        <a href="{{ route('admin.users.index') }}" class="btn btn-light w-100 p-3 text-start d-flex align-items-center quick-actions">
+                            <div class="bg-purple bg-opacity-10 p-2 rounded me-3">
+                                <i class="bi bi-people-fill text-purple"></i>
+                            </div>
+                            <div>
+                                <h6 class="mb-0 fw-bold">Manage Users</h6>
+                                <small class="text-muted">Manage system users and roles</small>
+                            </div>
+                        </a>
+                        @endif
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Programmes Without Courses -->
+    @if($unmappedProgrammes->isNotEmpty())
+    <!-- Programmes Section -->
     <div class="row g-4">
         <div class="col-lg-6">
             <div class="card border-0 shadow-sm h-100">
-                <div class="card-header bg-white border-0 border-bottom border-danger border-3 py-3">
+                <div class="card-header bg-white border-0 border-bottom border-{{ $isTimetabler ? 'primary' : 'danger' }} border-3 py-3">
                     <div class="d-flex justify-content-between align-items-center">
-                        <h5 class="mb-0 fw-bold text-danger">
-                            <i class="bi bi-exclamation-triangle-fill me-2"></i>Programmes Without Courses
+                        <h5 class="mb-0 fw-bold text-{{ $isTimetabler ? 'primary' : 'danger' }}">
+                            <i class="bi {{ $isTimetabler ? 'bi-journal-bookmark' : 'bi-exclamation-triangle-fill' }} me-2"></i>
+                            {{ $isTimetabler ? 'Programmes in Your School' : 'Programmes Without Courses' }}
                         </h5>
-                        <span class="badge bg-danger bg-opacity-10 text-danger">
-                            {{ $unmappedProgrammes->count() }} programmes
+                        <span class="badge bg-{{ $isTimetabler ? 'primary' : 'danger' }}-subtle text-{{ $isTimetabler ? 'primary' : 'danger' }} px-2 py-1">
+                            {{ $unmappedProgrammes->count() }} {{ $unmappedProgrammes->count() === 1 ? 'programme' : 'programmes' }}
                         </span>
                     </div>
                 </div>
@@ -418,6 +463,7 @@
             </div>
         </div>
     </div>
+    @endif
 </div>
 
 @push('scripts')
