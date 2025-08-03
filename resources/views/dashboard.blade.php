@@ -62,9 +62,6 @@
     .stat-change {
         font-size: 0.75rem;
     }
-        justify-content: center;
-        font-size: 0.7rem;
-    }
     .card {
         border: none;
         border-radius: 10px;
@@ -82,6 +79,103 @@
     .list-group-item:hover {
         background-color: #f8f9fc;
         border-left-color: #4e73df;
+    }
+    .heatmap-container {
+        background: white;
+        border-radius: 0.5rem;
+        box-shadow: 0 0.125rem 0.5rem rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+        margin-bottom: 2rem;
+    }
+    .heatmap-header {
+        padding: 1rem 1.25rem;
+        background-color: #f8f9fa;
+        border-bottom: 1px solid #e9ecef;
+    }
+    .heatmap-title {
+        margin: 0;
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: #2c3e50;
+    }
+    .heatmap-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    .heatmap-table th, 
+    .heatmap-table td {
+        padding: 0.75rem 1rem;
+        text-align: center;
+        border: 1px solid #e9ecef;
+    }
+    .heatmap-table th {
+        background-color: #f8f9fa;
+        font-weight: 600;
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: #6c757d;
+    }
+    .heatmap-programme {
+        text-align: left !important;
+        white-space: nowrap;
+        max-width: 250px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .heatmap-cell {
+        position: relative;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+    .heatmap-cell:hover {
+        transform: scale(1.05);
+        z-index: 1;
+        box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    .heatmap-count {
+        font-weight: 600;
+        font-size: 0.9rem;
+    }
+    .heatmap-tooltip {
+        position: absolute;
+        bottom: 100%;
+        left: 50%;
+        transform: translateX(-50%) translateY(-5px);
+        background: #2c3e50;
+        color: white;
+        padding: 0.5rem 1rem;
+        border-radius: 0.25rem;
+        font-size: 0.8rem;
+        white-space: nowrap;
+        pointer-events: none;
+        opacity: 0;
+        transition: opacity 0.2s, transform 0.2s;
+        z-index: 1000;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    .heatmap-cell:hover .heatmap-tooltip {
+        opacity: 1;
+        transform: translateX(-50%) translateY(-10px);
+    }
+    .heatmap-legend {
+        display: flex;
+        justify-content: center;
+        margin-top: 1rem;
+        font-size: 0.8rem;
+        color: #6c757d;
+    }
+    .heatmap-legend-item {
+        display: flex;
+        align-items: center;
+        margin: 0 0.5rem;
+    }
+    .heatmap-legend-color {
+        width: 1rem;
+        height: 1rem;
+        border-radius: 2px;
+        margin-right: 0.25rem;
+        border: 1px solid rgba(0,0,0,0.1);
     }
 </style>
 @endpush
@@ -538,6 +632,130 @@
         </div>
     </div>
     @endif
+
+    @if($isAdmin && !empty($heatmapData['programmes']) && $currentSession)
+    <!-- Heatmap Section -->
+    <div class="row g-4 mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-0 py-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0 fw-bold text-primary">
+                            <i class="bi bi-grid-3x3-gap-fill text-primary me-2"></i>
+                            Course Mappings Overview
+                        </h5>
+                        <div>
+                            <span class="badge bg-light text-dark">
+                                <i class="bi bi-calendar-week me-1"></i>
+                                {{ $currentSession->name }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-bordered align-middle mb-0 heatmap-table">
+                            <thead>
+                                <tr>
+                                    <th class="text-start ps-3">Programme</th>
+                                    @foreach($heatmapData['levels'] as $level)
+                                        <th>{{ $level }}</th>
+                                    @endforeach
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach($heatmapData['programmes'] as $programme)
+                                <tr>
+                                    <td class="heatmap-programme" title="{{ $programme['name'] }}">
+                                        <div class="d-flex align-items-center">
+                                            <div class="bg-primary bg-opacity-10 p-1 rounded me-2">
+                                                <i class="bi bi-journal-bookmark text-primary"></i>
+                                            </div>
+                                            <div class="text-truncate">
+                                                <div class="fw-bold">{{ $programme['code'] }}</div>
+                                                <small class="text-muted text-truncate d-block" style="max-width: 200px;">
+                                                    {{ $programme['name'] }}
+                                                </small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    @foreach($heatmapData['levels'] as $level)
+                                        @php
+                                            $count = $programme['levels'][$level]['count'] ?? 0;
+                                            $mappings = $programme['levels'][$level]['mappings'] ?? [];
+                                        @endphp
+                                        <td class="heatmap-cell" 
+                                            data-programme-id="{{ $programme['id'] }}" 
+                                            data-level="{{ $level }}"
+                                            data-count="{{ $count }}">
+                                            <div class="heatmap-count">{{ $count > 0 ? $count : '-' }}</div>
+                                            <div class="heatmap-tooltip">
+                                                {{ $programme['code'] }} - Level {{ $level }}
+                                            </div>
+                                        </td>
+                                    @endforeach
+                                </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- Legend -->
+                    <div class="p-3 border-top">
+                        <div class="heatmap-legend">
+                            <span class="me-3">
+                                <small><strong>Courses per level:</strong></small>
+                            </span>
+                            @php
+                                $maxCount = $heatmapData['maxCount'];
+                                $steps = min(5, $maxCount);
+                                $stepSize = $maxCount > 0 ? $maxCount / $steps : 1;
+                                
+                                // Define color scale for server-side rendering
+                                $colors = [
+                                    '#e6f2ff', // lightest
+                                    '#b3d7ff',
+                                    '#80bdff',
+                                    '#4da3ff',
+                                    '#1a88ff',
+                                    '#0066e0', // darkest
+                                ];
+                                
+                                function getServerHeatmapColor($count, $maxCount, $colors) {
+                                    if ($count === 0) return '#f8f9fa';
+                                    
+                                    // Calculate index based on count relative to max count
+                                    $index = min(
+                                        floor(($count / $maxCount) * (count($colors) - 1)),
+                                        count($colors) - 1
+                                    );
+                                    
+                                    return $colors[$index];
+                                }
+                            @endphp
+                            
+                            @for($i = 0; $i <= $steps; $i++)
+                                @php
+                                    $count = floor($i * $stepSize);
+                                    $color = $i === 0 ? '#f8f9fa' : getServerHeatmapColor($count, $maxCount, $colors);
+                                    $nextCount = $i < $steps ? floor(($i + 1) * $stepSize) : '';
+                                    $label = $i === 0 ? '0' : ($i === $steps ? $maxCount . '+' : $count . (($i < $steps && $nextCount > $count + 1) ? '-' . ($nextCount - 1) : ''));
+                                @endphp
+                                <div class="heatmap-legend-item">
+                                    <div class="heatmap-legend-color" style="background-color: {{ $color }};"></div>
+                                    <span>{{ $label }}</span>
+                                </div>
+                                @if($i < $steps)
+                                    <div class="heatmap-legend-item">→</div>
+                                @endif
+                            @endfor
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    @endif
 </div>
 
 @push('scripts')
@@ -571,7 +789,90 @@
                 this.style.transform = 'translateY(0)';
             });
         });
+        
+        // Initialize tooltips for heatmap cells if they exist
+        if (typeof bootstrap !== 'undefined') {
+            const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+            tooltipTriggerList.map(function (tooltipTriggerEl) {
+                return new bootstrap.Tooltip(tooltipTriggerEl);
+            });
+        }
     });
+    
+    // Function to get color for heatmap cell based on count and max count
+    function getHeatmapColor(count, maxCount) {
+        if (count === 0) return '#f8f9fa';
+        
+        // Define color scale from light to dark blue
+        const colors = [
+            '#e6f2ff', // lightest
+            '#b3d7ff',
+            '#80bdff',
+            '#4da3ff',
+            '#1a88ff',
+            '#0066e0', // darkest
+        ];
+        
+        // Calculate index based on count relative to max count
+        const index = Math.min(
+            Math.floor((count / maxCount) * (colors.length - 1)),
+            colors.length - 1
+        );
+        
+        return colors[index];
+    }
+    
+    // Initialize heatmap if data is available
+    @if(isset($heatmapData) && $isAdmin && !empty($heatmapData['programmes']))
+    document.addEventListener('DOMContentLoaded', function() {
+        const heatmapData = @json($heatmapData);
+        
+        // Set cell colors based on count
+        document.querySelectorAll('.heatmap-cell').forEach(cell => {
+            const count = parseInt(cell.getAttribute('data-count') || '0');
+            const maxCount = heatmapData.maxCount;
+            const color = getHeatmapColor(count, maxCount);
+            
+            cell.style.backgroundColor = color;
+            
+            // Add tooltip content
+            const programmeId = cell.getAttribute('data-programme-id');
+            const level = cell.getAttribute('data-level');
+            
+            if (programmeId && level) {
+                const programme = heatmapData.programmes.find(p => p.id == programmeId);
+                if (programme && programme.levels[level]) {
+                    const mappings = programme.levels[level].mappings;
+                    let tooltipHtml = `<div class="text-start">
+                        <strong>${programme.name}</strong><br>
+                        <small>Level: ${level}</small><br>
+                        <small>Courses: ${mappings.length}</small>`;
+                        
+                    if (mappings.length > 0) {
+                        tooltipHtml += '<div class="mt-2"><strong>Courses:</strong><ul class="mb-0 ps-3">';
+                        mappings.slice(0, 5).forEach(mapping => {
+                            tooltipHtml += `<li>${mapping.course_code} - ${mapping.course_name}</li>`;
+                        });
+                        if (mappings.length > 5) {
+                            tooltipHtml += `<li>+${mappings.length - 5} more</li>`;
+                        }
+                        tooltipHtml += '</ul></div>';
+                    }
+                    tooltipHtml += '</div>';
+                    
+                    cell.setAttribute('data-bs-toggle', 'tooltip');
+                    cell.setAttribute('data-bs-html', 'true');
+                    cell.setAttribute('title', tooltipHtml);
+                    
+                    // Initialize tooltip
+                    if (typeof bootstrap !== 'undefined') {
+                        new bootstrap.Tooltip(cell);
+                    }
+                }
+            }
+        });
+    });
+    @endif
 </script>
 @endpush
 
