@@ -1,19 +1,26 @@
-@if($isAdmin && !empty($heatmapData['programmes']) && $currentSession)
+@if(($isAdmin || $isTimetabler) && !empty($heatmapData['programmes']) && $currentSession)
     <!-- Heatmap Section -->
     <div class="heatmap-container">
         <div class="card border-0 shadow-sm rounded-3 overflow-hidden">
-            <div class="card-header bg-white border-0 py-3 px-4">
-                <div class="d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0 fw-bold text-primary">
-                        <i class="bi bi-grid-3x3-gap-fill text-primary me-2"></i>
-                        Course Mappings Overview
-                    </h5>
-                    <div>
-                        <span class="badge bg-light text-dark rounded-pill px-3 py-2">
-                            <i class="bi bi-calendar-week me-1"></i>
-                            {{ $currentSession->name }}
-                        </span>
-                    </div>
+            <div class="card-header bg-white border-0 py-3 d-flex justify-content-between align-items-center">
+                <h5 class="mb-0 fw-bold text-primary">
+                    <i class="bi bi-grid-3x3-gap-fill text-primary me-2"></i>
+                    @if(auth()->user()->hasRole('timetabler'))
+                        My School's Programme Mapping
+                    @else
+                        Course Unit Mapping Overview
+                    @endif
+                </h5>
+                <div class="d-flex align-items-center gap-3">
+                    @if(auth()->user()->hasRole('timetabler') && !empty($heatmapData['programmes']))
+                        <div class="text-muted small">
+                            <i class="bi bi-building me-1"></i> {{ $heatmapData['programmes'][0]['school'] ?? 'My School' }}
+                        </div>
+                    @endif
+                    <span class="badge bg-light text-dark rounded-pill px-3 py-2">
+                        <i class="bi bi-calendar-week me-1"></i>
+                        {{ $currentSession->name }}
+                    </span>
                 </div>
             </div>
             <div>
@@ -220,6 +227,34 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+            // Apply colors to heatmap cells
+            const heatmapCells = document.querySelectorAll('.heatmap-cell');
+            const maxCount = {{ $heatmapData['maxCount'] }};
+            const colors = [
+                '#e6f2ff', // lightest
+                '#b3d7ff',
+                '#80bdff',
+                '#4da3ff',
+                '#1a88ff',
+                '#0066e0', // darkest
+            ];
+
+            function getHeatmapColor(count, max) {
+                if (count === 0) return '#f8f9fa';
+                const index = Math.min(
+                    Math.floor((count / max) * (colors.length - 1)),
+                    colors.length - 1
+                );
+                return colors[index];
+            }
+
+            heatmapCells.forEach(cell => {
+                const count = parseInt(cell.dataset.count || 0);
+                const color = getHeatmapColor(count, maxCount);
+                cell.style.backgroundColor = color;
+                cell.style.border = '1px solid rgba(0, 0, 0, 0.1)';
+            });
+
             // Initialize tooltips for heatmap cells if Bootstrap is available
             if (typeof bootstrap !== 'undefined') {
                 const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));

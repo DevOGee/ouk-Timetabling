@@ -448,78 +448,9 @@
         </div>
     </div>
 
-    @if($isTimetabler && $programmes->isNotEmpty())
-    <!-- Managed Programmes Section for Timetablers -->
-    <div class="row g-4 mb-4">
-        <div class="col-12">
-            <div class="card border-0 shadow-sm">
-                <div class="card-header bg-white border-0 py-3">
-                    <h5 class="mb-0 fw-bold text-primary">
-                        <i class="bi bi-journal-bookmark text-primary me-2"></i>
-                        Programmes You Manage
-                    </h5>
-                </div>
-                <div class="card-body p-0">
-                    <div class="table-responsive">
-                        <table class="table table-hover align-middle mb-0">
-                            <thead class="table-light">
-                                <tr>
-                                    <th>Programme Name</th>
-                                    <th>Code</th>
-                                    <th>Duration</th>
-                                    <th>Level</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach($programmes as $programme)
-                                <tr>
-                                    <td>
-                                        <div class="d-flex align-items-center">
-                                            <div class="bg-primary bg-opacity-10 p-2 rounded me-3">
-                                                <i class="bi bi-journal-bookmark text-primary"></i>
-                                            </div>
-                                            <div>
-                                                <h6 class="mb-0 fw-bold">{{ $programme->name }}</h6>
-                                                @if($programme->school)
-                                                    <small class="text-muted">{{ $programme->school->name }}</small>
-                                                @endif
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <span class="badge bg-light text-dark">{{ $programme->programme_code }}</span>
-                                    </td>
-                                    <td>{{ $programme->duration }} years</td>
-                                    <td>
-                                        <span class="badge bg-info bg-opacity-10 text-info">
-                                            {{ ucfirst($programme->level) }}
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <div class="d-flex gap-2">
-                                            @if($currentSession)
-                                            <a href="{{ url('/admin/academic-sessions/' . $currentSession->id . '/programmes/' . $programme->id . '/map-course-units') }}" 
-                                               class="btn btn-sm btn-outline-primary" 
-                                               data-bs-toggle="tooltip" 
-                                               title="Map Courses">
-                                                <i class="bi bi-diagram-3"></i>
-                                            </a>
-                                            @endif
-                                            <a href="#" class="btn btn-sm btn-outline-secondary" data-bs-toggle="tooltip" title="View Details">
-                                                <i class="bi bi-eye"></i>
-                                            </a>
-                                        </div>
-                                    </td>
-                                </tr>
-                                @endforeach
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+    <!-- Heatmap Section for All Users -->
+    @if(($isAdmin || $isTimetabler) && $currentSession && !empty($heatmapData['programmes']))
+        @include('partials.heatmap')
     @endif
 
     @if($unmappedProgrammes->isNotEmpty())
@@ -633,7 +564,7 @@
     </div>
     @endif
 
-    @include('partials.heatmap')
+
 </div>
 
 @push('scripts')

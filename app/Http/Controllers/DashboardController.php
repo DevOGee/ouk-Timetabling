@@ -90,10 +90,11 @@ class DashboardController extends Controller
             }
         }
 
-        // Prepare heatmap data for admins
+        // Prepare heatmap data for admins and timetablers
         $heatmapData = [];
-        if ($isAdmin && $currentSession) {
-            $heatmapData = $this->getHeatmapData($currentSession->id);
+        if ($currentSession) {
+            $schoolId = $isTimetabler ? $user->school_id : null;
+            $heatmapData = $this->getHeatmapData($currentSession->id, $schoolId);
         }
 
         return view('dashboard', [
@@ -117,7 +118,7 @@ class DashboardController extends Controller
      * @param int $academicSessionId
      * @return array
      */
-    private function getHeatmapData($academicSessionId)
+    private function getHeatmapData($academicSessionId, $schoolId = null)
     {
         // Get all unique year_of_study_id-semester_id combinations from the mappings
         $levelCombinations = \App\Models\CourseUnitProgrammeMapping::where('academic_session_id', $academicSessionId)
@@ -136,11 +137,15 @@ class DashboardController extends Controller
         $levels = !empty($levelCombinations) ? $levelCombinations : ['1.1', '1.2', '2.1', '2.2', '3.1', '3.2', '4.1', '4.2'];
         
         // Get all programmes with their course unit mappings for the current session
-        $programmes = Programme::with(['courseUnitMappings' => function($query) use ($academicSessionId) {
-            $query->where('academic_session_id', $academicSessionId)
-                  ->whereNotNull('course_unit_id')
-                  ->with('courseUnit'); // Eager load course unit data
-        }])->get();
+        $programmes = Programme::when($schoolId, function($query) use ($schoolId) {
+                return $query->where('school_id', $schoolId);
+            })
+            ->with(['courseUnitMappings' => function($query) use ($academicSessionId) {
+                $query->where('academic_session_id', $academicSessionId)
+                      ->whereNotNull('course_unit_id')
+                      ->with('courseUnit'); // Eager load course unit data
+            }])
+            ->get();
 
         // Initialize the heatmap data structure
         $heatmapData = [];
