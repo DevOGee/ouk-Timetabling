@@ -29,7 +29,7 @@ use App\Models\Programme;
 use App\Models\CourseUnit;
 use App\Models\School;
 use App\Models\YearOfStudy;
-use App\Http\Controllers\GoogleAuthController;
+use App\Http\Controllers\Auth\GoogleAuthController;
 use App\Http\Controllers\ProgrammeMappingController;
 use App\Http\Controllers\ProgrammeSchedulingController;
 use App\Models\CourseUnitProgrammeMapping;
