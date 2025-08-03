@@ -30,19 +30,19 @@ use App\Models\CourseUnit;
 use App\Models\School;
 use App\Models\YearOfStudy;
 use App\Http\Controllers\Auth\GoogleAuthController;
-use App\Http\Controllers\ProgrammeMappingController;
-use App\Http\Controllers\ProgrammeSchedulingController;
+use App\Http\Controllers\Admin\ProgrammeMappingController;
+use App\Http\Controllers\Admin\ProgrammeSchedulingController;
 use App\Models\CourseUnitProgrammeMapping;
 use App\Models\AcademicSession;
 use App\Models\AcademicYear;    
 
 
 // Clear rate limiter - Remove this in production
-Route::get('/clear-limiter', function () {
-    $throttleKey = 'password.request|' . request()->ip();
-    cache()->forget($throttleKey);
-    return 'Rate limiter cleared for IP: ' . request()->ip();
-});
+// Route::get('/clear-limiter', function () {
+//     $throttleKey = 'password.request|' . request()->ip();
+//     cache()->forget($throttleKey);
+//     return 'Rate limiter cleared for IP: ' . request()->ip();
+// });
 
 // Test email route - Remove this in production
 Route::get('/test-email', function () {
