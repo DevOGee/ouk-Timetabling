@@ -26,13 +26,43 @@
         <div class="col-lg-4">
             <div class="card profile-summary-card">
                 <div class="card-body">
-                    <div class="avatar-wrapper">
+                    <div class="avatar-wrapper" style="width: 150px; height: 150px; border-radius: 50%; overflow: hidden; position: relative; border: 3px solid var(--primary-color);">
                         @if ($user->image_path)
-                            <img src="{{ asset('storage/' . $user->image_path) }}" class="avatar" alt="{{ $user->name }}">
+                            <img 
+                                src="{{ asset('storage/' . $user->image_path) }}" 
+                                alt="{{ $user->name }}"
+                                style="
+                                    width: 100%;
+                                    height: 100%;
+                                    object-fit: cover;
+                                    object-position: center;
+                                "
+                                onerror="this.onerror=null; this.src='https://ouk.ac.ke/sites/default/files/Facilitators/alt.png'"
+                            >
                         @else
-                            <img src="https://ouk.ac.ke/sites/default/files/Facilitators/alt.png" class="avatar" alt="Default Image">
+                            <img 
+                                src="https://ouk.ac.ke/sites/default/files/Facilitators/alt.png" 
+                                alt="Default Image"
+                                style="
+                                    width: 100%;
+                                    height: 100%;
+                                    object-fit: cover;
+                                    object-position: center;
+                                "
+                            >
                         @endif
-                        <span class="status-indicator bg-{{ $user->status === 'active' ? 'success' : 'secondary' }}" title="{{ ucfirst($user->status) }}"></span>
+                        <span class="status-indicator bg-{{ $user->status === 'active' ? 'success' : 'secondary' }}" 
+                              style="
+                                  position: absolute;
+                                  bottom: 10px;
+                                  right: 10px;
+                                  width: 20px;
+                                  height: 20px;
+                                  border: 2px solid #fff;
+                                  border-radius: 50%;
+                              "
+                              title="{{ ucfirst($user->status) }}">
+                        </span>
                     </div>
                     
                     <h4 class="user-name">{{ optional($user->title)->abbreviation ?? '' }} {{ $user->name }}</h4>
