@@ -182,7 +182,7 @@
 
                 <form method="POST" class="register-form" id="reset-form" action="{{ route('password.update') }}">
                     @csrf
-                    <input type="hidden" name="token" value="{{ $request->route('token') }}">
+                    <input type="hidden" name="token" value="{{ request()->route('token') }}">
                     
                     <div class="form-group">
                         <input 
@@ -190,7 +190,7 @@
                             name="email" 
                             id="email" 
                             placeholder="Your Email" 
-                            value="{{ old('email', $request->email) }}" 
+                            value="{{ old('email') }}" 
                             required 
                             autofocus
                         />
