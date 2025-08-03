@@ -27,14 +27,22 @@
         </div>
     @endif
 
+    <div class="card-header text-secondary">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+            <h5 class="mb-0">Programs</h5>
+            <span class="badge bg-light text-dark"><span id="program-count">{{ count($programs) }}</span> Programs</span>
+        </div>
+        @if(auth()->user()->hasRole('timetabler') && auth()->user()->school)
+            <div class="small">
+                <i class="bi bi-building me-1"></i> School: {{ auth()->user()->school->name }}
+            </div>
+        @endif
+    </div>
+
     <div class="row">
         <!-- Programs List -->
         <div class="col-lg-8">
             <div class="card shadow mb-4">
-                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">Programs</h5>
-                    <span class="badge bg-light text-dark"><span id="program-count">{{ count($programs) }}</span> Programs</span>
-                </div>
                 <div class="card-body p-0">
                     <!-- Enhanced Tabs Navigation -->
                     <div class="tabs-container">
@@ -87,6 +95,7 @@
                                                 $readyCount++;
                                             }
                                         }
+                                        
                                     @endphp
                                     <span class="badge rounded-pill bg-info ms-2">{{ $readyCount }}</span>
                                 </button>
@@ -215,20 +224,22 @@
                                                     </a>
                                                 @else
                                                     <div class="btn-group" role="group">
-                                                        @if($status === 'published')
-                                                            <button class="btn btn-sm btn-outline-warning btn-unpublish" 
-                                                                    data-timetable-id="{{ $timetable->id }}" 
-                                                                    data-program-name="{{ $program->name }}"
-                                                                    title="Unpublish">
-                                                                <i class="bi bi-x-circle"></i> Unpublish
-                                                            </button>
-                                                        @elseif($status === 'ready')
-                                                            <button class="btn btn-sm btn-success btn-publish" 
-                                                                    data-timetable-id="{{ $timetable->id }}" 
-                                                                    data-program-name="{{ $program->name }}"
-                                                                    title="Publish">
-                                                                <i class="bi bi-check-circle"></i> Publish
-                                                            </button>
+                                                        @if(auth()->user()->hasRole('admin'))
+                                                            @if($status === 'published')
+                                                                <button class="btn btn-sm btn-outline-warning btn-unpublish" 
+                                                                        data-timetable-id="{{ $timetable->id }}" 
+                                                                        data-program-name="{{ $program->name }}"
+                                                                        title="Unpublish">
+                                                                    <i class="bi bi-x-circle"></i> Unpublish
+                                                                </button>
+                                                            @elseif($status === 'ready')
+                                                                <button class="btn btn-sm btn-success btn-publish" 
+                                                                        data-timetable-id="{{ $timetable->id }}" 
+                                                                        data-program-name="{{ $program->name }}"
+                                                                        title="Publish">
+                                                                    <i class="bi bi-check-circle"></i> Publish
+                                                                </button>
+                                                            @endif
                                                         @endif
                                                         
                                                         @if($timetable)
@@ -446,7 +457,7 @@ function renderPrograms(containerId, filterFn) {
     
     let html = '';
     filteredPrograms.forEach((program, index) => {
-        const { id, name, programme_code, status, statusText, statusClass, timetable, mappings } = program;
+        const { id, name, programme_code, status, statusText, statusClass, timetable, mappings, completed, inProgress, notStarted, totalMappings } = program;
         
         // Generate action buttons based on status
         let actionButtons = '';
@@ -462,18 +473,20 @@ function renderPrograms(containerId, filterFn) {
                 <div class="btn-group" role="group">
                     ${status === 'published' ? `
                         <button class="btn btn-sm btn-outline-warning btn-unpublish" 
-                                data-timetable-id="${timetable.id}" 
+                                data-timetable-id="${timetable?.id || ''}" 
                                 data-program-name="${name}"
-                                title="Unpublish">
+                                title="Unpublish"
+                                ${!timetable ? 'disabled' : ''}>
                             <i class="bi bi-x-circle"></i> Unpublish
                         </button>
                     ` : ''}
                     
                     ${status === 'ready' ? `
                         <button class="btn btn-sm btn-success btn-publish" 
-                                data-timetable-id="${timetable.id}" 
+                                data-timetable-id="${timetable?.id || ''}" 
                                 data-program-name="${name}"
-                                title="Publish">
+                                title="Publish"
+                                ${!timetable ? 'disabled' : ''}>
                             <i class="bi bi-check-circle"></i> Publish
                         </button>
                     ` : ''}
@@ -543,14 +556,17 @@ function attachPublishHandlers() {
     });
 }
 
-// Initialize tabs and render programs when the page loads
-document.addEventListener('DOMContentLoaded', function() {
-    // Initial render of all programs
+// Function to initialize tab content
+function initializeTabContent() {
+    // Initial render of all programs in the active tab (All Programs)
     renderPrograms('programs-table-body', () => true);
     
     // Set up tab change handlers
     const tabEls = document.querySelectorAll('#timetableTabs button[data-bs-toggle="tab"]');
     tabEls.forEach(tabEl => {
+        // Skip if already initialized
+        if (tabEl.dataset.initialized) return;
+        
         tabEl.addEventListener('shown.bs.tab', function (event) {
             const targetId = event.target.getAttribute('data-bs-target').substring(1);
             
@@ -568,12 +584,67 @@ document.addEventListener('DOMContentLoaded', function() {
                     renderPrograms('programs-table-body', () => true);
             }
         });
+        
+        // Mark as initialized
+        tabEl.dataset.initialized = 'true';
     });
     
-    // Initial render of published programs (for the first tab that's not active)
-    renderPrograms('published-programs', p => p.status === 'published');
-    renderPrograms('ready-programs', p => p.status === 'ready');
-    renderPrograms('pending-programs', p => ['in_progress', 'not_started'].includes(p.status));
+    // Initial render of other tabs (but don't show them yet)
+    if (programsData.length > 0) {
+        renderPrograms('published-programs', p => p.status === 'published');
+        renderPrograms('ready-programs', p => p.status === 'ready');
+        renderPrograms('pending-programs', p => ['in_progress', 'not_started'].includes(p.status));
+    }
+}
+
+// Initialize when the page loads
+document.addEventListener('DOMContentLoaded', function() {
+    // Check if programs data is available
+    if (programsData && programsData.length > 0) {
+        initializeTabContent();
+    } else {
+        // If no programs data, show appropriate message
+        ['published-programs', 'ready-programs', 'pending-programs'].forEach(containerId => {
+            const container = document.getElementById(containerId);
+            if (container) {
+                container.innerHTML = `
+                    <tr>
+                        <td colspan="4" class="text-center py-4">
+                            <div class="text-muted">
+                                <i class="bi bi-inbox me-1"></i>
+                                No programs available.
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }
+        });
+    }
+    
+    // Set up event delegation for dynamic buttons
+    document.addEventListener('click', function(e) {
+        // Handle publish button clicks
+        if (e.target.closest('.btn-publish')) {
+            const button = e.target.closest('.btn-publish');
+            const timetableId = button.dataset.timetableId;
+            const programName = button.dataset.programName;
+            
+            if (confirm(`Are you sure you want to publish the timetable for ${programName}?`)) {
+                publishTimetable(timetableId, button);
+            }
+        }
+        
+        // Handle unpublish button clicks
+        if (e.target.closest('.btn-unpublish')) {
+            const button = e.target.closest('.btn-unpublish');
+            const timetableId = button.dataset.timetableId;
+            const programName = button.dataset.programName;
+            
+            if (confirm(`Are you sure you want to unpublish the timetable for ${programName}?`)) {
+                unpublishTimetable(timetableId, button);
+            }
+        }
+    });
 });
 
 document.addEventListener('DOMContentLoaded', function() {
