@@ -6,8 +6,10 @@ use App\Http\Controllers\Controller;
 use App\Models\AcademicSession;
 use App\Models\Programme;
 use App\Models\CourseUnit;
+use App\Models\Timetable;
 use App\Models\User;
-use App\Models\Room;
+// Room model not available
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 
 class DashboardController extends Controller
@@ -19,20 +21,34 @@ class DashboardController extends Controller
      */
     public function index()
     {
-        $stats = [
-            'academicSessions' => AcademicSession::count(),
-            'programmes' => Programme::count(),
-            'courseUnits' => CourseUnit::count(),
-            'instructors' => User::role('instructor')->count(),
-            'rooms' => Room::count(),
-        ];
-
+        $user = auth()->user();
+        $isTimetabler = $user->hasRole('timetabler');
+        
         // Get the current academic session
         $currentSession = AcademicSession::where('is_current', true)->first();
         
-        // Get recent academic sessions
-        $recentSessions = AcademicSession::latest()->take(5)->get();
+        // Initialize stats array
+        $stats = [
+            'academicSessions' => $isTimetabler ? 0 : AcademicSession::count(),
+            'programmes' => $isTimetabler 
+                ? $user->school->programmes()->count() 
+                : Programme::count(),
+            'courseUnits' => $isTimetabler ? 0 : CourseUnit::count(),
+            'instructors' => $isTimetabler 
+                ? User::role('instructor')->where('school_id', $user->school_id)->count()
+                : User::role('instructor')->count(),
+        ];
+        
+        // Add timetabler-specific data if needed
+        if ($isTimetabler) {
+            $stats['myProgrammes'] = $user->school->programmes()->count();
+        }
 
-        return view('admin.dashboard', compact('stats', 'currentSession', 'recentSessions'));
+        return view('admin.dashboard', [
+            'stats' => $stats,
+            'currentSession' => $currentSession,
+            'isTimetabler' => $isTimetabler,
+            'user' => $user
+        ]);
     }
 }

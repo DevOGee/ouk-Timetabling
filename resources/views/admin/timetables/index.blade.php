@@ -57,7 +57,38 @@
                                 <button class="nav-link d-flex align-items-center justify-content-center" id="ready-tab" data-bs-toggle="tab" data-bs-target="#ready" type="button" role="tab">
                                     <i class="bi bi-check2-all me-2"></i>
                                     <span>Ready</span>
-                                    <span class="badge rounded-pill bg-info ms-2">{{ $programs->filter(fn($p) => ($p->programmeTimetables->first()?->status ?? '') === 'ready')->count() }}</span>
+                                    @php
+                                        $readyCount = 0;
+                                        foreach($programs as $program) {
+                                            // Skip if already published
+                                            $timetable = $program->programmeTimetables->first();
+                                            if ($timetable && $timetable->status === 'published') {
+                                                continue;
+                                            }
+                                            
+                                            $mappings = $program->courseUnitMappings()
+                                                ->where('academic_session_id', $academicSession->id)
+                                                ->get();
+                                            
+                                            $totalMappings = $mappings->count();
+                                            if ($totalMappings === 0) continue;
+                                            
+                                            $completed = 0;
+                                            foreach ($mappings as $mapping) {
+                                                $hasMorning = $mapping->morning_start_time !== null && $mapping->morning_duration !== null;
+                                                $hasEvening = $mapping->evening_start_time !== null && $mapping->evening_duration !== null;
+                                                
+                                                if ($hasMorning || $hasEvening) {
+                                                    $completed++;
+                                                }
+                                            }
+                                            
+                                            if ($completed === $totalMappings) {
+                                                $readyCount++;
+                                            }
+                                        }
+                                    @endphp
+                                    <span class="badge rounded-pill bg-info ms-2">{{ $readyCount }}</span>
                                 </button>
                             </li>
                             <li class="nav-item" role="presentation">

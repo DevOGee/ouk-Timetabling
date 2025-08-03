@@ -14,6 +14,9 @@ class TimetableManagementController extends Controller
 {
     public function index()
     {
+        $user = auth()->user();
+        $isTimetabler = $user->hasRole('timetabler');
+        
         // Get the active academic session
         $academicSession = AcademicSession::where('status', 'active')
             ->orderBy('start_date', 'desc')
@@ -45,18 +48,28 @@ class TimetableManagementController extends Controller
         $programs = collect();
         
         if ($academicSession) {
-            // Get all programs mapped to this session with their timetable status
-            $programs = Programme::with(['programmeTimetables' => function($query) use ($academicSession) {
+            // Base query for programs
+            $programQuery = Programme::with(['programmeTimetables' => function($query) use ($academicSession) {
                 $query->where('academic_session_id', $academicSession->id);
             }])
             ->whereHas('academicSessions', function($query) use ($academicSession) {
                 $query->where('academic_session_id', $academicSession->id);
-            })
-            ->orderBy('name')
-            ->get();
+            });
             
-            // Get total count of programs in the system
-            $totalPrograms = Programme::count();
+            // If user is a timetabler, only show programs from their school
+            if ($isTimetabler && $user->school_id) {
+                $programQuery->where('school_id', $user->school_id);
+            }
+            
+            $programs = $programQuery->orderBy('name')->get();
+            
+            // Get total count of programs (filtered by school if timetabler)
+            $totalProgramsQuery = Programme::query();
+            if ($isTimetabler && $user->school_id) {
+                $totalProgramsQuery->where('school_id', $user->school_id);
+            }
+            $totalPrograms = $totalProgramsQuery->count();
+            
             $mappedCount = $programs->count();
             $notMappedCount = $totalPrograms - $mappedCount;
             

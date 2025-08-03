@@ -6,14 +6,106 @@
 <div class="container-fluid">
     <!-- Stats Cards -->
     <div class="row mb-4">
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-primary shadow h-100 py-2">
+        @if($isTimetabler)
+            <!-- Timetabler Stats -->
+            <div class="col-xl-6 col-md-6 mb-4">
+                <div class="card border-left-primary shadow h-100 py-2">
+                    <div class="card-body">
+                        <div class="row no-gutters align-items-center">
+                            <div class="col mr-2">
+                                <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                    My School's Programmes</div>
+                                <div class="h5 mb-0 font-weight-bold text-gray-800">{{ $stats['programmes'] }}</div>
+                            </div>
+                            <div class="col-auto">
+                                <i class="bi bi-journal-text fa-2x text-gray-300"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-xl-6 col-md-6 mb-4">
+                <div class="card border-left-info shadow h-100 py-2">
+                    <div class="card-body">
+                        <div class="row no-gutters align-items-center">
+                            <div class="col mr-2">
+                                <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                    Instructors in My School</div>
+                                <div class="h5 mb-0 font-weight-bold text-gray-800">{{ $stats['instructors'] }}</div>
+                            </div>
+                            <div class="col-auto">
+                                <i class="bi bi-people fa-2x text-gray-300"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        @else
+            <!-- Admin Stats -->
+            <div class="col-xl-3 col-md-6 mb-4">
+                <div class="card border-left-primary shadow h-100 py-2">
+                    <div class="card-body">
+                        <div class="row no-gutters align-items-center">
+                            <div class="col mr-2">
+                                <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                    Total Programmes</div>
+                                <div class="h5 mb-0 font-weight-bold text-gray-800">{{ $stats['programmes'] }}</div>
+                            </div>
+                            <div class="col-auto">
+                                <i class="bi bi-journal-text fa-2x text-gray-300"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-xl-3 col-md-6 mb-4">
+                <div class="card border-left-success shadow h-100 py-2">
+                    <div class="card-body">
+                        <div class="row no-gutters align-items-center">
+                            <div class="col mr-2">
+                                <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                    Course Units</div>
+                                <div class="h5 mb-0 font-weight-bold text-gray-800">{{ $stats['courseUnits'] }}</div>
+                            </div>
+                            <div class="col-auto">
+                                <i class="bi bi-book fa-2x text-gray-300"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-xl-3 col-md-6 mb-4">
+                <div class="card border-left-info shadow h-100 py-2">
+                    <div class="card-body">
+                        <div class="row no-gutters align-items-center">
+                            <div class="col mr-2">
+                                <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                    Instructors</div>
+                                <div class="h5 mb-0 font-weight-bold text-gray-800">{{ $stats['instructors'] }}</div>
+                            </div>
+                            <div class="col-auto">
+                                <i class="bi bi-people fa-2x text-gray-300"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        @endif
+
+        <!-- Active Session Card (Visible to all) -->
+        <div class="{{ $isTimetabler ? 'col-xl-12' : 'col-xl-3' }} col-md-6 mb-4">
+            <div class="card border-left-warning shadow h-100 py-2">
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
-                                Academic Sessions</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ $stats['academicSessions'] }}</div>
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                Active Session</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                {{ $currentSession ? $currentSession->name : 'None' }}
+                            </div>
                         </div>
                         <div class="col-auto">
                             <i class="bi bi-calendar3 fa-2x text-gray-300"></i>
@@ -22,111 +114,155 @@
                 </div>
             </div>
         </div>
-
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-success shadow h-100 py-2">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
-                                Programmes</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ $stats['programmes'] }}</div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="bi bi-journal-text fa-2x text-gray-300"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-info shadow h-100 py-2">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
-                                Course Units</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ $stats['courseUnits'] }}</div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="bi bi-book fa-2x text-gray-300"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-warning shadow h-100 py-2">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
-                                Instructors</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ $stats['instructors'] }}</div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="bi bi-people fa-2x text-gray-300"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
     </div>
 
-    <!-- Current Session and Recent Sessions -->
     <div class="row">
+        <!-- Quick Actions -->
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="bi bi-lightning-charge-fill me-2"></i>Quick Actions
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        @if(!$isTimetabler)
+                            <!-- Admin Quick Actions -->
+                            <div class="col-md-6 mb-3">
+                                <a href="{{ route('admin.programmes.create') }}" class="btn btn-primary w-100 py-3">
+                                    <i class="bi bi-plus-circle me-2"></i>Add Programme
+                                </a>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <a href="{{ route('course_units.create') }}" class="btn btn-success w-100 py-3">
+                                    <i class="bi bi-journal-plus me-2"></i>Add Course Unit
+                                </a>
+                            </div>
+                            <div class="col-md-6">
+                                <a href="{{ route('admin.users.create') }}" class="btn btn-info text-white w-100 py-3">
+                                    <i class="bi bi-person-plus me-2"></i>Add Instructor
+                                </a>
+                            </div>
+                            <div class="col-md-6">
+                                <a href="#" class="btn btn-warning w-100 py-3" data-bs-toggle="modal" data-bs-target="#bulkUploadModal">
+                                    <i class="bi bi-upload me-2"></i>Bulk Upload
+                                </a>
+                            </div>
+                        @else
+                            <!-- Timetabler Quick Actions -->
+                            <div class="col-12 mb-3">
+                                <a href="{{ $currentSession ? url('/admin/academic-sessions/' . $currentSession->id) : '#' }}" 
+                                   class="btn btn-primary w-100 py-3 {{ !$currentSession ? 'disabled' : '' }}" 
+                                   {{ !$currentSession ? 'aria-disabled="true"' : '' }}>
+                                    <i class="bi bi-diagram-3 me-2"></i>Course Mapping
+                                    @if(!$currentSession)
+                                        <span class="badge bg-warning ms-2">No active session</span>
+                                    @endif
+                                </a>
+                            </div>
+                            <div class="col-12">
+                                <a href="{{ route('admin.timetables.manage') }}" class="btn btn-success w-100 py-3">
+                                    <i class="bi bi-calendar-week me-2"></i>Manage Timetable
+                                </a>
+                            </div>
+                        @endif
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Current Session -->
         @if($currentSession)
         <div class="col-lg-6 mb-4">
             <div class="card shadow mb-4">
-                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-                    <h6 class="m-0 font-weight-bold text-primary">Current Academic Session</h6>
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="bi bi-calendar3 me-2"></i>Current Academic Session
+                    </h6>
                 </div>
                 <div class="card-body">
                     <h4 class="mb-3">{{ $currentSession->name }}</h4>
-                    <p class="mb-1"><strong>Duration:</strong> {{ $currentSession->start_date->format('M d, Y') }} - {{ $currentSession->end_date->format('M d, Y') }}</p>
-                    <p class="mb-1"><strong>Status:</strong> 
-                        <span class="badge bg-{{ $currentSession->status === 'active' ? 'success' : 'secondary' }}">
+                    <p class="mb-2">
+                        <i class="bi bi-calendar-range me-2"></i>
+                        {{ $currentSession->start_date->format('M d, Y') }} - {{ $currentSession->end_date->format('M d, Y') }}
+                    </p>
+                    <p class="mb-3">
+                        <span class="badge bg-{{ $currentSession->status === 'active' ? 'success' : 'secondary' }} p-2">
+                            <i class="bi bi-{{ $currentSession->status === 'active' ? 'check-circle' : 'circle' }} me-1"></i>
                             {{ ucfirst($currentSession->status) }}
                         </span>
                     </p>
-                    <div class="mt-3">
-                        <a href="{{ route('admin.academic-sessions.show', $currentSession) }}" class="btn btn-primary btn-sm">
-                            <i class="bi bi-arrow-right-circle me-1"></i> View Session
-                        </a>
-                    </div>
+                    <a href="{{ route('admin.academic-sessions.show', $currentSession) }}" class="btn btn-primary">
+                        <i class="bi bi-arrow-right-circle me-1"></i> View Session
+                    </a>
                 </div>
             </div>
         </div>
         @endif
+    </div>
+</div>
 
-        <!-- Recent Sessions -->
-        <div class="col-lg-6 mb-4">
-            <div class="card shadow mb-4">
-                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-                    <h6 class="m-0 font-weight-bold text-primary">Recent Academic Sessions</h6>
-                    <a href="{{ route('admin.academic-sessions.index') }}" class="btn btn-sm btn-link">View All</a>
-                </div>
-                <div class="card-body">
-                    <div class="list-group list-group-flush">
-                        @forelse($recentSessions as $session)
-                            <div class="list-group-item list-group-item-action">
-                                <div class="d-flex w-100 justify-content-between">
-                                    <h6 class="mb-1">{{ $session->name }}</h6>
-                                    <small>{{ $session->status === 'active' ? 'Active' : 'Inactive' }}</small>
-                                </div>
-                                <p class="mb-1">{{ $session->start_date->format('M d, Y') }} - {{ $session->end_date->format('M d, Y') }}</p>
-                                <small><a href="{{ route('admin.academic-sessions.show', $session) }}">View Details</a></small>
-                            </div>
-                        @empty
-                            <p class="text-muted mb-0">No academic sessions found.</p>
-                        @endforelse
+<!-- Bulk Upload Modal -->
+<div class="modal fade" id="bulkUploadModal" tabindex="-1" aria-labelledby="bulkUploadModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="bulkUploadModalLabel">Bulk Upload</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">Select upload type:</label>
+                    <select class="form-select mb-3">
+                        <option value="instructors">Instructors</option>
+                        <option value="students" disabled>Students</option>
+                        <option value="courses" disabled>Course Units</option>
+                    </select>
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle me-2"></i>
+                        Only Instructors bulk upload is currently available.
                     </div>
                 </div>
+                <a href="{{ route('instructors.upload') }}" class="btn btn-primary w-100">
+                    <i class="bi bi-upload me-2"></i>Proceed to Upload
+                </a>
             </div>
         </div>
     </div>
 </div>
+
+@push('styles')
+<style>
+    .card {
+        transition: all 0.3s ease;
+        border: none;
+        border-radius: 10px;
+        overflow: hidden;
+        box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15) !important;
+    }
+    .card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 0.5rem 2rem 0 rgba(58, 59, 69, 0.25) !important;
+    }
+    .btn {
+        transition: all 0.2s ease;
+    }
+    .btn:hover {
+        transform: translateY(-2px);
+    }
+</style>
+@endpush
+
+@push('scripts')
+<script>
+    // Initialize tooltips
+    document.addEventListener('DOMContentLoaded', function() {
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl);
+        });
+    });
+</script>
+@endpush
 @endsection
