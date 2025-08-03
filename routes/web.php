@@ -406,3 +406,8 @@ Route::middleware(['auth'])->group(function () {
 });
 
 // require __DIR__.'/auth.php'; // Commented out to prevent duplicate route definitions
+
+// Block access to registration page
+Route::match(['get', 'post'], '/register', function () {
+    return redirect('/login');
+})->name('register');
