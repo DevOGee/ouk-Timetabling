@@ -19,21 +19,35 @@ class InstructorDashboardController extends Controller
     {
         $instructor = Auth::user();
         
-        // Get all course units assigned to this instructor with their schedules
+        // Get the active academic session
+        $activeSession = \App\Models\AcademicSession::where('status', 'active')->first();
+        
+        if (!$activeSession) {
+            return view('instructor.course-units', [
+                'courseUnits' => collect(),
+                'activeSession' => null
+            ]);
+        }
+        
+        // Get all course units assigned to this instructor for the active session, grouped by course code
         $courseUnits = CourseUnitProgrammeMapping::with([
-                'courseUnit',
+                'courseUnit' => function($query) {
+                    $query->orderBy('code')
+                          ->with('yearOfStudy', 'semester');
+                },
                 'programme',
-                'day',
-                'academicSession',
                 'yearOfStudy',
-                'semester'
+                'semester',
+                'day'
             ])
             ->where('user_id', $instructor->id)
-            ->orderBy('academic_session_id', 'desc')
-            ->orderBy('programme_id')
-            ->orderBy('course_unit_id')
+            ->where('academic_session_id', $activeSession->id)
+            ->join('course_units', 'course_unit_programme_mappings.course_unit_id', '=', 'course_units.id')
+            ->orderBy('course_units.code')
             ->get()
-            ->groupBy('academic_session_id');
+            ->groupBy(function($item) {
+                return $item->courseUnit->code;
+            });
 
         return view('instructor.course-units', [
             'courseUnits' => $courseUnits,
