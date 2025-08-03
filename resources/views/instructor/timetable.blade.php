@@ -114,12 +114,15 @@
             <div class="card-body">
                 <div class="row">
                     <div class="col-md-6">
-                        <h6 class="font-weight-bold">Course Information</h6>
+                        <h6 class="font-weight-bold">Card Layout</h6>
                         <ul class="list-unstyled">
-                            <li><span class="font-weight-bold">Top Line:</span> Course Code & Name</li>
-                            <li><span class="font-weight-bold">Middle Line:</span> Programme & Venue</li>
-                            <li><span class="font-weight-bold">Bottom Line:</span> Time Slot</li>
+                            <li><span class="font-weight-bold">First Line:</span> Course Code</li>
+                            <li><span class="font-weight-bold">Second Line:</span> Course Name</li>
+                            <li><span class="font-weight-bold">Bottom Section:</span> Programme Codes</li>
                         </ul>
+                        <p class="small text-muted mt-2">
+                            <i class="bi bi-info-circle"></i> Each card represents a scheduled class session
+                        </p>
                     </div>
                     <div class="col-md-6">
                         <h6 class="font-weight-bold">Color Coding</h6>

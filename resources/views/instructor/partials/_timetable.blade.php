@@ -24,7 +24,7 @@
                             $min = $minute % 60;
                             $timeLabel = $min == 0 ? sprintf('%02d:00', $hour) : '';
                         @endphp
-                        <tr style="height: 50px;">
+                        <tr style="height: 40px;">
                             <td style="background-color: #f8f9fa;">{{ $timeLabel }}</td>
                             @foreach ($days as $day)
                                 @php
@@ -69,7 +69,7 @@
                                             $rendered[$day->id][$lesson->id][$minute + ($i * 30)] = true;
                                         }
                                     @endphp
-                                    <td rowspan="{{ $rowspan }}" style="background-color: {{ $color }}; color: white; vertical-align: top; padding: 0; height: {{ $rowspan * 50 }}px;">
+                                    <td rowspan="{{ $rowspan }}" style="background-color: {{ $color }}; color: white; vertical-align: top; padding: 0; height: {{ $rowspan * 30 }}px;">
                                         <div class="lesson-container">
                                             <div class="course-title mb-1">
                                                 <div><strong>{{ $lesson->courseUnit->code }}</strong></div>
@@ -128,7 +128,7 @@
                             $timeLabel = $min == 0 ? sprintf('%02d:00', $hour) : '';
                         @endphp
                         @if ($timeLabel != '')
-                            <div style="display: flex; min-height: 50px; border-top: 1px solid #dee2e6;">
+                            <div style="display: flex; min-height: 30px; border-top: 1px solid #dee2e6;">
                                 <div style="width: 60px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; background: #f8f9fa; padding: 5px;">
                                     {{ $timeLabel }}
                                 </div>
@@ -168,7 +168,7 @@
 
                                     @if ($lesson)
                                         @php
-                                            $height = ceil($lesson->duration / 30) * 50;
+                                            $height = ceil($lesson->duration / 30) * 30;
                                             $color = $lesson->courseUnit->color ?? '#' . substr(md5($lesson->courseUnit->code), 0, 6);
                                             // Mark all slots for this lesson as rendered
                                             for ($i = 0; $i < ceil($lesson->duration / 30); $i++) {
