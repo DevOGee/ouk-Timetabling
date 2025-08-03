@@ -72,7 +72,8 @@
                                     <td rowspan="{{ $rowspan }}" style="background-color: {{ $color }}; color: white; vertical-align: top; padding: 0; height: {{ $rowspan * 50 }}px;">
                                         <div class="lesson-container">
                                             <div class="course-title mb-1">
-                                                <strong>{{ $lesson->courseUnit->code }}</strong> - {{ $lesson->courseUnit->name }}
+                                                <div><strong>{{ $lesson->courseUnit->code }}</strong></div>
+                                                <div style="font-size: 0.85em;">{{ $lesson->courseUnit->name }}</div>
                                             </div>
                                             <div class="programme-codes">
                                                 @php
@@ -177,6 +178,9 @@
                                         <div style="width: 150px; height: {{ $height }}px; margin: 0 1px; background-color: {{ $color }}; color: white; padding: 5px; font-size: 0.7rem; border-radius: 3px; display: flex; flex-direction: column; justify-content: center;">
                                             <div style="font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
                                                 {{ $lesson->courseUnit->code }}
+                                            </div>
+                                            <div style="font-size: 0.8em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                                {{ $lesson->courseUnit->name }}
                                             </div>
                                             <div style="font-size: 0.65rem; opacity: 0.9; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
                                                 @php
