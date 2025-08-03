@@ -760,8 +760,8 @@
                 </a>
             </li>
             @elseif(auth()->user()->hasRole('instructor'))
-            <li class="menu-item {{ request()->routeIs('timetable.*') ? 'active' : '' }}">
-                <a href="#" class="menu-link">
+            <li class="menu-item {{ request()->routeIs('instructor.timetable') ? 'active' : '' }}">
+                <a href="{{ route('instructor.timetable') }}" class="menu-link">
                     <i class="bi bi-calendar3"></i>
                     <span>My Timetable</span>
                 </a>
@@ -842,6 +842,8 @@
                 </a>
             </li>
             @endif
+            
+
             @endauth
 
             {{-- Programmes - Admin and Dean only --}}

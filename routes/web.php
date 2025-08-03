@@ -108,6 +108,9 @@ Route::post('instructors/import', [InstructorController::class, 'importInstructo
 Route::prefix('instructor')->middleware(['auth'])->group(function () {
     Route::get('/my-course-units', [InstructorDashboardController::class, 'myCourseUnits'])
         ->name('instructor.course-units');
+        
+    Route::get('/my-timetable', [InstructorDashboardController::class, 'myTimetable'])
+        ->name('instructor.timetable');
 });
 
 // Academic Year routes

@@ -359,7 +359,7 @@
                         @if($isInstructor)
                             <!-- Instructor Quick Actions -->
                             <div class="col-lg-4 col-md-6">
-                                <a href="#" class="btn btn-light w-100 p-3 text-start d-flex align-items-center quick-actions">
+                                <a href="{{ route('instructor.timetable') }}" class="btn btn-light w-100 p-3 text-start d-flex align-items-center quick-actions">
                                     <div class="bg-primary bg-opacity-10 p-2 rounded me-3">
                                         <i class="bi bi-calendar-week text-primary"></i>
                                     </div>
@@ -370,7 +370,7 @@
                                 </a>
                             </div>
                             <div class="col-lg-4 col-md-6">
-                                <a href="#" class="btn btn-light w-100 p-3 text-start d-flex align-items-center quick-actions">
+                                <a href="{{ route('instructor.course-units') }}" class="btn btn-light w-100 p-3 text-start d-flex align-items-center quick-actions">
                                     <div class="bg-success bg-opacity-10 p-2 rounded me-3">
                                         <i class="bi bi-book text-success"></i>
                                     </div>
