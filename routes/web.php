@@ -53,7 +53,14 @@ Route::get('/test-bulk-upload', function () {
 })->middleware('auth');
 
 // Authentication Routes
-Auth::routes(['verify' => true]);
+// Register authentication routes except registration
+Auth::routes([
+    'verify' => true,
+    'register' => false, // Disable registration routes
+    'reset' => true,    // Keep password reset functionality
+    'confirm' => true,  // Keep password confirmation
+    'verify' => true,   // Keep email verification
+]);
 
 // Google OAuth Routes
 Route::get('/login/google', [\App\Http\Controllers\Auth\GoogleAuthController::class, 'redirectToGoogle'])->name('login.google');
