@@ -252,7 +252,7 @@
     <!-- Navigation Bar -->
     <nav class="navbar navbar-expand-lg navbar-dark fixed-top">
         <div class="container">
-            <a class="navbar-brand d-flex align-items-center" href="#">
+            <a class="navbar-brand d-flex align-items-center" href="{{ route('welcome') }}">
                 <img src="{{ asset('ouk-logo-small.png') }}" alt="OUK Logo" height="40" class="d-inline-block align-text-top me-2" style="filter: brightness(0) invert(1);">
                 <span class="d-none d-sm-inline">Timetable</span>
             </a>
@@ -274,7 +274,7 @@
             @auth
                 <a href="{{ route('dashboard') }}" class="btn btn-primary-custom px-4 py-2">Go to Dashboard</a>
             @else
-                <a href="#cta" class="btn btn-primary-custom px-4 py-2 me-2">View Timetable</a>
+                <a href="/timetable" class="btn btn-primary-custom px-4 py-2 me-2">View Timetable</a>
                 <a href="{{ route('login') }}" class="btn btn-outline-light px-4 py-2">Login</a>
             @endauth
         </div>
@@ -325,70 +325,13 @@
         <div class="container">
             <div class="row justify-content-center">
                 <div class="col-lg-8 text-center">
-                    <h2 class="fw-bold mb-3">View Your Timetable</h2>
-                    <p class="mb-4">Select your programme and academic year to instantly view the course schedule.</p>
-                    
-                    @php
-                        $groupedProgrammes = $programmes->sortBy('programme_code')->groupBy('school_id');
-                    @endphp
-                    
-                    <form method="GET" action="{{ route('timetable.index') }}" class="filter-form" target="_blank">
-                        <div class="row g-4">
-                            <!-- School Dropdown -->
-                            <div class="col-md-4">
-                                <div class="form-group">
-                                    <select class="form-control form-control-lg" id="school_id" name="school_id" required>
-                                        <option value="">Select School</option>
-                                        @foreach ($schools as $school)
-                                            <option value="{{ $school->id }}">
-                                                {{ $school->name }}
-                                            </option>
-                                        @endforeach
-                                    </select>
-                                </div>
-                            </div>
-
-                            <!-- Programme Dropdown -->
-                            <div class="col-md-4">
-                                <div class="form-group">
-                                    <select class="form-control form-control-lg" id="programme_id" name="programme_id" required>
-                                        <option value="">Select Programme</option>
-                                        @foreach ($groupedProgrammes as $schoolId => $schoolProgrammes)
-                                            @foreach ($schoolProgrammes as $programme)
-                                                <option value="{{ $programme->id }}" data-school="{{ $schoolId }}">
-                                                    {{ $programme->programme_code }} - {{ $programme->name }}
-                                                </option>
-                                            @endforeach
-                                        @endforeach
-                                    </select>
-                                </div>
-                            </div>
-
-                            <!-- Level of Study -->
-                            <div class="col-md-3">
-                                <div class="form-group">
-                                    <select class="form-control form-control-lg" id="level" name="level" required>
-                                        <option value="">Select Level</option>
-                                        @foreach($levels as $level)
-                                            <option value="{{ $level->id }}">
-                                                {{ $level->name }}
-                                            </option>
-                                        @endforeach
-                                    </select>
-                                </div>
-                            </div>
-
-                            <!-- View Button -->
-                            <div class="col-md-1">
-                                <button type="submit" class="btn btn-primary-custom w-100 py-2 d-flex align-items-center justify-content-center" style="font-size: 1.1rem;">
-                                    <i class="bi bi-calendar3 me-2"></i> View Timetable
-                                </button>
-                            </div>
-                        </div>
-                    </form>
-                    
+                    <h2 class="fw-bold mb-4">View Timetable</h2>
+                    <p class="lead mb-4">Access the class schedule and timetable information.</p>
+                    <a href="{{ route('timetable.index') }}" class="btn btn-primary-custom btn-lg px-5">
+                        <i class="bi bi-calendar3 me-2"></i> View Timetable
+                    </a>
                     @guest
-                        <p class="text-muted">Don't have an account? <a href="{{ route('register') }}" class="text-primary">Sign up</a> for full access.</p>
+                        <p class="mt-3 mb-0">For additional features, please <a href="{{ route('login') }}">login</a> or contact the administrator for access.</p>
                     @endguest
                 </div>
             </div>

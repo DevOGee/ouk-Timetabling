@@ -25,6 +25,17 @@ use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\TimetableManagementController;
 use App\Http\Controllers\Instructor\InstructorDashboardController;
 use App\Models\User;
+use App\Models\Programme;
+use App\Models\CourseUnit;
+use App\Models\School;
+use App\Models\YearOfStudy;
+use App\Http\Controllers\GoogleAuthController;
+use App\Http\Controllers\ProgrammeMappingController;
+use App\Http\Controllers\ProgrammeSchedulingController;
+use App\Models\CourseUnitProgrammeMapping;
+use App\Models\AcademicSession;
+use App\Models\AcademicYear;    
+
 
 // Clear rate limiter - Remove this in production
 Route::get('/clear-limiter', function () {
@@ -63,19 +74,11 @@ Auth::routes([
 ]);
 
 // Google OAuth Routes
-Route::get('/login/google', [\App\Http\Controllers\Auth\GoogleAuthController::class, 'redirectToGoogle'])->name('login.google');
-Route::get('/login/google/callback', [\App\Http\Controllers\Auth\GoogleAuthController::class, 'handleGoogleCallback']);
+Route::get('/login/google', [GoogleAuthController::class, 'redirectToGoogle'])->name('login.google');
+Route::get('/login/google/callback', [GoogleAuthController::class, 'handleGoogleCallback']);
 
-// Welcome page route (root URL)
-Route::get('/', function () {
-    return view('welcome', [
-        'programmes' => \App\Models\Programme::all(),
-        'courseUnits' => \App\Models\CourseUnit::all(),
-        'instructors' => \App\Models\User::role('instructor')->get(),
-        'schools' => \App\Models\School::all(),
-        'levels' => \App\Models\YearOfStudy::all()
-    ]);
-})->name('welcome');
+// Root URL redirects to timetable
+Route::redirect('/', '/timetable');
 
 // Main dashboard route
 Route::get('/dashboard', [\App\Http\Controllers\DashboardController::class, 'index'])
@@ -130,12 +133,12 @@ Route::resource('schools', SchoolController::class);
 Route::get('/debug/timetable-status/{academicSessionId?}', function($academicSessionId = null) {
     $academicSessionId = $academicSessionId ?? 3; // Default to session 3 if not provided
     
-    $programmes = \App\Models\Programme::with(['courseUnitMappings' => function($q) use ($academicSessionId) {
+    $programmes = Programme::with(['courseUnitMappings' => function($q) use ($academicSessionId) {
         $q->where('academic_session_id', $academicSessionId);
     }])->get();
     
     // Get some sample mappings for detailed view
-    $sampleMappings = \App\Models\CourseUnitProgrammeMapping::with(['programme', 'courseUnit', 'instructor', 'day'])
+    $sampleMappings = CourseUnitProgrammeMapping::with(['programme', 'courseUnit', 'instructor', 'day'])
         ->where('academic_session_id', $academicSessionId)
         ->limit(5)
         ->get();
@@ -194,7 +197,7 @@ Route::prefix('admin')->middleware(['auth'])->group(function () {
     });
     
     // User Management
-    Route::resource('users', \App\Http\Controllers\RoleController::class, [
+    Route::resource('users', RoleController::class, [
         'names' => [
             'index' => 'admin.users.index',
             'create' => 'admin.users.create',
@@ -205,14 +208,14 @@ Route::prefix('admin')->middleware(['auth'])->group(function () {
             'destroy' => 'admin.users.destroy',
         ]
     ]);
-    Route::patch('users/{user}/toggle-status', [\App\Http\Controllers\RoleController::class, 'toggleStatus'])->name('admin.users.toggle-status');
-    Route::post('users/{user}/assign-role', [\App\Http\Controllers\RoleController::class, 'assign'])->name('admin.users.assign-role');
-    Route::post('users/{user}/remove-role', [\App\Http\Controllers\RoleController::class, 'remove'])->name('admin.users.remove-role');
+    Route::patch('users/{user}/toggle-status', [RoleController::class, 'toggleStatus'])->name('admin.users.toggle-status');
+    Route::post('users/{user}/assign-role', [RoleController::class, 'assign'])->name('admin.users.assign-role');
+    Route::post('users/{user}/remove-role', [RoleController::class, 'remove'])->name('admin.users.remove-role');
     
     // User Import/Export
-    Route::get('users/import', [\App\Http\Controllers\RoleController::class, 'showImportForm'])->name('admin.users.import.form');
-    Route::post('users/import', [\App\Http\Controllers\RoleController::class, 'import'])->name('admin.users.import');
-    Route::get('users/export', [\App\Http\Controllers\RoleController::class, 'export'])->name('admin.users.export');
+    Route::get('users/import', [RoleController::class, 'showImportForm'])->name('admin.users.import.form');
+    Route::post('users/import', [RoleController::class, 'import'])->name('admin.users.import');
+    Route::get('users/export', [RoleController::class, 'export'])->name('admin.users.export');
     
     // Programme Management
     Route::resource('programmes', ProgrammeController::class, [
@@ -250,34 +253,34 @@ Route::prefix('admin')->middleware(['auth'])->group(function () {
     ]);
     
     // Route for copying course unit mappings from another session
-    Route::post('academic-sessions/{academicSession}/copy-mappings', [\App\Http\Controllers\Admin\AcademicSessionController::class, 'copyMappings'])
+    Route::post('academic-sessions/{academicSession}/copy-mappings', [AcademicSessionController::class, 'copyMappings'])
         ->name('admin.academic-sessions.copy-mappings');
     
     Route::prefix('academic-sessions/{academicSession}')->name('admin.academic-sessions.')->group(function () {
-        Route::get('select-programmes', [\App\Http\Controllers\Admin\ProgrammeMappingController::class, 'selectProgrammes'])
+        Route::get('select-programmes', [ProgrammeMappingController::class, 'selectProgrammes'])
             ->name('select-programmes');
-        Route::post('programmes', [\App\Http\Controllers\Admin\ProgrammeMappingController::class, 'storeProgrammes'])
+        Route::post('programmes', [ProgrammeMappingController::class, 'storeProgrammes'])
             ->name('programmes.store');
             
         // Bulk upload course unit mappings
-        Route::get('bulk-upload', [\App\Http\Controllers\Admin\ProgrammeMappingController::class, 'showBulkUploadForm'])
+        Route::get('bulk-upload', [ProgrammeMappingController::class, 'showBulkUploadForm'])
             ->name('bulk-upload');
-        Route::post('bulk-upload', [\App\Http\Controllers\Admin\ProgrammeMappingController::class, 'processBulkUpload'])
+        Route::post('bulk-upload', [ProgrammeMappingController::class, 'processBulkUpload'])
             ->name('bulk-upload.process');
             
         // Download bulk upload report
-        Route::get('bulk-upload/report/{filename}', [\App\Http\Controllers\Admin\ProgrammeMappingController::class, 'downloadReport'])
+        Route::get('bulk-upload/report/{filename}', [ProgrammeMappingController::class, 'downloadReport'])
             ->name('bulk-upload.report');
             
         // Course unit mappings for programmes
         Route::prefix('programmes/{programme}')->name('programmes.')->group(function () {
-            Route::get('map-course-units', [\App\Http\Controllers\Admin\ProgrammeMappingController::class, 'mapCourseUnits'])
+            Route::get('map-course-units', [ProgrammeMappingController::class, 'mapCourseUnits'])
                 ->name('map-course-units');
-            Route::post('course-units', [\App\Http\Controllers\Admin\ProgrammeMappingController::class, 'addCourseUnit'])
+            Route::post('course-units', [ProgrammeMappingController::class, 'addCourseUnit'])
                 ->name('course-units.add');
-            Route::delete('course-units/{courseUnit}', [\App\Http\Controllers\Admin\ProgrammeMappingController::class, 'removeCourseUnit'])
+            Route::delete('course-units/{courseUnit}', [ProgrammeMappingController::class, 'removeCourseUnit'])
                 ->name('course-units.remove');
-            Route::delete('detach', [\App\Http\Controllers\Admin\ProgrammeMappingController::class, 'detach'])
+            Route::delete('detach', [ProgrammeMappingController::class, 'detach'])
                 ->name('detach');
         });
         
@@ -332,19 +335,19 @@ Route::prefix('admin')->middleware(['auth'])->group(function () {
     // Programme scheduling routes (scoped to academic session)
     Route::prefix('academic-sessions/{academicSession}/programmes/{programme}')->name('admin.academic-sessions.programmes.')->group(function () {
         // View schedules
-        Route::get('scheduling', [\App\Http\Controllers\Admin\ProgrammeSchedulingController::class, 'show'])->name('scheduling.show');
+        Route::get('scheduling', [ProgrammeSchedulingController::class, 'show'])->name('scheduling.show');
         
         // Instructor management
-        Route::post('add-instructor', [\App\Http\Controllers\Admin\ProgrammeSchedulingController::class, 'addInstructor'])->name('scheduling.add-instructor');
-        Route::delete('remove-instructor', [\App\Http\Controllers\Admin\ProgrammeSchedulingController::class, 'removeInstructor'])->name('scheduling.remove-instructor');
+        Route::post('add-instructor', [ProgrammeSchedulingController::class, 'addInstructor'])->name('scheduling.add-instructor');
+        Route::delete('remove-instructor', [ProgrammeSchedulingController::class, 'removeInstructor'])->name('scheduling.remove-instructor');
         
         // Schedule management
-        Route::post('assign-slot', [\App\Http\Controllers\Admin\ProgrammeSchedulingController::class, 'assignSlot'])->name('scheduling.assign-slot');
-        Route::put('update-slot/{mapping}', [\App\Http\Controllers\Admin\ProgrammeSchedulingController::class, 'updateSlot'])->name('scheduling.update-slot');
-        Route::delete('delete-slot/{mapping}', [\App\Http\Controllers\Admin\ProgrammeSchedulingController::class, 'deleteSlot'])->name('scheduling.delete-slot');
-        Route::post('bulk-schedule', [\App\Http\Controllers\Admin\ProgrammeSchedulingController::class, 'bulkSchedule'])->name('scheduling.bulk-schedule');
-        Route::get('download-courses', [\App\Http\Controllers\Admin\ProgrammeSchedulingController::class, 'downloadCourses'])->name('scheduling.download-courses');
-        Route::get('export-schedule', [\App\Http\Controllers\Admin\ProgrammeSchedulingController::class, 'exportSchedule'])
+        Route::post('assign-slot', [ProgrammeSchedulingController::class, 'assignSlot'])->name('scheduling.assign-slot');
+        Route::put('update-slot/{mapping}', [ProgrammeSchedulingController::class, 'updateSlot'])->name('scheduling.update-slot');
+        Route::delete('delete-slot/{mapping}', [ProgrammeSchedulingController::class, 'deleteSlot'])->name('scheduling.delete-slot');
+        Route::post('bulk-schedule', [ProgrammeSchedulingController::class, 'bulkSchedule'])->name('scheduling.bulk-schedule');
+        Route::get('download-courses', [ProgrammeSchedulingController::class, 'downloadCourses'])->name('scheduling.download-courses');
+        Route::get('export-schedule', [ProgrammeSchedulingController::class, 'exportSchedule'])
             ->name('scheduling.export')
             ->where('format', 'pdf|excel');
     });
