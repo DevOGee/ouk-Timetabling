@@ -308,7 +308,7 @@
         @endif
 
         <!-- Selected/Current Academic Session -->
-        @if($currentSession)
+        @if($currentSession && !$isInstructor)
         <div class="col-lg-6">
             <div class="card border-0 shadow-sm h-100">
                 <div class="card-header bg-white border-0 border-start border-primary border-4 py-3">
@@ -356,21 +356,58 @@
                 </div>
                 <div class="card-body p-4">
                     <div class="row g-3">
-                        @if($currentSession)
-                        <div class="col-lg-3 col-md-6">
-                            <a href="{{ route('admin.academic-sessions.show', $currentSession) }}" class="btn btn-light w-100 p-3 text-start d-flex align-items-center quick-actions">
-                                <div class="bg-primary bg-opacity-10 p-2 rounded me-3">
-                                    <i class="bi bi-calendar-check text-primary"></i>
-                                </div>
-                                <div>
-                                    <h6 class="mb-0 fw-bold">Current Session</h6>
-                                    <small class="text-muted">{{ $currentSession->name }}</small>
-                                </div>
-                            </a>
-                        </div>
-                        @endif
-                        <div class="col-lg-3 col-md-6">
-                                @if(!$isTimetabler)
+                        @if($isInstructor)
+                            <!-- Instructor Quick Actions -->
+                            <div class="col-lg-4 col-md-6">
+                                <a href="#" class="btn btn-light w-100 p-3 text-start d-flex align-items-center quick-actions">
+                                    <div class="bg-primary bg-opacity-10 p-2 rounded me-3">
+                                        <i class="bi bi-calendar-week text-primary"></i>
+                                    </div>
+                                    <div>
+                                        <h6 class="mb-0 fw-bold">My Timetable</h6>
+                                        <small class="text-muted">View your class schedule</small>
+                                    </div>
+                                </a>
+                            </div>
+                            <div class="col-lg-4 col-md-6">
+                                <a href="#" class="btn btn-light w-100 p-3 text-start d-flex align-items-center quick-actions">
+                                    <div class="bg-success bg-opacity-10 p-2 rounded me-3">
+                                        <i class="bi bi-book text-success"></i>
+                                    </div>
+                                    <div>
+                                        <h6 class="mb-0 fw-bold">My Course Units</h6>
+                                        <small class="text-muted">View your assigned courses</small>
+                                    </div>
+                                </a>
+                            </div>
+                            <div class="col-lg-4 col-md-6">
+                                <a href="{{ route('profile.show') }}" class="btn btn-light w-100 p-3 text-start d-flex align-items-center quick-actions">
+                                    <div class="bg-info bg-opacity-10 p-2 rounded me-3">
+                                        <i class="bi bi-person text-info"></i>
+                                    </div>
+                                    <div>
+                                        <h6 class="mb-0 fw-bold">My Profile</h6>
+                                        <small class="text-muted">Update your information</small>
+                                    </div>
+                                </a>
+                            </div>
+                        @else
+                            <!-- Admin/Timetabler Quick Actions -->
+                            @if($currentSession)
+                            <div class="col-lg-3 col-md-6">
+                                <a href="{{ route('admin.academic-sessions.show', $currentSession) }}" class="btn btn-light w-100 p-3 text-start d-flex align-items-center quick-actions">
+                                    <div class="bg-primary bg-opacity-10 p-2 rounded me-3">
+                                        <i class="bi bi-calendar-check text-primary"></i>
+                                    </div>
+                                    <div>
+                                        <h6 class="mb-0 fw-bold">Current Session</h6>
+                                        <small class="text-muted">{{ $currentSession->name }}</small>
+                                    </div>
+                                </a>
+                            </div>
+                            @endif
+                            @if(!$isTimetabler)
+                            <div class="col-lg-3 col-md-6">
                                 <a href="{{ route('admin.academic-sessions.index') }}" class="btn btn-light w-100 p-3 text-start d-flex align-items-center quick-actions">
                                     <div class="bg-primary bg-opacity-10 p-2 rounded me-3">
                                         <i class="bi bi-calendar3 text-primary"></i>
@@ -380,9 +417,10 @@
                                         <small class="text-muted">Manage academic years</small>
                                     </div>
                                 </a>
-                                @endif
-                                
-                                        @if($isTimetabler && $currentSession)
+                            </div>
+                            @endif
+                            @if($isTimetabler && $currentSession)
+                            <div class="col-lg-3 col-md-6">
                                 <a href="{{ url('/admin/academic-sessions/' . $currentSession->id) }}" class="btn btn-light w-100 p-3 text-start d-flex align-items-center quick-actions">
                                     <div class="bg-info bg-opacity-10 p-2 rounded me-3">
                                         <i class="bi bi-diagram-3 text-info"></i>
@@ -392,8 +430,8 @@
                                         <small class="text-muted">Map courses to programmes</small>
                                     </div>
                                 </a>
-                                @endif
                             </div>
+                            @endif
                         @if(!$isTimetabler)
                         <div class="col-lg-3 col-md-6">
                             <a href="{{ route('admin.programmes.index') }}" class="btn btn-light w-100 p-3 text-start d-flex align-items-center quick-actions">
@@ -431,18 +469,19 @@
                         </div>
                         @if($isAdmin)
                         <div class="col-lg-3 col-md-6">
-                        <a href="{{ route('admin.users.index') }}" class="btn btn-light w-100 p-3 text-start d-flex align-items-center quick-actions">
-                            <div class="bg-purple bg-opacity-10 p-2 rounded me-3">
-                                <i class="bi bi-people-fill text-purple"></i>
-                            </div>
-                            <div>
-                                <h6 class="mb-0 fw-bold">Manage Users</h6>
-                                <small class="text-muted">Manage system users and roles</small>
-                            </div>
-                        </a>
-                        @endif
+                            <a href="{{ route('admin.users.index') }}" class="btn btn-light w-100 p-3 text-start d-flex align-items-center quick-actions">
+                                <div class="bg-purple bg-opacity-10 p-2 rounded me-3">
+                                    <i class="bi bi-people-fill text-purple"></i>
+                                </div>
+                                <div>
+                                    <h6 class="mb-0 fw-bold">Manage Users</h6>
+                                    <small class="text-muted">Manage system users and roles</small>
+                                </div>
+                            </a>
                         </div>
+                        @endif
                     </div>
+                    @endif
                 </div>
             </div>
         </div>

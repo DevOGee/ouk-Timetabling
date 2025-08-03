@@ -750,13 +750,30 @@
                 </a>
             </li>
 
-            {{-- Timetables - Visible to all authenticated users --}}
+            {{-- Timetables - Visible to admins and timetablers --}}
+            @auth
+            @if(auth()->user()->hasRole(['admin', 'dean', 'timetabler']))
             <li class="menu-item {{ request()->routeIs('timetable.*') ? 'active' : '' }}">
                 <a href="{{ route('timetable.index') }}" class="menu-link">
                     <i class="bi bi-calendar3"></i>
                     <span>Timetables</span>
                 </a>
             </li>
+            @elseif(auth()->user()->hasRole('instructor'))
+            <li class="menu-item {{ request()->routeIs('timetable.*') ? 'active' : '' }}">
+                <a href="#" class="menu-link">
+                    <i class="bi bi-calendar3"></i>
+                    <span>My Timetable</span>
+                </a>
+            </li>
+            <li class="menu-item {{ request()->routeIs('instructor.course-units') ? 'active' : '' }}">
+                <a href="{{ route('instructor.course-units') }}" class="menu-link">
+                    <i class="bi bi-journal-text"></i>
+                    <span>My Course Units</span>
+                </a>
+            </li>
+            @endif
+            @endauth
 
             {{-- Academic Sessions - Admin and Dean only --}}
             @auth

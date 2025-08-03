@@ -22,9 +22,10 @@ class DashboardController extends Controller
         $user = auth()->user();
         $isTimetabler = $user->hasRole('timetabler');
         $isAdmin = $user->hasRole('admin');
+        $isInstructor = $user->hasRole('instructor');
 
         // Get academic sessions - active and current
-        $academicSessions = $isTimetabler ? collect() : AcademicSession::latest()->get();
+        $academicSessions = ($isTimetabler || $isInstructor) ? collect() : AcademicSession::latest()->get();
         $currentSession = AcademicSession::where('is_current', true)->first();
         $activeSession = AcademicSession::where('status', 'active')->first();
         
@@ -43,16 +44,23 @@ class DashboardController extends Controller
         $courseUnits = $isTimetabler ? collect() : CourseUnit::latest()->get();
         
         // Initialize stats array for cards
-        $stats = [
-            'academicSessions' => $isTimetabler ? 0 : AcademicSession::count(),
-            'programmes' => $isTimetabler 
-                ? $user->school->programmes()->count() 
-                : Programme::count(),
-            'courseUnits' => $isTimetabler ? 0 : CourseUnit::count(),
-            'instructors' => $isTimetabler 
-                ? User::role('instructor')->where('school_id', $user->school_id)->count()
-                : User::role('instructor')->count(),
-        ];
+        if ($isInstructor) {
+            $stats = [
+                'courseUnitsTeaching' => $user->assignedCourseUnits()->count(),
+                'programmesTeaching' => $user->assignedProgrammes()->distinct()->count(),
+            ];
+        } else {
+            $stats = [
+                'academicSessions' => $isTimetabler ? 0 : AcademicSession::count(),
+                'programmes' => $isTimetabler 
+                    ? $user->school->programmes()->count() 
+                    : Programme::count(),
+                'courseUnits' => $isTimetabler ? 0 : CourseUnit::count(),
+                'instructors' => $isTimetabler 
+                    ? User::role('instructor')->where('school_id', $user->school_id)->count()
+                    : User::role('instructor')->count(),
+            ];
+        }
         
         // Initialize empty collection for unmapped programmes
         $unmappedProgrammes = collect();
@@ -108,6 +116,7 @@ class DashboardController extends Controller
             'heatmapData' => $heatmapData,
             'isTimetabler' => $isTimetabler,
             'isAdmin' => $isAdmin,
+            'isInstructor' => $isInstructor,
             'recentProgrammes' => $programmes->take(5) // Add recent programmes (first 5)
         ]);
     }

@@ -9,6 +9,8 @@ use Laravel\Sanctum\HasApiTokens;
 use App\Traits\HasRoles;
 use Illuminate\Database\Eloquent\Builder;
 use App\Models\CourseUnitProgrammeMapping;
+use App\Models\CourseUnit;
+use App\Models\Programme;
 
 class User extends Authenticatable
 {
@@ -20,6 +22,25 @@ class User extends Authenticatable
     public function school(): \Illuminate\Database\Eloquent\Relations\BelongsTo
     {
         return $this->belongsTo(School::class);
+    }
+
+    /**
+     * Get the course units assigned to this instructor.
+     */
+    public function assignedCourseUnits()
+    {
+        return $this->belongsToMany(CourseUnit::class, 'course_unit_programme_mappings', 'user_id', 'course_unit_id')
+            ->withTimestamps();
+    }
+
+    /**
+     * Get the programmes this instructor is teaching in.
+     */
+    public function assignedProgrammes()
+    {
+        return $this->belongsToMany(Programme::class, 'course_unit_programme_mappings', 'user_id', 'programme_id')
+            ->distinct()
+            ->withTimestamps();
     }
 
     /**

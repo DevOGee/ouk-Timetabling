@@ -23,6 +23,7 @@ use App\Http\Controllers\RoleController;
 use App\Http\Controllers\Admin\AcademicSessionController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\TimetableManagementController;
+use App\Http\Controllers\Instructor\InstructorDashboardController;
 use App\Models\User;
 
 // Clear rate limiter - Remove this in production
@@ -102,6 +103,12 @@ Route::get('timetable', [TimetableController::class, 'index'])->name('timetable.
 Route::resource('instructors', InstructorController::class);
 Route::get('instructors/upload', [InstructorController::class, 'showUploadForm'])->name('instructors.upload');
 Route::post('instructors/import', [InstructorController::class, 'importInstructors'])->name('instructors.import');
+
+// Instructor Dashboard Routes
+Route::prefix('instructor')->middleware(['auth'])->group(function () {
+    Route::get('/my-course-units', [InstructorDashboardController::class, 'myCourseUnits'])
+        ->name('instructor.course-units');
+});
 
 // Academic Year routes
 Route::resource('academic_years', AcademicYearController::class);
