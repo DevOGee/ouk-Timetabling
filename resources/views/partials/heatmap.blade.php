@@ -172,12 +172,15 @@
             position: relative;
             cursor: pointer;
             transition: all 0.2s ease;
-            min-width: 50px;
+            min-width: 60px;
             height: 60px;
+            border-radius: 8px;
+            border: 10px solid white;
+            margin: -5px;
         }
         
         .heatmap-cell:hover {
-            transform: scale(1.05);
+            transform: scale(1.02);
             z-index: 5;
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
         }
