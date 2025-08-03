@@ -74,8 +74,10 @@ Auth::routes([
 ]);
 
 // Google OAuth Routes
-Route::get('/login/google', [GoogleAuthController::class, 'redirectToGoogle'])->name('login.google');
-Route::get('/login/google/callback', [GoogleAuthController::class, 'handleGoogleCallback']);
+Route::middleware(['web', 'guest'])->group(function () {
+    Route::get('/login/google', [GoogleAuthController::class, 'redirectToGoogle'])->name('login.google');
+    Route::get('/login/google/callback', [GoogleAuthController::class, 'handleGoogleCallback']);
+});
 
 // Root URL redirects to timetable
 Route::redirect('/', '/timetable');
