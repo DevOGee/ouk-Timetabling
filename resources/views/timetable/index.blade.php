@@ -402,7 +402,7 @@
 </head>
 
 <body>
-    @if($currentAcademicSession)
+    {{-- @if($currentAcademicSession)
         <div class="container mt-3">
             <div class="alert alert-success mb-3">
                 <div class="d-flex justify-content-between align-items-center">
@@ -417,7 +417,7 @@
                 </div>
             </div>
         </div>
-    @endif
+    @endif --}}
 
     <div class="filter-section">
         @php
