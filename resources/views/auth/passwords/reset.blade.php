@@ -190,9 +190,11 @@
                             name="email" 
                             id="email" 
                             placeholder="Your Email" 
-                            value="{{ old('email') }}" 
+                            value="{{ old('email', request('email')) }}" 
                             required 
-                            autofocus
+                            readonly
+                            class="readonly-email"
+                            style="background-color: #f8f9fa;"
                         />
                         <label for="email"><i class="zmdi zmdi-email"></i></label>
                     </div>

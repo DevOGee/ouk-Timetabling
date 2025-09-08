@@ -275,6 +275,7 @@
     <!-- Academic Session Status -->
     <div class="row g-4 mb-4">
         <!-- Active Academic Session -->
+        @if($activeSession || $selectedSession)
         @if($activeSession)
         <div class="col-lg-6">
             <div class="card border-0 shadow-sm h-100">
@@ -288,7 +289,7 @@
                         <div class="bg-success bg-opacity-10 p-3 rounded-circle me-4">
                             <i class="bi bi-check-circle-fill text-success" style="font-size: 2rem;"></i>
                         </div>
-                        <div>
+                        <div class="flex-grow-1">
                             <h4 class="mb-1">{{ $activeSession->name }}</h4>
                             <p class="text-muted mb-2">This is the live timetable session currently visible to students and staff.</p>
                             <div class="d-flex align-items-center flex-wrap gap-2">
@@ -299,6 +300,11 @@
                                 <a href="{{ route('timetable.index', ['academic_session' => $activeSession->id]) }}" class="btn btn-sm btn-success mt-1">
                                     <i class="bi bi-calendar-week me-1"></i> View Timetable
                                 </a>
+                                @if(auth()->user()->hasRole('admin'))
+                                <a href="{{ route('admin.academic-sessions.edit', $activeSession) }}" class="btn btn-sm btn-outline-secondary mt-1">
+                                    <i class="bi bi-pencil me-1"></i> Manage Session
+                                </a>
+                                @endif
                             </div>
                         </div>
                     </div>
@@ -307,8 +313,8 @@
         </div>
         @endif
 
-        <!-- Selected/Current Academic Session -->
-        @if($currentSession && !$isInstructor)
+        <!-- Selected Academic Session -->
+        @if($selectedSession && !$isInstructor)
         <div class="col-lg-6">
             <div class="card border-0 shadow-sm h-100">
                 <div class="card-header bg-white border-0 border-start border-primary border-4 py-3">
@@ -321,23 +327,29 @@
                         <div class="bg-primary bg-opacity-10 p-3 rounded-circle me-4">
                             <i class="bi bi-pencil-square text-primary" style="font-size: 2rem;"></i>
                         </div>
-                        <div>
-                            <h4 class="mb-1">{{ $currentSession->name }}</h4>
+                        <div class="flex-grow-1">
+                            <h4 class="mb-1">{{ $selectedSession->name }}</h4>
                             <p class="text-muted mb-2">You are currently viewing and editing this academic session.</p>
                             <div class="d-flex align-items-center flex-wrap gap-2">
                                 <span class="badge bg-primary bg-opacity-10 text-primary me-2">
                                     <i class="bi bi-calendar3 me-1"></i>
-                                    {{ $currentSession->start_date->format('M d, Y') }} - {{ $currentSession->end_date->format('M d, Y') }}
+                                    {{ $selectedSession->start_date->format('M d, Y') }} - {{ $selectedSession->end_date->format('M d, Y') }}
                                 </span>
-                                <a href="{{ route('timetable.index', ['academic_session' => $currentSession->id]) }}" class="btn btn-sm btn-primary">
+                                <a href="{{ route('timetable.index', ['academic_session' => $selectedSession->id]) }}" class="btn btn-sm btn-primary mt-1">
                                     <i class="bi bi-calendar-week me-1"></i> View Timetable
                                 </a>
+                                @if(auth()->user()->hasRole('admin'))
+                                <a href="{{ route('admin.academic-sessions.edit', $selectedSession) }}" class="btn btn-sm btn-outline-secondary mt-1">
+                                    <i class="bi bi-pencil me-1"></i> Manage Session
+                                </a>
+                                @endif
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
+        @endif
         @endif
     </div>
 
@@ -393,15 +405,15 @@
                             </div>
                         @else
                             <!-- Admin/Timetabler Quick Actions -->
-                            @if($currentSession)
+                            @if($selectedSession)
                             <div class="col-lg-3 col-md-6">
-                                <a href="{{ route('admin.academic-sessions.show', $currentSession) }}" class="btn btn-light w-100 p-3 text-start d-flex align-items-center quick-actions">
+                                <a href="{{ route('admin.academic-sessions.show', $selectedSession) }}" class="btn btn-light w-100 p-3 text-start d-flex align-items-center quick-actions">
                                     <div class="bg-primary bg-opacity-10 p-2 rounded me-3">
                                         <i class="bi bi-calendar-check text-primary"></i>
                                     </div>
                                     <div>
-                                        <h6 class="mb-0 fw-bold">Current Session</h6>
-                                        <small class="text-muted">{{ $currentSession->name }}</small>
+                                        <h6 class="mb-0 fw-bold">Selected Session</h6>
+                                        <small class="text-muted">{{ $selectedSession->name }}</small>
                                     </div>
                                 </a>
                             </div>
@@ -419,9 +431,9 @@
                                 </a>
                             </div>
                             @endif
-                            @if($isTimetabler && $currentSession)
+                            @if($isTimetabler && $selectedSession)
                             <div class="col-lg-3 col-md-6">
-                                <a href="{{ url('/admin/academic-sessions/' . $currentSession->id) }}" class="btn btn-light w-100 p-3 text-start d-flex align-items-center quick-actions">
+                                <a href="{{ url('/admin/academic-sessions/' . $selectedSession->id) }}" class="btn btn-light w-100 p-3 text-start d-flex align-items-center quick-actions">
                                     <div class="bg-info bg-opacity-10 p-2 rounded me-3">
                                         <i class="bi bi-diagram-3 text-info"></i>
                                     </div>
@@ -488,7 +500,7 @@
     </div>
 
     <!-- Heatmap Section for All Users -->
-    @if(($isAdmin || $isTimetabler) && $currentSession && !empty($heatmapData['programmes']))
+    @if(($isAdmin || $isTimetabler) && $selectedSession && !empty($heatmapData['programmes']))
         @include('partials.heatmap')
     @endif
 
@@ -512,7 +524,7 @@
                     @if($unmappedProgrammes->isNotEmpty())
                         <div class="list-group list-group-flush">
                             @foreach($unmappedProgrammes as $programme)
-                                <a href="{{ url("/admin/academic-sessions/" . $currentSession->id . "/programmes/" . $programme->id . "/map-course-units") }}" class="list-group-item list-group-item-action py-3 px-4 recent-activity">
+                                <a href="{{ url("/admin/academic-sessions/" . $selectedSession->id . "/programmes/" . $programme->id . "/map-course-units") }}" class="list-group-item list-group-item-action py-3 px-4 recent-activity">
                                     <div class="d-flex align-items-center">
                                         <div class="flex-shrink-0">
                                             <div class="bg-warning bg-opacity-10 p-2 rounded-circle">
@@ -534,7 +546,7 @@
                             @endforeach
                         </div>
                         <div class="card-footer bg-white border-0 py-3">
-                            <a href="{{ route('admin.academic-sessions.show', $currentSession) }}" class="btn btn-sm btn-outline-primary w-100">
+                            <a href="{{ route('admin.academic-sessions.show', $selectedSession) }}" class="btn btn-sm btn-outline-primary w-100">
                                 <i class="bi bi-arrow-right me-1"></i> Manage Academic Session
                             </a>
                         </div>

@@ -6,6 +6,7 @@
         <div class="col-md-6">
             <h2>Academic Session: {{ $academicSession->name }}</h2>
         </div>
+        @if(auth()->user()->hasRole('admin'))
         <div class="col-md-6 text-end">
             <a href="{{ route('admin.academic-sessions.edit', $academicSession) }}" class="btn btn-outline-primary">
                 <i class="bi bi-pencil"></i> Edit
@@ -14,6 +15,7 @@
                 <i class="bi bi-arrow-left"></i> Back to List
             </a>
         </div>
+        @endif
     </div>
 
     <div class="card mb-4">

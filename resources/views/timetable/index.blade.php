@@ -402,6 +402,23 @@
 </head>
 
 <body>
+    @if($currentAcademicSession)
+        <div class="container mt-3">
+            <div class="alert alert-success mb-3">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <i class="fas fa-calendar-alt me-2"></i>
+                        <strong>Active Academic Session:</strong> {{ $currentAcademicSession->name }}
+                        <span class="badge bg-success ms-2">Active</span>
+                    </div>
+                    <div class="small text-muted">
+                        {{ $currentAcademicSession->start_date->format('M d, Y') }} - {{ $currentAcademicSession->end_date->format('M d, Y') }}
+                    </div>
+                </div>
+            </div>
+        </div>
+    @endif
+
     <div class="filter-section">
         @php
             $groupedProgrammes = $programmes->sortBy('programme_code')->groupBy('school_id');
@@ -459,11 +476,11 @@
                     </div>
 
                     {{-- Export Button --}}
-                    <div>
+                    {{-- <div>
                         <button type="button" id="exportPdfBtn" class="btn btn-success btn-sm" style="border-radius: 5px; height: 38px; white-space: nowrap;">
                             <i class="fas fa-file-export me-1"></i> Export PDF
                         </button>
-                    </div>
+                    </div> --}}
                 </div>
             </form>
         </div>

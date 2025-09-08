@@ -1,4 +1,4 @@
-@if(($isAdmin || $isTimetabler) && !empty($heatmapData['programmes']) && $currentSession)
+@if(($isAdmin || $isTimetabler) && !empty($heatmapData['programmes']) && $selectedSession)
     <!-- Heatmap Section -->
     <div class="heatmap-container">
         <div class="card border-0 shadow-sm rounded-3 overflow-hidden">
@@ -19,7 +19,7 @@
                     @endif
                     <span class="badge bg-light text-dark rounded-pill px-3 py-2">
                         <i class="bi bi-calendar-week me-1"></i>
-                        {{ $currentSession->name }}
+                        {{ $selectedSession->name }}
                     </span>
                 </div>
             </div>
@@ -45,7 +45,7 @@
                                         <small class="text-muted d-block">{{ $programme['name'] }}</small>
                                     </div>
                                 </div>
-                                <a href="/admin/academic-sessions/{{ $currentSession->id }}/programmes/{{ $programme['id'] }}/map-course-units" 
+                                <a href="/admin/academic-sessions/{{ $selectedSession->id }}/programmes/{{ $programme['id'] }}/map-course-units" 
                                    class="btn btn-sm btn-outline-primary ms-2"
                                    title="Map Course Units for {{ $programme['code'] }}"
                                    data-bs-toggle="tooltip">

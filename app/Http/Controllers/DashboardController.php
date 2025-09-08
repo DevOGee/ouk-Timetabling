@@ -24,15 +24,14 @@ class DashboardController extends Controller
         $isAdmin = $user->hasRole('admin');
         $isInstructor = $user->hasRole('instructor');
 
-        // Get academic sessions - active and current
+        // Get academic sessions
         $academicSessions = ($isTimetabler || $isInstructor) ? collect() : AcademicSession::latest()->get();
-        $currentSession = AcademicSession::where('is_current', true)->first();
+        
+        // Get active academic session (status = 'active')
         $activeSession = AcademicSession::where('status', 'active')->first();
         
-        // If no current session but there is an active one, use that
-        if (!$currentSession && $activeSession) {
-            $currentSession = $activeSession;
-        }
+        // Get selected academic session (is_current = true)
+        $selectedSession = AcademicSession::where('is_current', true)->first();
         $programmes = $isTimetabler 
             ? Programme::where('school_id', $user->school_id)->with('school')->latest()->get()
             : Programme::with('school')->latest()->get();
@@ -65,9 +64,9 @@ class DashboardController extends Controller
         // Initialize empty collection for unmapped programmes
         $unmappedProgrammes = collect();
         
-        if ($currentSession) {
-            // Get all programmes that are part of the current academic session
-            $programmesInSession = $currentSession->programmes()
+        if ($selectedSession) {
+            // Get all programmes that are part of the selected academic session
+            $programmesInSession = $selectedSession->programmes()
                 ->when($isTimetabler, function($query) use ($user) {
                     return $query->where('school_id', $user->school_id);
                 })
@@ -75,7 +74,7 @@ class DashboardController extends Controller
             
             if ($programmesInSession->isNotEmpty()) {
                 // Get programmes that have course units mapped in this session
-                $programmesWithMappedCourses = CourseUnitProgrammeMapping::where('academic_session_id', $currentSession->id)
+                $programmesWithMappedCourses = CourseUnitProgrammeMapping::where('academic_session_id', $selectedSession->id)
                     ->whereNotNull('course_unit_id')
                     ->when($isTimetabler, function($query) use ($user) {
                         return $query->whereHas('programme', function($q) use ($user) {
@@ -100,9 +99,9 @@ class DashboardController extends Controller
 
         // Prepare heatmap data for admins and timetablers
         $heatmapData = [];
-        if ($currentSession) {
+        if ($selectedSession) {
             $schoolId = $isTimetabler ? $user->school_id : null;
-            $heatmapData = $this->getHeatmapData($currentSession->id, $schoolId);
+            $heatmapData = $this->getHeatmapData($selectedSession->id, $schoolId);
         }
 
         return view('dashboard', [
@@ -110,7 +109,7 @@ class DashboardController extends Controller
             'programmes' => $programmes,
             'instructors' => $instructors,
             'courseUnits' => $courseUnits,
-            'currentSession' => $currentSession,
+            'selectedSession' => $selectedSession,
             'unmappedProgrammes' => $unmappedProgrammes,
             'stats' => $stats,
             'heatmapData' => $heatmapData,

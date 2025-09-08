@@ -16,8 +16,8 @@ class TimetableController extends Controller
 {
     public function index(Request $request)
     {
-        // Get current academic session
-        $currentAcademicSession = \App\Models\AcademicSession::where('is_current', true)->first();
+        // Get active academic session
+        $currentAcademicSession = \App\Models\AcademicSession::where('status', 'active')->first();
         
         if (!$currentAcademicSession) {
             return redirect()->back()->with('error', 'No active academic session found.');
