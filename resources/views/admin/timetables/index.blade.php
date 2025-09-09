@@ -457,14 +457,14 @@ function renderPrograms(containerId, filterFn) {
     
     let html = '';
     filteredPrograms.forEach((program, index) => {
-        const { id, name, programme_code, status, statusText, statusClass, timetable, mappings, completed, inProgress, notStarted, totalMappings } = program;
+        const { id, name, programme_code, status, statusText, statusClass, timetable, mappings } = program;
         
         // Generate action buttons based on status
         let actionButtons = '';
         
         if (status === 'in_progress' && !timetable) {
             actionButtons = `
-                <a href="{{ route('admin.timetables.create', ['programme_id' => '${id}', 'academic_session_id' => '${$academicSession->id}']) }}" class="btn btn-sm btn-primary">
+                <a href="{{ route('admin.timetables.create', ['programme_id' => '${id}', 'academic_session_id' => '${$academicSession->id}'] ?? '') }}" class="btn btn-sm btn-primary">
                     <i class="bi bi-plus-circle"></i> Create Timetable
                 </a>
             `;
@@ -508,7 +508,7 @@ function renderPrograms(containerId, filterFn) {
                 <td>
                     <span class="badge bg-${statusClass}" 
                           data-bs-toggle="tooltip" 
-                          title="Scheduled: ${mappings.completed} | In Progress: ${mappings.inProgress} | Not Started: ${mappings.notStarted}">
+                          title="Scheduled: ${mappings?.completed || 0} | In Progress: ${mappings?.inProgress || 0} | Not Started: ${mappings?.notStarted || 0}">
                         ${statusText}
                     </span>
                 </td>
@@ -524,36 +524,6 @@ function renderPrograms(containerId, filterFn) {
     // Reinitialize tooltips for the new elements
     const tooltipTriggerList = [].slice.call(container.querySelectorAll('[data-bs-toggle="tooltip"]'));
     tooltipTriggerList.map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl));
-    
-    // Reattach event listeners for publish/unpublish buttons
-    attachPublishHandlers();
-}
-
-// Function to attach event handlers for publish/unpublish buttons
-function attachPublishHandlers() {
-    // Publish button handler
-    document.querySelectorAll('.btn-publish').forEach(button => {
-        button.addEventListener('click', function() {
-            const timetableId = this.dataset.timetableId;
-            const programName = this.dataset.programName;
-            
-            if (confirm(`Are you sure you want to publish the timetable for ${programName}?`)) {
-                publishTimetable(timetableId, this);
-            }
-        });
-    });
-
-    // Unpublish button handler
-    document.querySelectorAll('.btn-unpublish').forEach(button => {
-        button.addEventListener('click', function() {
-            const timetableId = this.dataset.timetableId;
-            const programName = this.dataset.programName;
-            
-            if (confirm(`Are you sure you want to unpublish the timetable for ${programName}?`)) {
-                unpublishTimetable(timetableId, this);
-            }
-        });
-    });
 }
 
 // Function to initialize tab content
@@ -597,77 +567,108 @@ function initializeTabContent() {
     }
 }
 
+// Global functions for timetable actions
+function showAlert(type, message) {
+    // Remove any existing alerts
+    const existingAlert = document.querySelector('.alert');
+    if (existingAlert) {
+        existingAlert.remove();
+    }
+    
+    // Create and show new alert
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+    alertDiv.role = 'alert';
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    `;
+    
+    // Insert at the top of the main container
+    const container = document.querySelector('.container');
+    if (container) {
+        container.insertBefore(alertDiv, container.firstChild);
+    }
+    
+    // Auto-dismiss after 5 seconds
+    setTimeout(() => {
+        const bsAlert = new bootstrap.Alert(alertDiv);
+        bsAlert.close();
+    }, 5000);
+}
+
+// Show alert message
+function showAlert(type, message) {
+    // Create and show new alert
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+    alertDiv.role = 'alert';
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    `;
+    
+    // Insert at the top of the main container
+    const container = document.querySelector('.container');
+    if (container) {
+        container.insertBefore(alertDiv, container.firstChild);
+    }
+    
+    // Auto-dismiss after 5 seconds
+    setTimeout(() => {
+        const bsAlert = new bootstrap.Alert(alertDiv);
+        bsAlert.close();
+    }, 5000);
+}
+
 // Initialize when the page loads
 document.addEventListener('DOMContentLoaded', function() {
     // Check if programs data is available
-    if (programsData && programsData.length > 0) {
+    if (typeof programsData !== 'undefined' && programsData.length > 0) {
         initializeTabContent();
     } else {
-        // If no programs data, show appropriate message
-        ['published-programs', 'ready-programs', 'pending-programs'].forEach(containerId => {
-            const container = document.getElementById(containerId);
-            if (container) {
-                container.innerHTML = `
-                    <tr>
-                        <td colspan="4" class="text-center py-4">
-                            <div class="text-muted">
-                                <i class="bi bi-inbox me-1"></i>
-                                No programs available.
-                            </div>
-                        </td>
-                    </tr>
-                `;
-            }
-        });
-    }
-    
-    // Set up event delegation for dynamic buttons
-    document.addEventListener('click', function(e) {
-        // Handle publish button clicks
-        if (e.target.closest('.btn-publish')) {
-            const button = e.target.closest('.btn-publish');
-            const timetableId = button.dataset.timetableId;
-            const programName = button.dataset.programName;
-            
-            if (confirm(`Are you sure you want to publish the timetable for ${programName}?`)) {
-                publishTimetable(timetableId, button);
-            }
+            // If no programs data, show appropriate message
+            ['published-programs', 'ready-programs', 'pending-programs'].forEach(containerId => {
+                const container = document.getElementById(containerId);
+                if (container) {
+                    container.innerHTML = `
+                        <tr>
+                            <td colspan="4" class="text-center py-4">
+                                <div class="text-muted">
+                                    <i class="bi bi-inbox me-1"></i>
+                                    No programs available.
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                }
+            });
         }
         
-        // Handle unpublish button clicks
-        if (e.target.closest('.btn-unpublish')) {
-            const button = e.target.closest('.btn-unpublish');
-            const timetableId = button.dataset.timetableId;
-            const programName = button.dataset.programName;
-            
-            if (confirm(`Are you sure you want to unpublish the timetable for ${programName}?`)) {
-                unpublishTimetable(timetableId, button);
+        // Set up event delegation for dynamic buttons
+        document.addEventListener('click', function(e) {
+            // Handle publish button clicks
+            if (e.target.closest('.btn-publish')) {
+                e.preventDefault();
+                const button = e.target.closest('.btn-publish');
+                const timetableId = button.dataset.timetableId;
+                const programName = button.dataset.programName;
+                
+                if (confirm(`Are you sure you want to publish the timetable for ${programName}?`)) {
+                    publishTimetable(timetableId, button);
+                }
             }
-        }
-    });
-});
-
-document.addEventListener('DOMContentLoaded', function() {
-    // Publish button handler
-    document.querySelectorAll('.btn-publish').forEach(button => {
-        button.addEventListener('click', function() {
-            const timetableId = this.dataset.timetableId;
-            const programName = this.dataset.programName;
             
-            if (confirm(`Are you sure you want to publish the timetable for ${programName}?`)) {
-                publishTimetable(timetableId, this);
-            }
-        });
-    });
-
-    // Unpublish button handler
-    document.querySelectorAll('.btn-unpublish').forEach(button => {
-        button.addEventListener('click', function() {
-            const timetableId = this.dataset.timetableId;
-            const programName = this.dataset.programName;
-            
-            if (confirm(`Are you sure you want to unpublish the timetable for ${programName}?`)) {
-                unpublishTimetable(timetableId, this);
+            // Handle unpublish button clicks
+            if (e.target.closest('.btn-unpublish')) {
+                e.preventDefault();
+                const button = e.target.closest('.btn-unpublish');
+                const timetableId = button.dataset.timetableId;
+                const programName = button.dataset.programName;
+                
+                if (confirm(`Are you sure you want to unpublish the timetable for ${programName}?`)) {
+                    unpublishTimetable(timetableId, button);
+                }
             }
         });
     });
@@ -688,10 +689,7 @@ document.addEventListener('DOMContentLoaded', function() {
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                // Show success message
                 showAlert('success', data.message);
-                
-                // Reload the page to reflect changes
                 window.location.reload();
             } else {
                 throw new Error(data.message || 'Failed to publish timetable');
@@ -719,10 +717,7 @@ document.addEventListener('DOMContentLoaded', function() {
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                // Show success message
                 showAlert('success', data.message);
-                
-                // Reload the page to reflect changes
                 window.location.reload();
             } else {
                 throw new Error(data.message || 'Failed to unpublish timetable');
@@ -733,38 +728,11 @@ document.addEventListener('DOMContentLoaded', function() {
             showAlert('danger', error.message || 'An error occurred while unpublishing the timetable.');
         });
     }
-
-    function showAlert(type, message) {
-        // Remove any existing alerts
-        const existingAlert = document.querySelector('.alert');
-        if (existingAlert) {
-            existingAlert.remove();
-        }
-        
-        // Create and show new alert
-        const alertDiv = document.createElement('div');
-        alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
-        alertDiv.role = 'alert';
-        alertDiv.innerHTML = `
-            ${message}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        `;
-        
-        // Insert at the top of the main container
-        const container = document.querySelector('.container');
-        container.insertBefore(alertDiv, container.firstChild);
-        
-        // Auto-dismiss after 5 seconds
-        setTimeout(() => {
-            const bsAlert = new bootstrap.Alert(alertDiv);
-            bsAlert.close();
-        }, 5000);
-    }
-});
 </script>
 @endpush
 
 @push('styles')
+{{-- Additional styles will be pushed here --}}
 <style>
     /* Enhanced Tabs Styling */
     .tabs-container {
@@ -1016,153 +984,159 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // Handle publish/unpublish actions
-    document.addEventListener('DOMContentLoaded', function() {
-        // Publish/Unpublish buttons
-        document.querySelectorAll('.btn-publish, .btn-unpublish').forEach(button => {
-            button.addEventListener('click', function(e) {
-                e.preventDefault();
-                const timetableId = this.dataset.timetableId;
-                const isPublish = this.classList.contains('btn-publish');
-                const action = isPublish ? 'publish' : 'unpublish';
-                const programName = this.dataset.programName || 'this timetable';
+    document.querySelectorAll('.btn-publish, .btn-unpublish').forEach(button => {
+        button.addEventListener('click', function(e) {
+            e.preventDefault();
+            const timetableId = this.dataset.timetableId;
+            const isPublish = this.classList.contains('btn-publish');
+            const action = isPublish ? 'publish' : 'unpublish';
+            const programName = this.dataset.programName || 'this timetable';
+            
+            // Show confirmation dialog
+            const modal = new bootstrap.Modal(document.getElementById('confirmModal'));
+            const modalTitle = document.getElementById('confirmModalLabel');
+            const modalBody = document.getElementById('confirmModalBody');
+            const confirmBtn = document.getElementById('confirmAction');
+            
+            // Update modal content
+            modalTitle.textContent = isPublish ? 'Publish Timetable' : 'Unpublish Timetable';
+            modalBody.innerHTML = isPublish 
+                ? `Are you sure you want to publish the timetable for <strong>${programName}</strong>? This will unpublish any other timetables for this academic session.`
+                : `Are you sure you want to unpublish the timetable for <strong>${programName}</strong>?`;
+            
+            // Set up the confirm button
+            confirmBtn.textContent = isPublish ? 'Publish' : 'Unpublish';
+            confirmBtn.className = isPublish ? 'btn btn-success' : 'btn btn-warning';
+            
+            // Remove previous event listeners
+            const newConfirmBtn = confirmBtn.cloneNode(true);
+            confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
+            
+            // Add click handler for the confirm button
+            newConfirmBtn.onclick = function() {
+                const url = isPublish 
+                    ? `{{ route('admin.timetables.publish', ['timetable' => '__ID__']) }}`.replace('__ID__', timetableId)
+                    : `{{ route('admin.timetables.unpublish', ['timetable' => '__ID__']) }}`.replace('__ID__', timetableId);
                 
-                // Show confirmation dialog
-                const modal = new bootstrap.Modal(document.getElementById('confirmModal'));
-                const modalTitle = document.getElementById('confirmModalLabel');
-                const modalBody = document.getElementById('confirmModalBody');
-                const confirmBtn = document.getElementById('confirmActionBtn');
-                
-                modalTitle.textContent = isPublish ? 'Publish Timetable' : 'Unpublish Timetable';
-                modalBody.innerHTML = isPublish 
-                    ? `Are you sure you want to publish the timetable for <strong>${programName}</strong>? This will unpublish any other timetables for this academic session.`
-                    : `Are you sure you want to unpublish the timetable for <strong>${programName}</strong>?`;
-                
-                // Set up the confirm button
-                confirmBtn.textContent = isPublish ? 'Publish' : 'Unpublish';
-                confirmBtn.className = isPublish ? 'btn btn-success' : 'btn btn-warning';
-                confirmBtn.onclick = null; // Remove previous event listeners
-                
-                // Handle confirm action
-                confirmBtn.addEventListener('click', function() {
-                    const url = isPublish 
-                        ? `{{ route('admin.timetables.publish', ['timetable' => '__ID__']) }}`.replace('__ID__', timetableId)
-                        : `{{ route('admin.timetables.unpublish', ['timetable' => '__ID__']) }}`.replace('__ID__', timetableId);
-                    
-                    fetch(url, {
-                        method: 'POST',
-                        headers: {
-                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-                            'Accept': 'application/json',
-                            'Content-Type': 'application/json',
-                        },
-                    })
-                    .then(response => {
-                        if (!response.ok) {
-                            return response.json().then(err => {
-                                throw new Error(err.message || 'Network response was not ok');
-                            });
-                        }
-                        return response.json();
-                    })
-                    .then(data => {
-                        if (data.success) {
-                            // Show success message
-                            const toast = new bootstrap.Toast(document.getElementById('successToast'));
-                            const toastMessage = document.getElementById('toastMessage');
-                            toastMessage.textContent = data.message;
-                            toast.show();
-                            
-                            // Reload the page after a short delay
-                            setTimeout(() => {
-                                window.location.reload();
-                            }, 1500);
-                        } else {
-                            throw new Error(data.message || 'An error occurred');
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error:', error);
-                        const toast = new bootstrap.Toast(document.getElementById('errorToast'));
-                        const toastMessage = document.getElementById('errorToastMessage');
-                        toastMessage.textContent = error.message || 'An error occurred while processing your request';
+                fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: JSON.stringify({})
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        return response.json().then(err => {
+                            throw new Error(err.message || 'Network response was not ok');
+                        });
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.success) {
+                        // Show success message
+                        const toast = new bootstrap.Toast(document.getElementById('successToast'));
+                        const toastMessage = document.getElementById('toastMessage');
+                        toastMessage.textContent = data.message;
                         toast.show();
-                    })
-                    .finally(() => {
-                        modal.hide();
-                    });
+                        
+                        // Reload the page after a short delay
+                        setTimeout(() => {
+                            window.location.reload();
+                        }, 1500);
+                    } else {
+                        throw new Error(data.message || 'An error occurred');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    const toast = new bootstrap.Toast(document.getElementById('errorToast'));
+                    const toastMessage = document.getElementById('errorToastMessage');
+                    toastMessage.textContent = error.message || 'An error occurred while processing your request';
+                    toast.show();
+                })
+                .finally(() => {
+                    modal.hide();
                 });
-                
-                modal.show();
-            });
+            };
+            
+            modal.show();
         });
+    });
         
-        // Delete button
-        document.querySelectorAll('.btn-delete').forEach(button => {
-            button.addEventListener('click', function(e) {
-                e.preventDefault();
-                const timetableId = this.dataset.timetableId;
-                const programName = this.dataset.programName || 'this timetable';
+    // Handle delete button
+    document.querySelectorAll('.btn-delete').forEach(button => {
+        button.addEventListener('click', function(e) {
+            e.preventDefault();
+            const timetableId = this.dataset.timetableId;
+            const programName = this.dataset.programName || 'this timetable';
+            
+            // Show confirmation dialog
+            const modal = new bootstrap.Modal(document.getElementById('confirmDeleteModal'));
+            const modalBody = document.getElementById('confirmDeleteModalBody');
+            const confirmBtn = document.getElementById('confirmDeleteBtn');
+            
+            // Update modal content
+            modalBody.textContent = `Are you sure you want to delete the timetable for ${programName}? This action cannot be undone.`;
+            
+            // Remove previous event listeners
+            const newConfirmBtn = confirmBtn.cloneNode(true);
+            confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
+            
+            // Add click handler for the confirm button
+            newConfirmBtn.onclick = function() {
+                const url = `{{ route('admin.timetables.destroy', ['timetable' => '__ID__']) }}`.replace('__ID__', timetableId);
                 
-                // Show confirmation dialog
-                const modal = new bootstrap.Modal(document.getElementById('confirmDeleteModal'));
-                const modalBody = document.getElementById('confirmDeleteModalBody');
-                const confirmBtn = document.getElementById('confirmDeleteBtn');
-                
-                modalBody.textContent = `Are you sure you want to delete the timetable for ${programName}? This action cannot be undone.`;
-                
-                // Set up the confirm button
-                confirmBtn.onclick = null; // Remove previous event listeners
-                
-                // Handle confirm action
-                confirmBtn.addEventListener('click', function() {
-                    const url = `{{ route('admin.timetables.destroy', ['timetable' => '__ID__']) }}`.replace('__ID__', timetableId);
-                    
-                    fetch(url, {
-                        method: 'DELETE',
-                        headers: {
-                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-                            'Accept': 'application/json',
-                            'Content-Type': 'application/json',
-                        },
-                    })
-                    .then(response => {
-                        if (!response.ok) {
-                            return response.json().then(err => {
-                                throw new Error(err.message || 'Network response was not ok');
-                            });
-                        }
-                        return response.json();
-                    })
-                    .then(data => {
-                        if (data.success) {
-                            // Show success message
-                            const toast = new bootstrap.Toast(document.getElementById('successToast'));
-                            const toastMessage = document.getElementById('toastMessage');
-                            toastMessage.textContent = data.message;
-                            toast.show();
-                            
-                            // Reload the page after a short delay
-                            setTimeout(() => {
-                                window.location.reload();
-                            }, 1500);
-                        } else {
-                            throw new Error(data.message || 'An error occurred');
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error:', error);
-                        const toast = new bootstrap.Toast(document.getElementById('errorToast'));
-                        const toastMessage = document.getElementById('errorToastMessage');
-                        toastMessage.textContent = error.message || 'An error occurred while processing your request';
+                fetch(url, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        return response.json().then(err => {
+                            throw new Error(err.message || 'Network response was not ok');
+                        });
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.success) {
+                        // Show success message
+                        const toast = new bootstrap.Toast(document.getElementById('successToast'));
+                        const toastMessage = document.getElementById('toastMessage');
+                        toastMessage.textContent = data.message;
                         toast.show();
-                    })
-                    .finally(() => {
-                        modal.hide();
-                    });
+                        
+                        // Reload the page after a short delay
+                        setTimeout(() => {
+                            window.location.reload();
+                        }, 1500);
+                    } else {
+                        throw new Error(data.message || 'An error occurred');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    const toast = new bootstrap.Toast(document.getElementById('errorToast'));
+                    const toastMessage = document.getElementById('errorToastMessage');
+                    toastMessage.textContent = error.message || 'An error occurred while processing your request';
+                    toast.show();
+                })
+                .finally(() => {
+                    modal.hide();
                 });
-                
-                modal.show();
-            });
+            };
+            
+            modal.show();
         });
     });
 });
