@@ -16,12 +16,14 @@ class ClassSchedulesExport implements FromView, ShouldAutoSize, WithTitle
     protected $academicSessionId;
     protected $schoolId;
     protected $showCourseNames;
+    protected $showInstructors;
 
-    public function __construct($academicSessionId, $schoolId, $showCourseNames)
+    public function __construct($academicSessionId, $schoolId, $showCourseNames, $showInstructors = false)
     {
         $this->academicSessionId = $academicSessionId;
         $this->schoolId = $schoolId;
         $this->showCourseNames = $showCourseNames;
+        $this->showInstructors = $showInstructors;
     }
 
     /**
@@ -50,13 +52,20 @@ class ClassSchedulesExport implements FromView, ShouldAutoSize, WithTitle
         $scheduleData = collect();
 
         // Get all course unit mappings for the selected school and academic session
-        $mappings = CourseUnitProgrammeMapping::with([
+        $withRelations = [
             'courseUnit',
             'day',
             'programme',
             'yearOfStudy',
-            'semester'
-        ])
+            'semester',
+            'instructor' // Instructor relationship
+        ];
+        
+        if ($this->showInstructors) {
+            $withRelations[] = 'courseUnit.instructors';
+        }
+        
+        $mappings = CourseUnitProgrammeMapping::with($withRelations)
         ->whereHas('programme', function($query) {
             $query->where('school_id', $this->schoolId);
         })
@@ -107,10 +116,18 @@ class ClassSchedulesExport implements FromView, ShouldAutoSize, WithTitle
                     foreach ($mappingsByDay as $dayName => $dayMappings) {
                         if (array_key_exists($dayName, $rowData['days'])) {
                             $rowData['days'][$dayName] = $dayMappings->map(function($mapping) {
+                                $showInstructors = $this->showInstructors;
                                 return [
                                     'code' => $mapping->courseUnit->code,
                                     'name' => $mapping->courseUnit->name,
-                                    'programme_code' => $mapping->programme->code
+                                    'programme_code' => $mapping->programme->code,
+                                    'instructors' => $this->showInstructors ? 
+                                        ($mapping->instructor ? [
+                                            [
+                                                'name' => $mapping->instructor->name,
+                                                'email' => $mapping->instructor->email
+                                            ]
+                                        ] : []) : []
                                 ];
                             })->unique('code')->sortBy('code')->values()->toArray();
                         }
@@ -129,10 +146,11 @@ class ClassSchedulesExport implements FromView, ShouldAutoSize, WithTitle
         }
 
         return view('admin.reports.exports.class-schedules', [
+            'school' => $school,
             'scheduleData' => $scheduleData,
             'days' => $days,
             'showCourseNames' => $this->showCourseNames,
-            'school' => $school
+            'showInstructors' => $this->showInstructors
         ]);
     }
 }

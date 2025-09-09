@@ -38,6 +38,7 @@
         .course-name { 
             font-size: 8px; 
             color: #666; 
+            margin-bottom: 2px;
         }
         .header {
             text-align: center;
@@ -90,9 +91,9 @@
                                             @if($showCourseNames)
                                                 <div class="course-name">{{ $course['name'] }}</div>
                                             @endif
-                                            @if(!empty($course['instructor']))
-                                                <div class="instructor" style="font-size: 8px; color: #444;">
-                                                    {{ $course['instructor'] }}
+                                            @if($showInstructors && !empty($course['instructors']))
+                                                <div class="instructor" style="font-size: 8px; color: #4a6fdc;">
+                                                    {{ implode(', ', array_column($course['instructors'], 'name')) }}
                                                 </div>
                                             @endif
                                         </div>

@@ -37,6 +37,13 @@
                         </div>
                     </div>
                     <div class="col-md-2 d-flex align-items-end">
+                        <div class="form-check form-switch mb-0">
+                            <input class="form-check-input" type="checkbox" id="show_instructors" 
+                                   name="show_instructors" value="1" {{ $showInstructors ? 'checked' : '' }}>
+                            <label class="form-check-label" for="show_instructors">Show Instructors</label>
+                        </div>
+                    </div>
+                    <div class="col-md-2 d-flex align-items-end">
                         <button type="submit" class="btn btn-primary me-2">
                             <i class="bi bi-funnel"></i> Filter
                         </button>
@@ -111,6 +118,14 @@
                                                             <div>{{ $course['programme_code'] }} {{ $course['code'] }}</div>
                                                             @if($showCourseNames)
                                                                 <div class="small text-muted">{{ $course['name'] }}</div>
+                                                            @endif
+                                                            @if($showInstructors && !empty($course['instructors']))
+                                                                <div class="small text-primary mt-1">
+                                                                    <i class="bi bi-person-fill"></i>
+                                                                    @foreach($course['instructors'] as $instructor)
+                                                                        {{ $instructor['name'] }}{{ !$loop->last ? ',' : '' }}
+                                                                    @endforeach
+                                                                </div>
                                                             @endif
                                                         </div>
                                                     @endforeach

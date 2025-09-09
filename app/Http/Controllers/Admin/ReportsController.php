@@ -460,6 +460,7 @@ class ReportsController extends Controller
         );
         
         $schoolId = $request->input('school_id', 'all');
+        $showInstructors = $request->boolean('show_instructors', false);
         
         // Get filter options
         $academicSessions = AcademicSession::orderBy('start_date', 'desc')->get();
@@ -473,13 +474,20 @@ class ReportsController extends Controller
         
         if ($academicSessionId && $schoolId !== 'all') {
             // Get all course unit mappings for the selected school and academic session
-            $mappings = CourseUnitProgrammeMapping::with([
+            $withRelations = [
                 'courseUnit',
                 'day',
                 'programme',
                 'yearOfStudy',
-                'semester'
-            ])
+                'semester',
+                'instructor' // Instructor relationship
+            ];
+            
+            if ($showInstructors) {
+                $withRelations[] = 'courseUnit.instructors';
+            }
+            
+            $mappings = CourseUnitProgrammeMapping::with($withRelations)
             ->whereHas('programme', function($query) use ($schoolId) {
                 $query->where('school_id', $schoolId);
             })
@@ -529,11 +537,18 @@ class ReportsController extends Controller
                         
                         foreach ($mappingsByDay as $dayName => $dayMappings) {
                             if (array_key_exists($dayName, $rowData['days'])) {
-                                $rowData['days'][$dayName] = $dayMappings->map(function($mapping) {
+                                $rowData['days'][$dayName] = $dayMappings->map(function($mapping) use ($showInstructors) {
                                     return [
                                         'code' => $mapping->courseUnit->code,
                                         'name' => $mapping->courseUnit->name,
-                                        'programme_code' => $mapping->programme->code
+                                        'programme_code' => $mapping->programme->code,
+                                        'instructors' => $showInstructors ? 
+                                            ($mapping->instructor ? [
+                                                [
+                                                    'name' => $mapping->instructor->name,
+                                                    'email' => $mapping->instructor->email
+                                                ]
+                                            ] : []) : []
                                     ];
                                 })->unique('code')->sortBy('code')->values()->toArray();
                             }
@@ -562,7 +577,8 @@ class ReportsController extends Controller
             'selectedSchoolId' => $schoolId,
             'days' => $days,
             'scheduleData' => $scheduleData,
-            'showCourseNames' => $request->boolean('show_course_names', false)
+            'showCourseNames' => $request->boolean('show_course_names', false),
+            'showInstructors' => $showInstructors
         ]);
     }
 
@@ -581,6 +597,7 @@ class ReportsController extends Controller
         
         $schoolId = $request->input('school_id', 'all');
         $showCourseNames = $request->boolean('show_course_names', false);
+        $showInstructors = $request->boolean('show_instructors', false);
         
         if ($academicSessionId && $schoolId !== 'all') {
             $school = School::findOrFail($schoolId);
@@ -588,7 +605,7 @@ class ReportsController extends Controller
             
             if ($format === 'pdf') {
                 // Get the data for the PDF view
-                $export = new \App\Exports\ClassSchedulesExport($academicSessionId, $schoolId, $showCourseNames);
+                $export = new \App\Exports\ClassSchedulesExport($academicSessionId, $schoolId, $showCourseNames, $showInstructors);
                 $data = $export->view()->getData();
                 
                 $pdf = \PDF::loadView('admin.reports.exports.class-schedules-pdf', [
@@ -596,14 +613,15 @@ class ReportsController extends Controller
                     'academicSession' => AcademicSession::find($academicSessionId),
                     'scheduleData' => $data['scheduleData'],
                     'days' => $data['days'],
-                    'showCourseNames' => $showCourseNames
+                    'showCourseNames' => $showCourseNames,
+                'showInstructors' => $showInstructors
                 ]);
                 
                 return $pdf->download($filename . '.pdf');
             }
             
             // For Excel export
-            $export = new \App\Exports\ClassSchedulesExport($academicSessionId, $schoolId, $showCourseNames);
+            $export = new \App\Exports\ClassSchedulesExport($academicSessionId, $schoolId, $showCourseNames, $showInstructors);
             
             // Default to Excel
             $filename .= '.xlsx';
