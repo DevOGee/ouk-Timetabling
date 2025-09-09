@@ -54,6 +54,29 @@
             </div>
         </div>
 
+        <!-- Workload Distribution Card -->
+        <div class="col-xl-4 col-md-6 mb-4">
+            <div class="card border-left-info shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                Workload Distribution</div>
+                            <p class="mb-0 text-muted">View staff workload across schools</p>
+                        </div>
+                        <div class="col-auto">
+                            <i class="bi bi-people fa-3x text-gray-300"></i>
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <a href="{{ route('admin.reports.workload-distribution') }}" class="btn btn-sm btn-info text-white">
+                            <i class="bi bi-bar-chart-line me-1"></i> View Report
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Class Schedules Card -->
         <div class="col-xl-4 col-md-6 mb-4">
             <div class="card border-left-primary shadow h-100 py-2">

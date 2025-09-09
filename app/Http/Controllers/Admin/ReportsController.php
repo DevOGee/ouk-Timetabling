@@ -14,6 +14,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Exports\InstructorSchedulesExport;
+use App\Exports\WorkloadDistributionExport;
+use App\Models\School;
 use PDF;
 
 class ReportsController extends Controller
@@ -276,6 +278,170 @@ class ReportsController extends Controller
             
         } catch (\Exception $e) {
             \Log::error('Export Error: ' . $e->getMessage());
+            return back()->with('error', 'An error occurred while generating the export: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Display workload distribution report
+     */
+    public function workloadDistribution(Request $request)
+    {
+        // Get all academic sessions for the dropdown
+        $academicSessions = AcademicSession::orderBy('start_date', 'desc')->get();
+        $schools = School::orderBy('name')->get();
+        
+        // Get filter parameters
+        $selectedAcademicSessionId = $request->input('academic_session_id', 
+            AcademicSession::where('is_current', true)->first()?->id
+        );
+        $selectedSchoolId = $request->input('school_id', 'all');
+        
+        $workloadData = collect();
+        
+        if ($selectedAcademicSessionId) {
+            // Base query for instructors
+            $query = User::role('instructor')
+                ->with('school')
+                ->withCount(['courseUnitMappings as total_units' => function($q) use ($selectedAcademicSessionId) {
+                    $q->where('academic_session_id', $selectedAcademicSessionId);
+                }])
+                ->with(['courseUnitMappings' => function($q) use ($selectedAcademicSessionId) {
+                    $q->where('academic_session_id', $selectedAcademicSessionId)
+                      ->with(['courseUnit', 'programme']);
+                }])
+                ->orderBy('name');
+            
+            // Apply school filter if specified
+            if ($selectedSchoolId !== 'all') {
+                $query->where('school_id', $selectedSchoolId);
+            }
+            
+            $workloadData = $query->get()->map(function($instructor) {
+                // Skip if instructor has no school assigned
+                if (!$instructor->school) {
+                    return null;
+                }
+                
+                // Get unique course units
+                $uniqueUnits = $instructor->courseUnitMappings
+                    ->filter(function($mapping) {
+                        return $mapping->courseUnit !== null;
+                    })
+                    ->unique('course_unit_id')
+                    ->map(function($mapping) {
+                        return $mapping->courseUnit;
+                    });
+                
+                // Format name as "Title Firstname LASTNAME"
+                $name = $instructor->name;
+                $nameParts = explode(' ', $name);
+                $lastName = array_pop($nameParts);
+                $firstName = implode(' ', $nameParts);
+                $title = $instructor->title ? ($instructor->title->abbreviation ?? $instructor->title->name) : '';
+                $formattedName = trim(($title ? $title . ' ' : '') . $firstName . ' ' . strtoupper($lastName));
+                
+                return (object)[
+                    'name' => $formattedName,
+                    'course_units' => $uniqueUnits->pluck('code')->implode(', '),
+                    'total_units' => $uniqueUnits->count()
+                ];
+            })->filter(); // Remove any null entries from the main collection
+        }
+        
+        // Debug the data being passed to the view
+        \Log::info('Workload Data:', ['data' => $workloadData]);
+        
+        return view('admin.reports.workload-distribution', [
+            'academicSessions' => $academicSessions,
+            'schools' => $schools,
+            'selectedAcademicSessionId' => $selectedAcademicSessionId,
+            'selectedSchoolId' => $selectedSchoolId,
+            'workloadData' => $workloadData
+        ]);
+    }
+    
+    /**
+     * Export workload distribution report
+     */
+    public function exportWorkloadDistribution(Request $request, $format)
+    {
+        try {
+            $academicSession = AcademicSession::findOrFail($request->input('academic_session_id'));
+            $schoolId = $request->input('school_id', 'all');
+            
+            if ($format === 'excel') {
+                return Excel::download(
+                    new WorkloadDistributionExport($academicSession->id, $schoolId),
+                    'workload-distribution-' . Str::slug($academicSession->name) . '.xlsx'
+                );
+            }
+            
+            // For PDF, we'll generate it directly here
+            if ($format === 'pdf') {
+                $school = $schoolId !== 'all' ? School::findOrFail($schoolId) : null;
+                
+                // Base query for instructors
+                $query = User::role('instructor')
+                    ->with('school')
+                    ->withCount(['courseUnitMappings as total_units' => function($q) use ($academicSession) {
+                        $q->where('academic_session_id', $academicSession->id);
+                    }])
+                    ->with(['courseUnitMappings' => function($q) use ($academicSession) {
+                        $q->where('academic_session_id', $academicSession->id)
+                          ->with(['courseUnit', 'programme']);
+                    }])
+                    ->orderBy('name');
+                
+                // Apply school filter if specified
+                if ($schoolId !== 'all') {
+                    $query->where('school_id', $schoolId);
+                }
+                
+                $workloadData = $query->get()->map(function($instructor) {
+                    // Skip if instructor has no school assigned
+                    if (!$instructor->school) {
+                        return null;
+                    }
+                    
+                    // Get unique course units
+                    $uniqueUnits = $instructor->courseUnitMappings
+                        ->filter(function($mapping) {
+                            return $mapping->courseUnit !== null;
+                        })
+                        ->unique('course_unit_id')
+                        ->map(function($mapping) {
+                            return $mapping->courseUnit;
+                        });
+                    
+                    // Format name as "Title Firstname LASTNAME"
+                    $name = $instructor->name;
+                    $nameParts = explode(' ', $name);
+                    $lastName = array_pop($nameParts);
+                    $firstName = implode(' ', $nameParts);
+                    $title = $instructor->title ? ($instructor->title->abbreviation ?? $instructor->title->name) : '';
+                    $formattedName = trim(($title ? $title . ' ' : '') . $firstName . ' ' . strtoupper($lastName));
+                    
+                    return (object)[
+                        'name' => $formattedName,
+                        'course_units' => $uniqueUnits->pluck('code')->implode(', '),
+                        'total_units' => $uniqueUnits->count()
+                    ];
+                })->filter(); // Remove any null entries
+                
+                $pdf = PDF::loadView('admin.reports.exports.workload-distribution-pdf', [
+                    'academicSession' => $academicSession,
+                    'school' => $school,
+                    'workloadData' => $workloadData
+                ]);
+                
+                return $pdf->download('workload-distribution-' . Str::slug($academicSession->name) . '.pdf');
+            }
+            
+            return back()->with('error', 'Invalid export format. Please choose Excel or PDF.');
+            
+        } catch (\Exception $e) {
+            \Log::error('Export Workload Error: ' . $e->getMessage());
             return back()->with('error', 'An error occurred while generating the export: ' . $e->getMessage());
         }
     }

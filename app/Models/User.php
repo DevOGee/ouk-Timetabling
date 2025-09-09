@@ -42,6 +42,14 @@ class User extends Authenticatable
             ->distinct()
             ->withTimestamps();
     }
+    
+    /**
+     * Get the course unit programme mappings for this instructor.
+     */
+    public function courseUnitMappings()
+    {
+        return $this->hasMany(CourseUnitProgrammeMapping::class, 'user_id');
+    }
 
     /**
      * The attributes that are mass assignable.

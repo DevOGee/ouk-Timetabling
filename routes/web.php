@@ -178,11 +178,10 @@ Route::prefix('admin')->middleware(['auth'])->group(function () {
     // Reports
     Route::prefix('reports')->name('admin.reports.')->group(function () {
         Route::get('/', [\App\Http\Controllers\Admin\ReportsController::class, 'index'])->name('index');
-        
-        // Instructor Schedules
-        Route::get('/instructor-schedules', [\App\Http\Controllers\Admin\ReportsController::class, 'instructorSchedules'])->name('instructor-schedules');
-        Route::get('/instructor-schedules/{instructorId}', [\App\Http\Controllers\Admin\ReportsController::class, 'instructorSchedules'])->name('instructor-schedules.show');
-        
+        Route::get('instructor-schedules', [\App\Http\Controllers\Admin\ReportsController::class, 'instructorSchedules'])->name('instructor-schedules');
+        Route::get('export-instructor-schedules/{format}', [\App\Http\Controllers\Admin\ReportsController::class, 'exportInstructorSchedules'])->name('export-instructor-schedules');
+        Route::get('workload-distribution', [\App\Http\Controllers\Admin\ReportsController::class, 'workloadDistribution'])->name('workload-distribution');
+        Route::get('export-workload-distribution/{format}', [\App\Http\Controllers\Admin\ReportsController::class, 'exportWorkloadDistribution'])->name('export-workload-distribution');
         // Exports
         Route::get('/export/{format}', [\App\Http\Controllers\Admin\ReportsController::class, 'exportInstructorSchedules'])
             ->name('export')
