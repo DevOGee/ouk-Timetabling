@@ -496,18 +496,40 @@ class ReportsController extends Controller
                 });
             }
             
+            // Debug: Log the SQL query
+            \DB::enableQueryLog();
             $mappings = $query->get();
+            \Log::debug('SQL Query:', \DB::getQueryLog());
             
             // Group by programme
             $groupedByProgramme = $mappings->groupBy('programme_id');
             
             foreach ($groupedByProgramme as $programmeId => $programmeMappings) {
-                $programme = Programme::find($programmeId);
+                $programme = Programme::withTrashed()->find($programmeId);
+                if (!$programme) {
+                    \Log::error('Programme not found:', ['programme_id' => $programmeId]);
+                    continue;
+                }
+                
+                // Debug log
+                \Log::debug('Programme Data:', [
+                    'id' => $programmeId,
+                    'programme_code' => $programme->programme_code ?? 'null',
+                    'name' => $programme->name ?? 'null'
+                ]);
+                
                 $programmeData = [
-                    'programme_code' => $programme->code,
+                    'programme_code' => $programme->programme_code,
                     'programme_name' => $programme->name,
                     'schedules' => []
                 ];
+                
+                if (empty($programme->programme_code)) {
+                    \Log::warning('Programme code is empty for programme:', ['id' => $programme->id, 'name' => $programme->name]);
+                }
+                
+                // Debug log the created programme data
+                \Log::debug('Created Programme Data:', $programmeData);
                 
                 // Group by year of study
                 $groupedByYear = $programmeMappings->groupBy('year_of_study_id');
@@ -545,7 +567,7 @@ class ReportsController extends Controller
                                     return [
                                         'code' => $mapping->courseUnit->code,
                                         'name' => $mapping->courseUnit->name,
-                                        'programme_code' => $mapping->programme->code,
+                                        'programme_code' => $mapping->programme->programme_code,
                                         'instructors' => $showInstructors ? 
                                             ($mapping->instructor ? [
                                                 [

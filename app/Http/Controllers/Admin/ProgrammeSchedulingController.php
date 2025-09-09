@@ -204,7 +204,7 @@ class ProgrammeSchedulingController extends Controller
             
         $headers = [
             'Content-Type' => 'text/csv',
-            'Content-Disposition' => 'attachment; filename="' . str_replace(' ', '_', $programme->code) . '_schedule_template_' . now()->format('Y-m-d') . '.csv"',
+            'Content-Disposition' => 'attachment; filename="' . str_replace(' ', '_', $programme->programme_code) . '_schedule_template_' . now()->format('Y-m-d') . '.csv"',
             'Pragma' => 'no-cache',
             'Cache-Control' => 'must-revalidate, post-check=0, pre-check=0',
             'Expires' => '0'

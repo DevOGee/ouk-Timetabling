@@ -33,7 +33,7 @@ class CurriculumMappingImport implements OnEachRow, WithHeadingRow
         $lecturerCode = $data['lecturer_code'] ?? null;
 
         // Find references
-        $programme = Programme::where('code', $programmeCode)->first();
+        $programme = Programme::where('programme_code', $programmeCode)->first();
         $courseUnit = CourseUnit::where('code', $courseCode)->first();
         $yearModel = YearOfStudy::where('name', $year)->orWhere('id', $year)->first();
         $semesterModel = Semester::where('name', $semester)->orWhere('id', $semester)->first();

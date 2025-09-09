@@ -91,7 +91,7 @@ class ClassSchedulesExport implements FromView, ShouldAutoSize, WithTitle
         foreach ($groupedByProgramme as $programmeId => $programmeMappings) {
             $programme = $programmeMappings->first()->programme;
             $programmeData = [
-                'programme_code' => $programme->code,
+                'programme_code' => $programme->programme_code,
                 'programme_name' => $programme->name,
                 'schedules' => []
             ];
@@ -166,7 +166,7 @@ $instructors = [];
                                 return [
                                     'code' => $mapping->courseUnit->code,
                                     'name' => $mapping->courseUnit->name,
-                                    'programme_code' => $mapping->programme->code,
+                                    'programme_code' => $mapping->programme->programme_code,
                                     'instructors' => $instructors
                                 ];
                             })->unique('code')->sortBy('code')->values()->toArray();
