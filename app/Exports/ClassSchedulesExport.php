@@ -18,7 +18,7 @@ class ClassSchedulesExport implements FromView, ShouldAutoSize, WithTitle
     protected $showCourseNames;
     protected $showInstructors;
 
-    public function __construct($academicSessionId, $schoolId, $showCourseNames, $showInstructors = false)
+    public function __construct($academicSessionId, $schoolId = 'all', $showCourseNames = false, $showInstructors = false)
     {
         $this->academicSessionId = $academicSessionId;
         $this->schoolId = $schoolId;
@@ -33,8 +33,15 @@ class ClassSchedulesExport implements FromView, ShouldAutoSize, WithTitle
      */
     public function title(): string
     {
-        $school = School::find($this->schoolId);
-        $title = 'Class_schedule_' . ($school->code ?? 'export');
+        $title = 'Class_schedule_';
+        
+        if ($this->schoolId !== 'all') {
+            $school = School::find($this->schoolId);
+            $title .= $school->code ?? 'school';
+        } else {
+            $title .= 'all_schools';
+        }
+        
         // Ensure the title is valid for Excel (no invalid characters and max 31 chars)
         $title = preg_replace('/[\/\\\*\?\[\]:]/', '', $title); // Remove invalid Excel sheet name characters
         return mb_substr($title, 0, 31);
@@ -47,30 +54,36 @@ class ClassSchedulesExport implements FromView, ShouldAutoSize, WithTitle
      */
     public function view(): View
     {
-        $school = School::findOrFail($this->schoolId);
+        $school = $this->schoolId !== 'all' ? School::findOrFail($this->schoolId) : null;
         $days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
         $scheduleData = collect();
 
         // Get all course unit mappings for the selected school and academic session
+        // Always load these relationships
         $withRelations = [
             'courseUnit',
             'day',
             'programme',
             'yearOfStudy',
             'semester',
-            'instructor' // Instructor relationship
+            'instructor' // Main instructor for the mapping
         ];
         
+        // Conditionally load course unit instructors if needed
         if ($this->showInstructors) {
             $withRelations[] = 'courseUnit.instructors';
         }
         
-        $mappings = CourseUnitProgrammeMapping::with($withRelations)
-        ->whereHas('programme', function($query) {
-            $query->where('school_id', $this->schoolId);
-        })
-        ->where('academic_session_id', $this->academicSessionId)
-        ->get();
+        $query = CourseUnitProgrammeMapping::with($withRelations)
+            ->where('academic_session_id', $this->academicSessionId);
+            
+        if ($this->schoolId !== 'all') {
+            $query->whereHas('programme', function($q) {
+                $q->where('school_id', $this->schoolId);
+            });
+        }
+        
+        $mappings = $query->get();
 
         // Group by programme
         $groupedByProgramme = $mappings->groupBy('programme_id');
@@ -116,18 +129,45 @@ class ClassSchedulesExport implements FromView, ShouldAutoSize, WithTitle
                     foreach ($mappingsByDay as $dayName => $dayMappings) {
                         if (array_key_exists($dayName, $rowData['days'])) {
                             $rowData['days'][$dayName] = $dayMappings->map(function($mapping) {
-                                $showInstructors = $this->showInstructors;
+$instructors = [];
+                                
+                                if ($this->showInstructors) {
+                                    // Check both direct instructor relationship and any additional instructors
+                                    $allInstructors = collect();
+                                    
+                                    // Add the main instructor if exists
+                                    if ($mapping->instructor) {
+                                        $allInstructors->push([
+                                            'name' => $mapping->instructor->name,
+                                            'email' => $mapping->instructor->email
+                                        ]);
+                                    }
+                                    
+                                    // Add any additional instructors from the course unit if needed
+                                    if ($mapping->courseUnit && $mapping->courseUnit->instructors) {
+                                        foreach ($mapping->courseUnit->instructors as $instructor) {
+                                            // Avoid duplicates
+                                            if (!$allInstructors->contains('email', $instructor->email)) {
+                                                $allInstructors->push([
+                                                    'name' => $instructor->name,
+                                                    'email' => $instructor->email
+                                                ]);
+                                            }
+                                        }
+                                    }
+                                    
+                                    $instructors = $allInstructors->toArray();
+                                    
+                                    \Log::debug('Instructor data for course ' . $mapping->courseUnit->code . ':', [
+                                        'instructors' => $instructors
+                                    ]);
+                                }
+                                
                                 return [
                                     'code' => $mapping->courseUnit->code,
                                     'name' => $mapping->courseUnit->name,
                                     'programme_code' => $mapping->programme->code,
-                                    'instructors' => $this->showInstructors ? 
-                                        ($mapping->instructor ? [
-                                            [
-                                                'name' => $mapping->instructor->name,
-                                                'email' => $mapping->instructor->email
-                                            ]
-                                        ] : []) : []
+                                    'instructors' => $instructors
                                 ];
                             })->unique('code')->sortBy('code')->values()->toArray();
                         }

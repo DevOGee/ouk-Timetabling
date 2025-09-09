@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>Class Schedules - {{ $school->name }}</title>
+    <title>Class Schedules - {{ $school ? $school->name : 'All Schools' }}</title>
     <style>
         body { font-family: Arial, sans-serif; }
         table { border-collapse: collapse; width: 100%; margin-bottom: 20px; }
@@ -15,7 +15,11 @@
     </style>
 </head>
 <body>
-    <h2>{{ $school->name }} - Class Schedules</h2>
+    <h2>{{ $school ? $school->name . ' - ' : '' }}Class Schedules</h2>
+    <p>Academic Session: {{ $academicSession->name }}</p>
+    @if(!$school)
+    <p>Showing data for all schools</p>
+    @endif
     <p>Generated on: {{ now()->format('Y-m-d H:i:s') }}</p>
 
     @foreach($scheduleData as $programmeData)

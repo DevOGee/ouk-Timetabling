@@ -58,14 +58,14 @@
         </div>
     </div>
 
-    @if(request()->has('school_id') && request('school_id') !== 'all' && $scheduleData->isNotEmpty())
+    @if(request()->has('school_id') && $scheduleData->isNotEmpty())
         @php
-            $school = $schools->firstWhere('id', request('school_id'));
+            $school = request('school_id') !== 'all' ? $schools->firstWhere('id', request('school_id')) : null;
         @endphp
         
         <div class="mb-4 d-flex justify-content-between align-items-center">
             <div>
-                <h4>{{ $school->name }}</h4>
+                <h4>{{ $school ? $school->name : 'All Schools' }}</h4>
                 <p>Class Schedule by Programme</p>
             </div>
             <div class="btn-group" role="group">
@@ -140,7 +140,7 @@
                 </div>
             </div>
         @endforeach
-    @elseif(request()->has('school_id') && request('school_id') !== 'all')
+    @elseif(request()->has('school_id'))
         <div class="alert alert-info">
             <i class="bi bi-info-circle me-2"></i> No schedule data found for the selected filters.
         </div>

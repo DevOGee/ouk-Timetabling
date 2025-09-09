@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
-    <title>Class Schedules - {{ $school->name }}</title>
+    <title>Class Schedules - {{ $school ? $school->name : 'All Schools' }}</title>
     <style>
         body { 
             font-family: DejaVu Sans, Arial, sans-serif; 
@@ -38,7 +38,16 @@
         .course-name { 
             font-size: 8px; 
             color: #666; 
-            margin-bottom: 2px;
+            margin: 2px 0;
+        }
+        .instructor {
+            font-size: 7px;
+            color: #4a6fdc;
+            margin-top: 2px;
+            font-style: normal;
+            display: flex;
+            align-items: center;
+            gap: 2px;
         }
         .header {
             text-align: center;
@@ -59,8 +68,11 @@
 </head>
 <body>
     <div class="header">
-        <h2>{{ $school->name }} - Class Schedules</h2>
-        <p>Academic Session: {{ $academicSession->name ?? 'N/A' }}</p>
+        <h2>Class Schedules - {{ $school ? $school->name : 'All Schools' }}</h2>
+        <p>Academic Session: {{ $academicSession->name }}</p>
+        @if(!$school)
+        <p>Showing data for all schools</p>
+        @endif
         <p>Generated on: {{ now()->format('Y-m-d H:i:s') }}</p>
     </div>
 
@@ -92,8 +104,11 @@
                                                 <div class="course-name">{{ $course['name'] }}</div>
                                             @endif
                                             @if($showInstructors && !empty($course['instructors']))
-                                                <div class="instructor" style="font-size: 8px; color: #4a6fdc;">
-                                                    {{ implode(', ', array_column($course['instructors'], 'name')) }}
+                                                <div class="instructor" style="font-size: 7px; color: #4a6fdc; margin-top: 2px;">
+                                                    <span style="font-family: DejaVu Sans, Arial, sans-serif;">👤</span>
+                                                    @foreach($course['instructors'] as $instructor)
+                                                        {{ $instructor['name'] }}{{ !$loop->last ? ',' : '' }}
+                                                    @endforeach
                                                 </div>
                                             @endif
                                         </div>
