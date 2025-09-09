@@ -180,6 +180,10 @@ Route::prefix('admin')->middleware(['auth'])->group(function () {
         Route::get('/', [\App\Http\Controllers\Admin\ReportsController::class, 'index'])->name('index');
         Route::get('instructor-schedules', [\App\Http\Controllers\Admin\ReportsController::class, 'instructorSchedules'])->name('instructor-schedules');
         Route::get('export-instructor-schedules/{format}', [\App\Http\Controllers\Admin\ReportsController::class, 'exportInstructorSchedules'])->name('export-instructor-schedules');
+        Route::get('class-schedules', [\App\Http\Controllers\Admin\ReportsController::class, 'classSchedules'])->name('class-schedules');
+        Route::post('export-class-schedules/{format?}', [\App\Http\Controllers\Admin\ReportsController::class, 'exportClassSchedules'])
+            ->where('format', 'xlsx|pdf')
+            ->name('export-class-schedules');
         Route::get('workload-distribution', [\App\Http\Controllers\Admin\ReportsController::class, 'workloadDistribution'])->name('workload-distribution');
         Route::get('export-workload-distribution/{format}', [\App\Http\Controllers\Admin\ReportsController::class, 'exportWorkloadDistribution'])->name('export-workload-distribution');
         // Exports

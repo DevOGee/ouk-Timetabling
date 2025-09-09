@@ -62,7 +62,7 @@
                         <div class="col mr-2">
                             <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
                                 Workload Distribution</div>
-                            <p class="mb-0 text-muted">View staff workload across schools</p>
+                            <p class="mb-0 text-muted">View staff workload distribution across  schools</p>
                         </div>
                         <div class="col-auto">
                             <i class="bi bi-people fa-3x text-gray-300"></i>
@@ -78,27 +78,7 @@
         </div>
 
         <!-- Class Schedules Card -->
-        <div class="col-xl-4 col-md-6 mb-4">
-            <div class="card border-left-primary shadow h-100 py-2">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
-                                Class Schedules</div>
-                            <p class="mb-0 text-muted">View daily, weekly, or monthly class schedules</p>
-                        </div>
-                        <div class="col-auto">
-                            <i class="bi bi-calendar3 fa-3x text-gray-300"></i>
-                        </div>
-                    </div>
-                    <div class="mt-3">
-                        <span class="btn btn-sm btn-secondary" disabled>
-                            <i class="bi bi-clock me-1"></i> Coming Soon
-                        </span>
-                    </div>
-                </div>
-            </div>
-        </div>
+        @include('admin.reports.class-schedules-card')
 
         <!-- Workload Distribution Card -->
         <div class="col-xl-4 col-md-6 mb-4">

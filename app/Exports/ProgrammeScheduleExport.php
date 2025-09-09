@@ -72,7 +72,9 @@ class ProgrammeScheduleExport implements FromCollection, WithHeadings, WithMappi
 
     public function title(): string
     {
-        return $this->programme->name . ' Schedule';
+        $title = $this->programme->name . ' Schedule';
+        // Ensure the title doesn't exceed 31 characters
+        return mb_substr($title, 0, 31);
     }
 
     public function styles(Worksheet $sheet)

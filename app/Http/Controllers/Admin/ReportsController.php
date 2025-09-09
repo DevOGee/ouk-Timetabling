@@ -15,7 +15,10 @@ use Illuminate\Support\Str;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Exports\InstructorSchedulesExport;
 use App\Exports\WorkloadDistributionExport;
+use App\Exports\ClassSchedulesExport;
 use App\Models\School;
+use App\Models\YearOfStudy;
+use App\Models\Semester;
 use PDF;
 
 class ReportsController extends Controller
@@ -444,5 +447,169 @@ class ReportsController extends Controller
             \Log::error('Export Workload Error: ' . $e->getMessage());
             return back()->with('error', 'An error occurred while generating the export: ' . $e->getMessage());
         }
+    }
+    
+    /**
+     * Display class schedules report
+     */
+    public function classSchedules(Request $request)
+    {
+        // Get filter parameters
+        $academicSessionId = $request->input('academic_session_id', 
+            AcademicSession::where('is_current', true)->first()?->id
+        );
+        
+        $schoolId = $request->input('school_id', 'all');
+        
+        // Get filter options
+        $academicSessions = AcademicSession::orderBy('start_date', 'desc')->get();
+        $schools = School::orderBy('name')->get();
+        
+        // Define days of the week we want to display
+        $days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+        
+        // Initialize the schedule data structure
+        $scheduleData = collect();
+        
+        if ($academicSessionId && $schoolId !== 'all') {
+            // Get all course unit mappings for the selected school and academic session
+            $mappings = CourseUnitProgrammeMapping::with([
+                'courseUnit',
+                'day',
+                'programme',
+                'yearOfStudy',
+                'semester'
+            ])
+            ->whereHas('programme', function($query) use ($schoolId) {
+                $query->where('school_id', $schoolId);
+            })
+            ->where('academic_session_id', $academicSessionId)
+            ->get();
+            
+            // Group by programme
+            $groupedByProgramme = $mappings->groupBy('programme_id');
+            
+            foreach ($groupedByProgramme as $programmeId => $programmeMappings) {
+                $programme = Programme::find($programmeId);
+                $programmeData = [
+                    'programme_code' => $programme->code,
+                    'programme_name' => $programme->name,
+                    'schedules' => []
+                ];
+                
+                // Group by year of study
+                $groupedByYear = $programmeMappings->groupBy('year_of_study_id');
+                
+                foreach ($groupedByYear as $yearId => $yearMappings) {
+                    $yearOfStudy = YearOfStudy::find($yearId);
+                    
+                    // Group by semester
+                    $groupedBySemester = $yearMappings->groupBy('semester_id');
+                    
+                    foreach ($groupedBySemester as $semesterId => $semesterMappings) {
+                        $semester = Semester::find($semesterId);
+                        
+                        // Create row header (e.g., "1.1" for Year 1, Semester 1)
+                        $rowHeader = $yearOfStudy->name . '.' . substr($semester->name, 0, 1);
+                        
+                        // Initialize row data with empty arrays for each day
+                        $rowData = [
+                            'row_header' => $rowHeader,
+                            'days' => [
+                                'Monday' => [],
+                                'Tuesday' => [],
+                                'Wednesday' => [],
+                                'Thursday' => [],
+                                'Friday' => []
+                            ]
+                        ];
+                        
+                        // Group by day and add course data
+                        $mappingsByDay = $semesterMappings->groupBy('day.name');
+                        
+                        foreach ($mappingsByDay as $dayName => $dayMappings) {
+                            if (array_key_exists($dayName, $rowData['days'])) {
+                                $rowData['days'][$dayName] = $dayMappings->map(function($mapping) {
+                                    return [
+                                        'code' => $mapping->courseUnit->code,
+                                        'name' => $mapping->courseUnit->name,
+                                        'programme_code' => $mapping->programme->code
+                                    ];
+                                })->unique('code')->sortBy('code')->values()->toArray();
+                            }
+                        }
+                    
+                    $programmeData['schedules'][] = $rowData;
+                    }
+                }
+                
+                // Sort the schedules by row header (e.g., 1.1, 1.2, 2.1, etc.)
+                usort($programmeData['schedules'], function($a, $b) {
+                    return strcmp($a['row_header'], $b['row_header']);
+                });
+                
+                $scheduleData->push($programmeData);
+            }
+            
+            // Sort the schedule data by row header (e.g., 1.1, 1.2, 2.1, etc.)
+            $scheduleData = $scheduleData->sortBy('row_header');
+        }
+        
+        return view('admin.reports.class-schedules', [
+            'academicSessions' => $academicSessions,
+            'selectedAcademicSessionId' => $academicSessionId,
+            'schools' => $schools,
+            'selectedSchoolId' => $schoolId,
+            'days' => $days,
+            'scheduleData' => $scheduleData,
+            'showCourseNames' => $request->boolean('show_course_names', false)
+        ]);
+    }
+
+    /**
+     * Export class schedules to Excel or PDF
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  string  $format  The export format (xlsx or pdf)
+     * @return \Symfony\Component\HttpFoundation\BinaryFileResponse|\Illuminate\Http\RedirectResponse
+     */
+    public function exportClassSchedules(Request $request, string $format = 'xlsx')
+    {
+        $academicSessionId = $request->input('academic_session_id', 
+            AcademicSession::where('is_current', true)->first()?->id
+        );
+        
+        $schoolId = $request->input('school_id', 'all');
+        $showCourseNames = $request->boolean('show_course_names', false);
+        
+        if ($academicSessionId && $schoolId !== 'all') {
+            $school = School::findOrFail($schoolId);
+            $filename = 'class-schedules-' . $school->code . '-' . now()->format('Y-m-d');
+            
+            if ($format === 'pdf') {
+                // Get the data for the PDF view
+                $export = new \App\Exports\ClassSchedulesExport($academicSessionId, $schoolId, $showCourseNames);
+                $data = $export->view()->getData();
+                
+                $pdf = \PDF::loadView('admin.reports.exports.class-schedules-pdf', [
+                    'school' => $school,
+                    'academicSession' => AcademicSession::find($academicSessionId),
+                    'scheduleData' => $data['scheduleData'],
+                    'days' => $data['days'],
+                    'showCourseNames' => $showCourseNames
+                ]);
+                
+                return $pdf->download($filename . '.pdf');
+            }
+            
+            // For Excel export
+            $export = new \App\Exports\ClassSchedulesExport($academicSessionId, $schoolId, $showCourseNames);
+            
+            // Default to Excel
+            $filename .= '.xlsx';
+            return Excel::download($export, $filename);
+        }
+        
+        return back()->with('error', 'Please select a school to export data.');
     }
 }
