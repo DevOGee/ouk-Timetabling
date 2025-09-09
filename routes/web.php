@@ -175,6 +175,20 @@ Route::prefix('admin')->middleware(['auth'])->group(function () {
     // Dashboard
     Route::get('dashboard', [DashboardController::class, 'index'])->name('admin.dashboard');
     
+    // Reports
+    Route::prefix('reports')->name('admin.reports.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Admin\ReportsController::class, 'index'])->name('index');
+        
+        // Instructor Schedules
+        Route::get('/instructor-schedules', [\App\Http\Controllers\Admin\ReportsController::class, 'instructorSchedules'])->name('instructor-schedules');
+        Route::get('/instructor-schedules/{instructorId}', [\App\Http\Controllers\Admin\ReportsController::class, 'instructorSchedules'])->name('instructor-schedules.show');
+        
+        // Exports
+        Route::get('/export/{format}', [\App\Http\Controllers\Admin\ReportsController::class, 'exportInstructorSchedules'])
+            ->name('export')
+            ->where('format', 'excel|pdf');
+    });
+    
     // User Management
     Route::prefix('users')->name('admin.users.')->group(function () {
         Route::get('/', [UserController::class, 'index'])->name('index');

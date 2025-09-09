@@ -869,6 +869,18 @@
             </li>
             @endif
             @endauth
+
+            {{-- Reports - Admin, Dean, and Timetabler --}}
+            @auth
+            @if(auth()->user()->hasRole(['admin', 'dean', 'timetabler']))
+            <li class="menu-item {{ request()->routeIs('admin.reports.*') ? 'active' : '' }}">
+                <a href="{{ route('admin.reports.index') }}" class="menu-link">
+                    <i class="bi bi-file-earmark-bar-graph"></i>
+                    <span>Reports</span>
+                </a>
+            </li>
+            @endif
+            @endauth
            
 
             {{-- Academic Setup - Admin and Dean only --}}
@@ -1125,10 +1137,10 @@
                 </div>
             </main>
             
-            <!-- Footer -->
+            {{-- <!-- Footer -->
             <footer class="main-footer">
                 <x-footer />
-            </footer>
+            </footer> --}}
         </div>
     </div>
 

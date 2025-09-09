@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class CourseUnitProgrammeMapping extends Model
 {
@@ -62,7 +63,12 @@ class CourseUnitProgrammeMapping extends Model
 
     public function courseUnit(): BelongsTo
     {
-        return $this->belongsTo(CourseUnit::class)->withDefault();
+        return $this->belongsTo(CourseUnit::class);
+    }
+    
+    public function lessonSlots(): HasMany
+    {
+        return $this->hasMany(LessonSlot::class, 'course_unit_programme_mapping_id')->withDefault();
     }
 
     public function programme(): BelongsTo
