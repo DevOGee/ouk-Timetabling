@@ -45,7 +45,7 @@
                                 @if(!empty($row['days'][$day]))
                                     @foreach($row['days'][$day] as $course)
                                         <div>
-                                            <div class="course-code">{{ $course['programme_code'] }} {{ $course['code'] }}</div>
+                                            <div class="course-code">{{ $course['code'] }}</div>
                                             @if($showCourseNames)
                                                 <div class="course-name">{{ $course['name'] }}</div>
                                             @endif

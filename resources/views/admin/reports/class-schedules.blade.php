@@ -1,5 +1,7 @@
 @extends('layouts.app')
 
+@section('title', 'Class Schedules')
+
 @section('content')
 <div class="container-fluid">
     <div class="row mb-4">
@@ -68,23 +70,15 @@
                 <h4>{{ $school ? $school->name : 'All Schools' }}</h4>
                 <p>Class Schedule by Programme</p>
             </div>
-            <div class="btn-group" role="group">
-                {{-- <form method="POST" action="{{ route('admin.reports.export-class-schedules', 'xlsx') }}" class="d-inline me-2">
-                    @csrf
-                    <input type="hidden" name="academic_session_id" value="{{ request('academic_session_id') }}">
-                    <input type="hidden" name="school_id" value="{{ request('school_id') }}">
-                    <input type="hidden" name="show_course_names" value="{{ $showCourseNames ? '1' : '0' }}">
-                    <button type="submit" class="btn btn-success">
-                        <i class="bi bi-file-earmark-excel me-1"></i> Export to Excel
-                    </button>
-                </form> --}}
+            <div class="export-buttons">
                 <form method="POST" action="{{ route('admin.reports.export-class-schedules', 'pdf') }}" class="d-inline">
                     @csrf
                     <input type="hidden" name="academic_session_id" value="{{ request('academic_session_id') }}">
                     <input type="hidden" name="school_id" value="{{ request('school_id') }}">
                     <input type="hidden" name="show_course_names" value="{{ $showCourseNames ? '1' : '0' }}">
-                    <button type="submit" class="btn btn-danger">
-                        <i class="bi bi-file-earmark-pdf me-1"></i> Export to PDF
+                    <input type="hidden" name="show_instructors" value="{{ $showInstructors ? '1' : '0' }}">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-file-earmark-pdf me-1"></i> Export Class Schedule
                     </button>
                 </form>
             </div>
