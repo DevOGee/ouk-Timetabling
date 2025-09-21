@@ -157,6 +157,13 @@ class ReportsController extends Controller
                             continue;
                         }
                         
+                        // Skip if courses have the same name (case-insensitive)
+                        $currentCourseName = strtolower(trim($current['mapping']->courseUnit->name));
+                        $nextCourseName = strtolower(trim($next['mapping']->courseUnit->name));
+                        if ($currentCourseName === $nextCourseName) {
+                            continue;
+                        }
+                        
                         // Create a unique key for this conflict pair to avoid duplicates
                         $conflictKey = $current['day_id'] . '_' . 
                                      min($current['start_time'], $next['start_time']) . '_' .
@@ -237,10 +244,10 @@ class ReportsController extends Controller
         $academicSession = AcademicSession::findOrFail($academicSessionId);
         $school = $schoolId !== 'all' ? School::findOrFail($schoolId) : null;
         
-        // Generate filename
-        $filename = 'Lecturer_Conflicts_' . str_replace(' ', '_', $academicSession->name);
+        // Generate filename with school code and current date
+        $filename = 'Lecturer_Conflicts';
         if ($school) {
-            $filename .= '_' . str_replace(' ', '_', $school->name);
+            $filename .= '_' . $school->code;
         }
         $filename .= '_' . now()->format('Y-m-d');
         
@@ -342,6 +349,13 @@ class ReportsController extends Controller
                     
                     // Skip if same course unit (allowed to have same course at same time)
                     if ($current['course_unit_id'] === $next['course_unit_id']) {
+                        continue;
+                    }
+                    
+                    // Skip if courses have the same name (case-insensitive)
+                    $currentCourseName = strtolower(trim($current['mapping']->courseUnit->name));
+                    $nextCourseName = strtolower(trim($next['mapping']->courseUnit->name));
+                    if ($currentCourseName === $nextCourseName) {
                         continue;
                     }
                     
