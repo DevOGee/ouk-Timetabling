@@ -80,30 +80,7 @@
         <!-- Class Schedules Card -->
         @include('admin.reports.class-schedules-card')
 
-        <!-- Time Conflicts Card -->
-        <div class="col-xl-4 col-md-6 mb-4">
-            <div class="card border-left-danger shadow h-100 py-2">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">
-                                Time Conflicts</div>
-                            <p class="mb-0 text-muted">View scheduling conflicts between courses</p>
-                        </div>
-                        <div class="col-auto">
-                            <i class="bi bi-clock-history fa-3x text-gray-300"></i>
-                        </div>
-                    </div>
-                    <div class="mt-3">
-                        <a href="{{ route('admin.reports.time-conflicts') }}" class="btn btn-sm btn-danger">
-                            <i class="bi bi-search me-1"></i> View Report
-                        </a>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Lecturer Conflicts Card -->
+<!-- Lecturer Conflicts Card -->
         <div class="col-xl-4 col-md-6 mb-4">
             <div class="card border-left-warning shadow h-100 py-2">
                 <div class="card-body">
