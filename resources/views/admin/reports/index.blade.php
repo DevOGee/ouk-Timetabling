@@ -80,47 +80,47 @@
         <!-- Class Schedules Card -->
         @include('admin.reports.class-schedules-card')
 
-        <!-- Workload Distribution Card -->
+        <!-- Time Conflicts Card -->
         <div class="col-xl-4 col-md-6 mb-4">
-            <div class="card border-left-info shadow h-100 py-2">
+            <div class="card border-left-danger shadow h-100 py-2">
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
-                                Workload Distribution</div>
-                            <p class="mb-0 text-muted">View staff workload distribution across departments</p>
+                            <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">
+                                Time Conflicts</div>
+                            <p class="mb-0 text-muted">View scheduling conflicts between courses</p>
                         </div>
                         <div class="col-auto">
-                            <i class="bi bi-pie-chart fa-3x text-gray-300"></i>
+                            <i class="bi bi-clock-history fa-3x text-gray-300"></i>
                         </div>
                     </div>
                     <div class="mt-3">
-                        <span class="btn btn-sm btn-secondary" disabled>
-                            <i class="bi bi-clock me-1"></i> Coming Soon
-                        </span>
+                        <a href="{{ route('admin.reports.time-conflicts') }}" class="btn btn-sm btn-danger">
+                            <i class="bi bi-search me-1"></i> View Report
+                        </a>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Time Conflicts Card -->
+        <!-- Lecturer Conflicts Card -->
         <div class="col-xl-4 col-md-6 mb-4">
             <div class="card border-left-warning shadow h-100 py-2">
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
                             <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
-                                Time Conflicts</div>
-                            <p class="mb-0 text-muted">Identify and resolve scheduling conflicts</p>
+                                Lecturer Conflicts</div>
+                            <p class="mb-0 text-muted">View lecturers with overlapping schedules</p>
                         </div>
                         <div class="col-auto">
-                            <i class="bi bi-exclamation-triangle fa-3x text-gray-300"></i>
+                            <i class="bi bi-person-x fa-3x text-gray-300"></i>
                         </div>
                     </div>
                     <div class="mt-3">
-                        <span class="btn btn-sm btn-secondary" disabled>
-                            <i class="bi bi-clock me-1"></i> Coming Soon
-                        </span>
+                        <a href="{{ route('admin.reports.lecturer-conflicts') }}" class="btn btn-sm btn-warning">
+                            <i class="bi bi-search me-1"></i> View Report
+                        </a>
                     </div>
                 </div>
             </div>

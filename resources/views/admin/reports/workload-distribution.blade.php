@@ -1,13 +1,12 @@
 @extends('layouts.app')
-
+@section('title', 'Workload Distribution')
 @section('content')
 <div class="container-fluid">
     <div class="row">
         <div class="col-md-12">
             <div class="card">
                 <div class="card-header">
-                    <h5 class="card-title">Workload Distribution Report</h5>
-                    <p class="card-category">View staff workload distribution across schools</p>
+                    <h5 class="card-title mb-0">Workload Distribution</h5>
                 </div>
                 <div class="card-body">
                     <form method="GET" action="{{ route('admin.reports.workload-distribution') }}" class="mb-4">

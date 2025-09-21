@@ -178,15 +178,34 @@ Route::prefix('admin')->middleware(['auth'])->group(function () {
     // Reports
     Route::prefix('reports')->name('admin.reports.')->group(function () {
         Route::get('/', [\App\Http\Controllers\Admin\ReportsController::class, 'index'])->name('index');
+        
+        // Instructor Schedules
         Route::get('instructor-schedules', [\App\Http\Controllers\Admin\ReportsController::class, 'instructorSchedules'])->name('instructor-schedules');
         Route::get('export-instructor-schedules/{format}', [\App\Http\Controllers\Admin\ReportsController::class, 'exportInstructorSchedules'])->name('export-instructor-schedules');
+        
+        // Class Schedules
         Route::get('class-schedules', [\App\Http\Controllers\Admin\ReportsController::class, 'classSchedules'])->name('class-schedules');
         Route::post('export-class-schedules/{format?}', [\App\Http\Controllers\Admin\ReportsController::class, 'exportClassSchedules'])
             ->where('format', 'xlsx|pdf')
             ->name('export-class-schedules');
+            
+        // Workload Distribution
         Route::get('workload-distribution', [\App\Http\Controllers\Admin\ReportsController::class, 'workloadDistribution'])->name('workload-distribution');
         Route::get('export-workload-distribution/{format}', [\App\Http\Controllers\Admin\ReportsController::class, 'exportWorkloadDistribution'])->name('export-workload-distribution');
-        // Exports
+        
+        // Time Conflicts
+        Route::get('time-conflicts', [\App\Http\Controllers\Admin\ReportsController::class, 'timeConflicts'])->name('time-conflicts');
+        Route::get('export-time-conflicts/{format}', [\App\Http\Controllers\Admin\ReportsController::class, 'exportTimeConflicts'])
+            ->name('export-time-conflicts')
+            ->where('format', 'xlsx|pdf');
+            
+        // Lecturer Conflicts
+        Route::get('lecturer-conflicts', [\App\Http\Controllers\Admin\ReportsController::class, 'lecturerConflicts'])->name('lecturer-conflicts');
+        Route::get('export-lecturer-conflicts/{format}', [\App\Http\Controllers\Admin\ReportsController::class, 'exportLecturerConflicts'])
+            ->name('export-lecturer-conflicts')
+            ->where('format', 'xlsx|pdf');
+        
+        // Legacy export route
         Route::get('/export/{format}', [\App\Http\Controllers\Admin\ReportsController::class, 'exportInstructorSchedules'])
             ->name('export')
             ->where('format', 'excel|pdf');

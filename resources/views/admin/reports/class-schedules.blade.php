@@ -4,7 +4,7 @@
 <div class="container-fluid">
     <div class="row mb-4">
         <div class="col-12">
-            <h1 class="h3 mb-3">Class Schedules Report</h1>
+            <h1 class="h3 mb-3">Class Schedules</h1>
             
             <form method="GET" action="{{ route('admin.reports.class-schedules') }}" class="mb-4">
                 <div class="row g-3">
