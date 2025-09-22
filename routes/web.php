@@ -34,7 +34,8 @@ use App\Http\Controllers\Admin\ProgrammeMappingController;
 use App\Http\Controllers\Admin\ProgrammeSchedulingController;
 use App\Models\CourseUnitProgrammeMapping;
 use App\Models\AcademicSession;
-use App\Models\AcademicYear;    
+use App\Models\AcademicYear;
+use App\Http\Controllers\Api\TimetableApiController;    
 
 
 // Clear rate limiter - Remove this in production
@@ -43,6 +44,17 @@ use App\Models\AcademicYear;
 //     cache()->forget($throttleKey);
 //     return 'Rate limiter cleared for IP: ' . request()->ip();
 // });
+
+// API Routes
+Route::prefix('api')->group(function () {
+    // Get levels with timetables for a programme
+    Route::get('levels-with-timetables', [TimetableApiController::class, 'getLevelsWithTimetables'])
+        ->name('api.levels-with-timetables');
+        
+    // Get programmes by school
+    Route::get('programmes-by-school', [TimetableApiController::class, 'getProgrammesBySchool'])
+        ->name('api.programmes-by-school');
+});
 
 // Test email route - Remove this in production
 Route::get('/test-email', function () {
