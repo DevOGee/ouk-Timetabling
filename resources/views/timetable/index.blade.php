@@ -431,6 +431,7 @@
                 <div class="d-flex align-items-end flex-wrap" style="gap: 8px;">
                     {{-- School Dropdown --}}
                     <div class="flex-grow-1" style="min-width: 200px;">
+                        <label for="school_id" class="form-label mb-1 fw-bold" style="color: #333; font-size: 0.9rem; display: block;">School</label>
                         <div class="form-group mb-0">
                             <select class="form-control form-control-sm" id="school_id" name="school_id" required style="border-radius: 5px; height: 38px;">
                                 <option value="">Select School</option>
@@ -445,6 +446,7 @@
 
                     {{-- Programme Dropdown --}}
                     <div class="flex-grow-1" style="min-width: 250px;">
+                        <label for="programme_id" class="form-label mb-1 fw-bold" style="color: #333; font-size: 0.9rem; display: block;">Programme</label>
                         <div class="form-group mb-0">
                             <select class="form-control form-control-sm" id="programme_id" name="programme_id" required style="border-radius: 5px; height: 38px;">
                                 <option value="">Select Programme</option>
@@ -467,6 +469,7 @@
 
                     {{-- Level of Study --}}
                     <div style="width: 150px;">
+                        <label for="level" class="form-label mb-1 fw-bold" style="color: #333; font-size: 0.9rem; display: block;">Level</label>
                         <div class="form-group mb-0">
                             <select class="form-control form-control-sm" id="level" name="level" required style="border-radius: 5px; height: 38px;">
                                 <option value="">Select Level</option>
