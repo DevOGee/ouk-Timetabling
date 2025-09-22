@@ -525,6 +525,13 @@
             @php
                 $selectedProgramme = request('programme_id') ? $programmes->where('id', request('programme_id'))->first() : null;
                 
+                // Get the level from the request if it exists
+                $levelDisplay = '';
+                if (request('level')) {
+                    list($yearId, $semesterId) = explode('.', request('level'));
+                    $levelDisplay = "({$yearId}.{$semesterId})";
+                }
+                
                 // --- FIX STARTS HERE ---
                 // Determine the earliest start time from the timetable data
                 $earliestTime = null;
@@ -546,7 +553,7 @@
                 // --- FIX ENDS HERE ---
             @endphp
             <h6 class="page-header">
-                Teaching &amp; Learning Schedule for {{ $selectedProgramme->name ?? 'Selected Programme' }}
+                Teaching &amp; Learning Schedule for {{ $selectedProgramme->name ?? 'Selected Programme' }} {{ $levelDisplay }}
             </h6>
 
             <div class="d-none d-md-block px-3 py-2">
