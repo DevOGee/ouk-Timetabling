@@ -433,6 +433,9 @@ Route::get('/search-instructors', function (Request $request) {
     return response()->json($instructors);
 })->name('search.instructors');
 
+// Public Examinations Timetable
+Route::get('/examinations', [App\Http\Controllers\ExaminationsController::class, 'index'])->name('examinations.index');
+
 // Curriculum Setup Routes - Now scoped under active academic session and curriculum
 Route::middleware(['auth'])->group(function () {
     // Main curriculum setup page for the active curriculum
