@@ -222,6 +222,10 @@ Route::prefix('admin')->middleware(['auth'])->group(function () {
         Route::get('/export/{format}', [\App\Http\Controllers\Admin\ReportsController::class, 'exportInstructorSchedules'])
             ->name('export')
             ->where('format', 'excel|pdf');
+            
+        // Exam Conflicts Report
+        Route::get('exam-conflicts', [\App\Http\Controllers\Admin\ExamReportController::class, 'conflicts'])
+            ->name('exam-conflicts');
     });
     
     // User Management

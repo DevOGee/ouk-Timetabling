@@ -103,24 +103,24 @@
             </div>
         </div>
 
-        <!-- Program Reports Card -->
+        <!-- Exam Conflicts Card -->
         <div class="col-xl-4 col-md-6 mb-4">
-            <div class="card border-left-dark shadow h-100 py-2">
+            <div class="card border-left-danger shadow h-100 py-2">
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-dark text-uppercase mb-1">
-                                Program Reports</div>
-                            <p class="mb-0 text-muted">Generate detailed program and course offering reports</p>
+                            <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">
+                                Exam Conflicts</div>
+                            <p class="mb-0 text-muted">Detect student and invigilator scheduling conflicts in exams</p>
                         </div>
                         <div class="col-auto">
-                            <i class="bi bi-journal-text fa-3x text-gray-300"></i>
+                            <i class="bi bi-exclamation-triangle fa-3x text-gray-300"></i>
                         </div>
                     </div>
                     <div class="mt-3">
-                        <span class="btn btn-sm btn-secondary" disabled>
-                            <i class="bi bi-clock me-1"></i> Coming Soon
-                        </span>
+                        <a href="{{ route('admin.reports.exam-conflicts') }}" class="btn btn-sm btn-danger">
+                            <i class="bi bi-search me-1"></i> View Report
+                        </a>
                     </div>
                 </div>
             </div>
