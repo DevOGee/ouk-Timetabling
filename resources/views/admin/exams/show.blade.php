@@ -111,6 +111,10 @@
                 </table>
             </div>
         </div>
+        
+        <div class="d-flex justify-content-center">
+            {!! $exams->links() !!}
+        </div>
     </div>
 </div>
 

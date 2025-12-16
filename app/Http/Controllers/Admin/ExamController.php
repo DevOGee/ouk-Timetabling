@@ -51,7 +51,9 @@ class ExamController extends Controller
             ->orderBy('exams.exam_date')
             ->orderBy('exams.start_time')
             ->orderBy('course_units.code')
-            ->get();
+            ->orderBy('exams.start_time')
+            ->orderBy('course_units.code')
+            ->paginate(20);
 
         return view('admin.exams.show', compact('examSchedule', 'exams'));
     }
@@ -68,21 +70,30 @@ class ExamController extends Controller
         $count = 0;
         
         DB::transaction(function () use ($mappings, $examSchedule, &$count) {
+            // Track processed course units to handle duplicates within the current batch
+            $processedCourseUnits = [];
+
             foreach ($mappings as $mapping) {
-                // Check if already exists to prevent dupes (optional, but good practice)
+                // Skip if we've already processed this course unit in this batch
+                if (in_array($mapping->course_unit_id, $processedCourseUnits)) {
+                    continue;
+                }
+
+                // Check if already exists in the database to prevent dupes
                 $exists = Exam::where('exam_schedule_id', $examSchedule->id)
-                    ->where('course_unit_programme_mapping_id', $mapping->id)
+                    ->where('course_unit_id', $mapping->course_unit_id)
                     ->exists();
 
                 if (!$exists) {
                     Exam::create([
                         'exam_schedule_id' => $examSchedule->id,
-                        'course_unit_programme_mapping_id' => $mapping->id,
+                        'course_unit_programme_mapping_id' => $mapping->id, // Link to the first mapping found
                         'course_unit_id' => $mapping->course_unit_id,
-                        'user_id' => $mapping->user_id, // Default invigilator is the instructor
+                        'user_id' => $mapping->user_id, // Default invigilator is the instructor of the first mapping
                         // Date/Time left null for manual scheduling
                     ]);
                     $count++;
+                    $processedCourseUnits[] = $mapping->course_unit_id;
                 }
             }
         });
