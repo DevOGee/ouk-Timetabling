@@ -775,6 +775,18 @@
             @endif
             @endauth
 
+            {{-- Exam Management - Admin and Dean --}}
+            @auth
+            @if(auth()->user()->hasRole(['admin', 'dean']))
+            <li class="menu-item {{ request()->routeIs('admin.exams.*') ? 'active' : '' }}">
+                <a href="{{ route('admin.exams.index') }}" class="menu-link">
+                    <i class="bi bi-clock-history"></i>
+                    <span>Exam Management</span>
+                </a>
+            </li>
+            @endif
+            @endauth
+
             {{-- Academic Sessions - Admin and Dean only --}}
             @auth
             @if(auth()->user()->hasRole(['admin', 'dean']))

@@ -465,6 +465,20 @@ Route::middleware(['auth'])->group(function () {
     });
 });
 
+// Exam Timetabling Routes
+Route::prefix('admin/exams')->name('admin.exams.')->middleware(['auth'])->group(function () {
+    Route::get('/', [App\Http\Controllers\Admin\ExamController::class, 'index'])->name('index');
+    Route::get('/create', [App\Http\Controllers\Admin\ExamController::class, 'create'])->name('create');
+    Route::post('/', [App\Http\Controllers\Admin\ExamController::class, 'store'])->name('store');
+    Route::get('/{examSchedule}', [App\Http\Controllers\Admin\ExamController::class, 'show'])->name('show');
+    Route::delete('/{examSchedule}', [App\Http\Controllers\Admin\ExamController::class, 'destroy'])->name('destroy');
+    
+    // Custom Actions
+    Route::post('/{examSchedule}/rollover', [App\Http\Controllers\Admin\ExamController::class, 'rollover'])->name('rollover');
+    Route::post('/{examSchedule}/import', [App\Http\Controllers\Admin\ExamController::class, 'import'])->name('import');
+    Route::post('/update-slot/{exam}', [App\Http\Controllers\Admin\ExamController::class, 'updateSlot'])->name('updateSlice');
+});
+
 // require __DIR__.'/auth.php'; // Commented out to prevent duplicate route definitions
 
 // Block access to registration page using middleware
