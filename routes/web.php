@@ -480,6 +480,7 @@ Route::prefix('admin/exams')->name('admin.exams.')->middleware(['auth'])->group(
     // Custom Actions
     Route::post('/{examSchedule}/rollover', [App\Http\Controllers\Admin\ExamController::class, 'rollover'])->name('rollover');
     Route::post('/{examSchedule}/import', [App\Http\Controllers\Admin\ExamController::class, 'import'])->name('import');
+    Route::get('/{examSchedule}/export-unscheduled', [App\Http\Controllers\Admin\ExamController::class, 'exportUnscheduled'])->name('export-unscheduled');
     Route::post('/update-slot/{exam}', [App\Http\Controllers\Admin\ExamController::class, 'updateSlot'])->name('updateSlice');
 });
 

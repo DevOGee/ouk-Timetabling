@@ -129,24 +129,51 @@ class ExamController extends Controller
             'exam_date' => 'nullable|date',
             'start_time' => 'nullable', 
             'duration_minutes' => 'nullable|integer|min:1',
-            'user_id' => 'nullable|exists:users,id',
         ]);
-        
-        // Remove nulls only if they were not explicitly sent as null?
-        // Actually, we want to update only keys present in request.
-        // But validate() returns only validated keys.
-        // If we want to allow unsetting (setting to null), we need to distinguish between "not sent" and "sent as null".
-        // For this use case (separate modals), we can merge with current values or check $request->has().
 
         $data = [];
         if ($request->has('exam_date')) $data['exam_date'] = $request->exam_date;
         if ($request->has('start_time')) $data['start_time'] = $request->start_time;
         if ($request->has('duration_minutes')) $data['duration_minutes'] = $request->duration_minutes;
+        // Only update user_id if explicitly provided (prevent accidental nulling)
         if ($request->has('user_id')) $data['user_id'] = $request->user_id;
 
         $exam->update($data);
-        
-        return response()->json(['success' => true, 'message' => 'Slot updated']);
+
+        return back()->with('success', 'Exam schedule updated successfully.');
+    }
+
+    public function exportUnscheduled(ExamSchedule $examSchedule)
+    {
+        $exams = $examSchedule->exams()
+            ->where(function($query) {
+                $query->whereNull('exam_date')
+                      ->orWhereNull('start_time');
+            })
+            ->with('courseUnit')
+            ->get();
+
+        $headers = [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => 'attachment; filename="unscheduled_exams_' . $examSchedule->id . '.csv"',
+        ];
+
+        $callback = function() use ($exams) {
+            $file = fopen('php://output', 'w');
+            fputcsv($file, ['course_code', 'date', 'start_time', 'duration']);
+
+            foreach ($exams as $exam) {
+                fputcsv($file, [
+                    $exam->courseUnit->code ?? '',
+                    '', // Leave date blank for user to fill
+                    '', // Leave time blank for user to fill
+                    $exam->duration_minutes ?? 120
+                ]);
+            }
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
     }
 
     public function destroy(ExamSchedule $examSchedule)

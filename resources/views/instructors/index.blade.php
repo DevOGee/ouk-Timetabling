@@ -3,37 +3,7 @@
 @section('title', 'Instructors')
 
 @section('content')
-    <style>
-        .pagination {
-            display: flex;
-            padding: 0;
-            list-style: none;
-        }
-
-        .pagination .page-item {
-            margin: 0 5px;
-        }
-
-        .pagination .page-item .page-link {
-            color: #037b90;
-            /* Your primary color */
-            border-radius: 5px;
-            border: 1px solid #037b90;
-            padding: 8px 12px;
-            transition: all 0.3s;
-        }
-
-        .pagination .page-item.active .page-link {
-            background-color: #037b90;
-            color: white;
-            border: 1px solid #037b90;
-        }
-
-        .pagination .page-item.disabled .page-link {
-            color: #aaa;
-            cursor: not-allowed;
-        }
-
+    <style>        
         table {
             width: 100%;
             border-spacing: 0;
@@ -148,41 +118,7 @@
 
 
         <div class="mt-3 d-flex justify-content-center">
-            <nav>
-                <ul class="pagination">
-                    {{-- Previous Page Link --}}
-                    @if ($instructors->onFirstPage())
-                        <li class="page-item disabled">
-                            <span class="page-link">« Prev</span>
-                        </li>
-                    @else
-                        <li class="page-item">
-                            <a class="page-link" href="{{ $instructors->previousPageUrl() }}&search={{ request('search') }}"
-                                rel="prev">« Prev</a>
-                        </li>
-                    @endif
-
-                    {{-- Page Number Links --}}
-                    @for ($page = 1; $page <= $instructors->lastPage(); $page++)
-                        <li class="page-item {{ $page == $instructors->currentPage() ? 'active' : '' }}">
-                            <a class="page-link"
-                                href="{{ $instructors->url($page) }}&search={{ request('search') }}">{{ $page }}</a>
-                        </li>
-                    @endfor
-
-                    {{-- Next Page Link --}}
-                    @if ($instructors->hasMorePages())
-                        <li class="page-item">
-                            <a class="page-link" href="{{ $instructors->nextPageUrl() }}&search={{ request('search') }}"
-                                rel="next">Next »</a>
-                        </li>
-                    @else
-                        <li class="page-item disabled">
-                            <span class="page-link">Next »</span>
-                        </li>
-                    @endif
-                </ul>
-            </nav>
+            {{ $instructors->links() }}
         </div>
     </div>
 

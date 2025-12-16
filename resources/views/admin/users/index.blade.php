@@ -172,37 +172,7 @@
                 @if($users->hasPages())
                     <div class="card-footer bg-white border-top-0 d-flex justify-content-center">
                         <nav>
-                            <ul class="pagination mb-0">
-                                {{-- Previous Page Link --}}
-                                @if ($users->onFirstPage())
-                                    <li class="page-item disabled">
-                                        <span class="page-link">« Prev</span>
-                                    </li>
-                                @else
-                                    <li class="page-item">
-                                        <a class="page-link" href="{{ $users->previousPageUrl() }}&{{ http_build_query(request()->except('page')) }}" rel="prev">« Prev</a>
-                                    </li>
-                                @endif
-
-                                {{-- Page Number Links --}}
-                                @for ($page = 1; $page <= $users->lastPage(); $page++)
-                                    <li class="page-item {{ $page == $users->currentPage() ? 'active' : '' }}">
-                                        <a class="page-link"
-                                            href="{{ $users->url($page) }}&{{ http_build_query(request()->except('page')) }}">{{ $page }}</a>
-                                    </li>
-                                @endfor
-
-                                {{-- Next Page Link --}}
-                                @if ($users->hasMorePages())
-                                    <li class="page-item">
-                                        <a class="page-link" href="{{ $users->nextPageUrl() }}&{{ http_build_query(request()->except('page')) }}" rel="next">Next »</a>
-                                    </li>
-                                @else
-                                    <li class="page-item disabled">
-                                        <span class="page-link">Next »</span>
-                                    </li>
-                                @endif
-                            </ul>
+                            {{ $users->appends(request()->except('page'))->links() }}
                         </nav>
                     </div>
                 @endif
@@ -234,42 +204,7 @@
         vertical-align: middle;
     }
     
-    /* Pagination Styles */
-    .pagination {
-        display: flex;
-        padding: 0;
-        list-style: none;
-        margin: 0;
-    }
 
-    .pagination .page-item {
-        margin: 0 3px;
-    }
-
-    .pagination .page-item .page-link {
-        color: #037b90;
-        border-radius: 5px;
-        border: 1px solid #037b90;
-        padding: 8px 12px;
-        transition: all 0.3s;
-        text-decoration: none;
-    }
-
-    .pagination .page-item.active .page-link {
-        background-color: #037b90;
-        color: white;
-        border: 1px solid #037b90;
-    }
-
-    .pagination .page-item.disabled .page-link {
-        color: #aaa;
-        cursor: not-allowed;
-        border-color: #dee2e6;
-    }
-    
-    .pagination .page-link:hover:not(.disabled) {
-        background-color: #f8f9fa;
-    }
 </style>
 @endpush
 

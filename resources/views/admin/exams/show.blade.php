@@ -219,8 +219,23 @@
                 </div>
                 <div class="modal-body">
                     <div class="mb-3">
-                        <label for="file" class="form-label">CSV File</label>
-                        <input class="form-control" type="file" id="file" name="file" required accept=".csv,.xlsx">
+                        <label class="form-label fw-bold">Step 1: Get Data</label>
+                        <div class="d-flex gap-2">
+                             <a href="{{ asset('templates/exam_import_template.csv') }}" class="btn btn-outline-secondary btn-sm">
+                                <i class="bi bi-download"></i> Download Blank Template
+                            </a>
+                            <a href="{{ route('admin.exams.export-unscheduled', $examSchedule) }}" class="btn btn-outline-primary btn-sm">
+                                <i class="bi bi-cloud-download"></i> Download Unscheduled Exams
+                            </a>
+                        </div>
+                        <div class="form-text">
+                            You can download a list of unscheduled exams, fill in the dates/times, and upload it below.
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="file" class="form-label fw-bold">Step 2: Upload CSV</label>
+                        <input type="file" name="file" id="file" class="form-control" accept=".csv" required>
                     </div>
                     <div class="alert alert-info small mb-0">
                         <strong>Expected Columns:</strong><br>
