@@ -73,35 +73,57 @@
                                 </td>
                                 <td style="min-width: 200px;">
                                     <div class="input-group input-group-sm">
-                                        <input type="time" 
-                                            class="form-control exam-time-input" 
-                                            data-exam-id="{{ $exam->id }}"
-                                            value="{{ $exam->start_time ? \Carbon\Carbon::parse($exam->start_time)->format('H:i') : '' }}">
-                                        <input type="number" 
-                                            class="form-control exam-duration-input" 
-                                            data-exam-id="{{ $exam->id }}"
-                                            value="{{ $exam->duration_minutes }}"
-                                            min="30" step="15"
-                                            title="Duration in minutes">
-                                        <span class="input-group-text">min</span>
-                                    </div>
-                                </td>
-                                <td>
-                                    <div class="small">{{ $exam->invigilator->name ?? 'Unassigned' }}</div>
-                                </td>
-                                <td>
-                                    <span class="status-indicator" id="status-{{ $exam->id }}">
-                                        @if($exam->exam_date && $exam->start_time)
-                                            <span class="badge bg-success">Scheduled</span>
-                                        @else
-                                            <span class="badge bg-warning text-dark">Pending</span>
-                                        @endif
-                                    </span>
-                                </td>
-                            </tr>
-                        @empty
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Time</th>
+                        <th>Course</th>
+                        <th>Invigilator</th>
+                        <th>Slots</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse($exams as $exam)
+                    <tr id="exam-row-{{ $exam->id }}">
+                        <td>
+                            <input type="date" class="form-control form-control-sm exam-input"
+                                data-id="{{ $exam->id }}" name="exam_date"
+                                value="{{ $exam->exam_date ? $exam->exam_date->format('Y-m-d') : '' }}"
+                                min="{{ $examSchedule->start_date->format('Y-m-d') }}"
+                                max="{{ $examSchedule->end_date->format('Y-m-d') }}">
+                        </td>
+                        <td>
+                            <input type="time" class="form-control form-control-sm exam-input"
+                                data-id="{{ $exam->id }}" name="start_time"
+                                value="{{ $exam->start_time ? \Carbon\Carbon::parse($exam->start_time)->format('H:i') : '' }}">
+                        </td>
+                        <td>
+                            <strong>{{ $exam->courseUnit->code }}</strong><br>
+                            <small class="text-muted">{{ Str::limit($exam->courseUnit->name, 30) }}</small>
+                        </td>
+                        <td>
+                            <select class="form-select form-select-sm exam-input" data-id="{{ $exam->id }}" name="user_id">
+                                <option value="">Select Invigilator</option>
+                                @foreach($instructors as $instructor)
+                                    <option value="{{ $instructor->id }}" {{ $exam->user_id == $instructor->id ? 'selected' : '' }}>
+                                        {{ $instructor->name }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </td>
+                        <td>
+                            <div class="input-group input-group-sm">
+                                <input type="number" class="form-control exam-input"
+                                    data-id="{{ $exam->id }}" name="duration_minutes"
+                                    value="{{ $exam->duration_minutes }}" min="30" step="15"
+                                    title="Duration in minutes" style="max-width: 80px;">
+                                <span class="input-group-text">min</span>
+                            </div>
+                        </td>
+                    </tr>
+                    @empty
                             <tr>
-                                <td colspan="6" class="text-center py-5 text-muted">
+                                <td colspan="5" class="text-center py-5 text-muted">
                                     <p>No exams found.</p>
                                     <p class="small">Use the "Rollover" button to import courses from the timetable.</p>
                                 </td>
@@ -111,9 +133,9 @@
                 </table>
             </div>
         </div>
-        
-        <div class="d-flex justify-content-center">
-            {!! $exams->links() !!}
+
+        <div class="d-flex justify-content-center mt-3">
+            {{ $exams->withQueryString()->links('pagination::bootstrap-5') }}
         </div>
     </div>
 </div>

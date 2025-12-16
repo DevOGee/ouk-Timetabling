@@ -44,6 +44,7 @@ class ExamController extends Controller
     public function show(ExamSchedule $examSchedule)
     {
         $examSchedule->load(['exams.courseUnit', 'exams.mapping.programme', 'exams.invigilator']);
+        $instructors = \App\Models\User::role('instructor')->orderBy('name')->get();
         
         $exams = $examSchedule->exams()
             ->join('course_units', 'exams.course_unit_id', '=', 'course_units.id')
@@ -55,7 +56,7 @@ class ExamController extends Controller
             ->orderBy('course_units.code')
             ->paginate(20);
 
-        return view('admin.exams.show', compact('examSchedule', 'exams'));
+        return view('admin.exams.show', compact('examSchedule', 'exams', 'instructors'));
     }
 
     public function rollover(Request $request, ExamSchedule $examSchedule)
@@ -120,13 +121,14 @@ class ExamController extends Controller
             'exam_date' => 'nullable|date',
             'start_time' => 'nullable', // Flexible validation, strict could be date_format:H:i
             'duration_minutes' => 'nullable|integer|min:1',
-            'start_time' => 'nullable',
+            'user_id' => 'nullable|exists:users,id',
         ]);
         
         $exam->update([
             'exam_date' => $request->exam_date,
             'start_time' => $request->start_time,
             'duration_minutes' => $request->duration_minutes ?? 120,
+            'user_id' => $request->user_id,
         ]);
         
         return response()->json(['success' => true, 'message' => 'Slot updated']);
