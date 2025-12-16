@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Http\Request;
 use App\Http\Controllers\AcademicYearController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\CourseMappingController;

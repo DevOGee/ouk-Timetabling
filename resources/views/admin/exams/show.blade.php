@@ -36,35 +36,34 @@
     <div class="card shadow-sm mb-4">
         <div class="card-header bg-light d-flex justify-content-between align-items-center">
             <h5 class="mb-0">Scheduled Exams</h5>
-            <span class="badge bg-primary">{{ $exams->count() }} Exams</span>
+            <div class="d-flex gap-2 align-items-center">
+                <form action="{{ route('admin.exams.show', $examSchedule) }}" method="GET" class="d-flex gap-2">
+                    <input type="text" name="search" class="form-control form-control-sm" 
+                           placeholder="Search Course or Invigilator..." 
+                           value="{{ request('search') }}" style="width: 250px;">
+                    <button type="submit" class="btn btn-sm btn-outline-primary">Search</button>
+                    @if(request('search'))
+                        <a href="{{ route('admin.exams.show', $examSchedule) }}" class="btn btn-sm btn-outline-secondary">Clear</a>
+                    @endif
+                </form>
+                <span class="badge bg-primary ms-2">{{ $exams->total() }} Exams</span>
+            </div>
         </div>
         <div class="card-body p-0">
             <div class="table-responsive">
                 <table class="table table-hover mb-0 align-middle">
                     <thead class="table-light">
                         <tr>
-                            <th>Date</th>
-                            <th>Time</th>
                             <th style="width: 25%;">Course</th>
                             <th>Invigilator</th>
+                            <th>Date</th>
+                            <th>Time</th>
                             <th>Duration</th>
                         </tr>
                     </thead>
                     <tbody>
                         @forelse($exams as $exam)
                             <tr id="exam-row-{{ $exam->id }}">
-                                <td>
-                                    <input type="date" class="form-control form-control-sm exam-input" name="exam_date"
-                                        data-exam-id="{{ $exam->id }}"
-                                        value="{{ $exam->exam_date ? $exam->exam_date->format('Y-m-d') : '' }}"
-                                        min="{{ $examSchedule->start_date->format('Y-m-d') }}"
-                                        max="{{ $examSchedule->end_date->format('Y-m-d') }}">
-                                </td>
-                                <td>
-                                    <input type="time" class="form-control form-control-sm exam-input" name="start_time"
-                                        data-exam-id="{{ $exam->id }}"
-                                        value="{{ $exam->start_time ? \Carbon\Carbon::parse($exam->start_time)->format('H:i') : '' }}">
-                                </td>
                                 <td>
                                     <div class="fw-bold">{{ $exam->courseUnit->code }}</div>
                                     <div class="small text-muted text-truncate" style="max-width: 200px;">
@@ -76,22 +75,40 @@
                                         <span id="invigilator-name-{{ $exam->id }}" class="small">
                                             {{ $exam->invigilator->name ?? 'Unassigned' }}
                                         </span>
-                                        <button class="btn btn-sm btn-light btn-edit-invigilator" 
+                                        <button class="btn btn-sm btn-outline-primary btn-edit-invigilator" 
+                                            data-bs-toggle="modal" 
+                                            data-bs-target="#invigilatorModal"
                                             data-exam-id="{{ $exam->id }}" 
                                             data-user-id="{{ $exam->user_id }}"
                                             title="Assign Invigilator">
-                                            <i class="bi bi-pencil-square"></i>
+                                            <i class="bi bi-person-gear"></i>
                                         </button>
                                     </div>
                                 </td>
                                 <td>
-                                    <div class="input-group input-group-sm">
-                                        <input type="number" class="form-control exam-input" name="duration_minutes"
+                                    <div class="d-flex align-items-center justify-content-between">
+                                        <span id="date-text-{{ $exam->id }}">
+                                            {{ $exam->exam_date ? $exam->exam_date->format('Y-m-d') : 'Unscheduled' }}
+                                        </span>
+                                        <button class="btn btn-sm btn-outline-success btn-edit-schedule" 
                                             data-exam-id="{{ $exam->id }}"
-                                            value="{{ $exam->duration_minutes }}" 
-                                            min="30" step="15" style="max-width: 70px;">
-                                        <span class="input-group-text">min</span>
+                                            data-date="{{ $exam->exam_date ? $exam->exam_date->format('Y-m-d') : '' }}"
+                                            data-time="{{ $exam->start_time ? \Carbon\Carbon::parse($exam->start_time)->format('H:i') : '' }}"
+                                            data-duration="{{ $exam->duration_minutes }}"
+                                            title="Edit Schedule">
+                                            <i class="bi bi-calendar-event"></i>
+                                        </button>
                                     </div>
+                                </td>
+                                <td>
+                                    <span id="time-text-{{ $exam->id }}">
+                                        {{ $exam->start_time ? \Carbon\Carbon::parse($exam->start_time)->format('H:i') : '--:--' }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <span id="duration-text-{{ $exam->id }}">
+                                        {{ $exam->duration_minutes }} min
+                                    </span>
                                 </td>
                             </tr>
                         @empty
@@ -126,6 +143,41 @@
                 Update saved successfully.
             </div>
             <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Schedule Modal -->
+<div class="modal fade" id="scheduleModal" tabindex="-1" aria-labelledby="scheduleModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="scheduleModalLabel">Edit Exam Schedule</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="schedule-exam-id">
+                <div class="mb-3">
+                    <label for="schedule-date" class="form-label">Date</label>
+                    <input type="date" class="form-control" id="schedule-date" 
+                        min="{{ $examSchedule->start_date->format('Y-m-d') }}"
+                        max="{{ $examSchedule->end_date->format('Y-m-d') }}">
+                </div>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="schedule-time" class="form-label">Start Time</label>
+                        <input type="time" class="form-control" id="schedule-time">
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="schedule-duration" class="form-label">Duration (min)</label>
+                        <input type="number" class="form-control" id="schedule-duration" min="30" step="15">
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="save-schedule">Save Schedule</button>
+            </div>
         </div>
     </div>
 </div>
@@ -184,6 +236,21 @@
     </div>
 </div>
 
+@endsection
+
+@push('styles')
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<style>
+    /* Fix for Select2 z-index in Bootstrap 5 Modal */
+    .select2-container--open {
+        z-index: 9999999 !important;
+    }
+</style>
+@endpush
+
+@push('scripts')
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
@@ -191,38 +258,80 @@
         const toast = new bootstrap.Toast(toastEl);
         
         let invigilatorModal = null;
+        let scheduleModal = null;
+        
         const modalElement = document.getElementById('invigilatorModal');
         if(modalElement) {
              invigilatorModal = new bootstrap.Modal(modalElement);
+             
+             // Dynamic Select2 Initialization (Scheduling Pattern)
+             modalElement.addEventListener('show.bs.modal', function(event) {
+                const button = event.relatedTarget;
+                const examId = button.getAttribute('data-exam-id');
+                const userId = button.getAttribute('data-user-id');
+                
+                // Update hidden input
+                document.getElementById('edit-exam-id').value = examId;
+                
+                // Initialise jQuery Select2
+                const select = $('#invigilator-select');
+                
+                // Destroy if exists
+                if (select.hasClass('select2-hidden-accessible')) {
+                    select.select2('destroy');
+                }
+                
+                // Init Select2
+                select.select2({
+                    dropdownParent: $('#invigilatorModal'),
+                    width: '100%',
+                    placeholder: "Search Instructor...",
+                    allowClear: true,
+                    theme: 'bootstrap-5',
+                    ajax: {
+                        url: "{{ route('search.instructors') }}",
+                        dataType: 'json',
+                        delay: 250,
+                        data: function(params) {
+                            return { q: params.term };
+                        },
+                        processResults: function(data) {
+                            return {
+                                results: $.map(data, function(instructor) {
+                                    return {
+                                        id: instructor.id,
+                                        text: instructor.name
+                                    };
+                                })
+                            };
+                        },
+                        cache: true
+                    }
+                });
+                
+                // Pre-fill selection
+                select.val(null).trigger('change'); // Clear first
+                
+                const nameSpan = document.getElementById(`invigilator-name-${examId}`);
+                const currentName = nameSpan ? nameSpan.innerText.trim() : 'Unassigned';
+                
+                if (userId && currentName !== 'Unassigned') {
+                    const option = new Option(currentName, userId, true, true);
+                    select.append(option).trigger('change');
+                }
+             });
+             
+             modalElement.addEventListener('hidden.bs.modal', function() {
+                const select = $('#invigilator-select');
+                if (select.hasClass('select2-hidden-accessible')) {
+                    select.select2('destroy');
+                }
+             });
         }
 
-        // Initialize Select2 in Modal with AJAX
-        if (typeof jQuery !== 'undefined' && jQuery.fn.select2) {
-            jQuery('.select2-invigilator').select2({
-                placeholder: "Search Instructor...",
-                allowClear: true,
-                width: '100%',
-                dropdownParent: jQuery('#invigilatorModal'),
-                ajax: {
-                    url: "{{ route('search.instructors') }}",
-                    dataType: 'json',
-                    delay: 250,
-                    data: function(params) {
-                        return { q: params.term };
-                    },
-                    processResults: function(data) {
-                        return {
-                            results: jQuery.map(data, function(instructor) {
-                                return {
-                                    id: instructor.id,
-                                    text: instructor.name // Standardizing on 'name'
-                                };
-                            })
-                        };
-                    },
-                    cache: true
-                }
-            });
+        const scheduleModalElement = document.getElementById('scheduleModal');
+        if(scheduleModalElement) {
+             scheduleModal = new bootstrap.Modal(scheduleModalElement);
         }
 
         function updateExam(examId, data) {
@@ -237,33 +346,58 @@
             .then(response => response.json());
         }
 
-        // Handle Edit Invigilator Click
-        document.querySelectorAll('.btn-edit-invigilator').forEach(btn => {
+        // Handle Schedule Edit Click
+        document.querySelectorAll('.btn-edit-schedule').forEach(btn => {
             btn.addEventListener('click', function() {
                 const examId = this.dataset.examId;
-                const userId = this.dataset.userId;
-                
-                // Get current name to pre-fill
-                const nameSpan = document.getElementById(`invigilator-name-${examId}`);
-                const currentName = nameSpan ? nameSpan.innerText.trim() : 'Unassigned';
-                
-                document.getElementById('edit-exam-id').value = examId;
-                
-                if (typeof jQuery !== 'undefined') {
-                    const select = jQuery('#invigilator-select');
-                    
-                    // Clear previous selection
-                    select.val(null).empty();
-                    
-                    // Pre-fill if assigned
-                    if (userId && currentName !== 'Unassigned') {
-                        const option = new Option(currentName, userId, true, true);
-                        select.append(option).trigger('change');
-                    }
-                }
-                
-                invigilatorModal.show();
+                const date = this.dataset.date;
+                const time = this.dataset.time;
+                const duration = this.dataset.duration;
+
+                document.getElementById('schedule-exam-id').value = examId;
+                document.getElementById('schedule-date').value = date;
+                document.getElementById('schedule-time').value = time;
+                document.getElementById('schedule-duration').value = duration;
+
+                scheduleModal.show();
             });
+        });
+
+        // Handle Save Schedule
+        document.getElementById('save-schedule').addEventListener('click', function() {
+            const examId = document.getElementById('schedule-exam-id').value;
+            const date = document.getElementById('schedule-date').value;
+            const time = document.getElementById('schedule-time').value;
+            const duration = document.getElementById('schedule-duration').value;
+
+            updateExam(examId, {
+                exam_date: date,
+                start_time: time,
+                duration_minutes: duration
+            })
+            .then(data => {
+                if (data.success) {
+                    toast.show();
+                    
+                    // Update UI text
+                    document.getElementById(`date-text-${examId}`).innerText = date ? date : 'Unscheduled';
+                    document.getElementById(`time-text-${examId}`).innerText = time ? time : '--:--';
+                    document.getElementById(`duration-text-${examId}`).innerText = duration + ' min';
+
+                    // Update data attributes on the button for next open
+                    const btn = document.querySelector(`.btn-edit-schedule[data-exam-id="${examId}"]`);
+                    if(btn) {
+                        btn.dataset.date = date;
+                        btn.dataset.time = time;
+                        btn.dataset.duration = duration;
+                    }
+
+                    scheduleModal.hide();
+                } else {
+                    alert('Error updating schedule.');
+                }
+            })
+            .catch(error => console.error('Error:', error));
         });
 
         // Handle Save Invigilator
@@ -274,12 +408,12 @@
             let userId = '';
             let userName = 'Unassigned';
             
-            if (typeof jQuery !== 'undefined') {
-                const data = jQuery('#invigilator-select').select2('data');
-                if (data && data.length > 0) {
-                    userId = data[0].id;
-                    userName = data[0].text;
-                }
+            const select = $('#invigilator-select');
+            const data = select.select2('data');
+            
+            if (data && data.length > 0) {
+                userId = data[0].id;
+                userName = data[0].text;
             }
 
             updateExam(examId, { user_id: userId })
@@ -293,7 +427,7 @@
                     
                     // Update data-attribute for next edit
                     const editBtn = document.querySelector(`.btn-edit-invigilator[data-exam-id="${examId}"]`);
-                    if(editBtn) editBtn.dataset.userId = userId;
+                    if(editBtn) editBtn.setAttribute('data-user-id', userId);
                     
                     invigilatorModal.hide();
                 } else {
@@ -302,36 +436,6 @@
             })
             .catch(error => console.error('Error:', error));
         });
-
-        function handleInputUpdate(inputElement) {
-            const examId = inputElement.dataset.examId;
-            const row = document.getElementById(`exam-row-${examId}`);
-            
-            const date = row.querySelector('input[name="exam_date"]').value;
-            const time = row.querySelector('input[name="start_time"]').value;
-            const duration = row.querySelector('input[name="duration_minutes"]').value;
-
-            updateExam(examId, {
-                exam_date: date,
-                start_time: time,
-                duration_minutes: duration
-            })
-            .then(data => {
-                if (data.success) {
-                    toast.show();
-                } else {
-                    alert('Error updating exam.');
-                }
-            })
-            .catch(error => console.error('Error:', error));
-        }
-
-        // Attach listeners to native inputs (Date, Time, Duration)
-        document.querySelectorAll('.exam-input').forEach(input => {
-            input.addEventListener('change', function() {
-                handleInputUpdate(this);
-            });
-        });
     });
 </script>
-@endsection
+@endpush

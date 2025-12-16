@@ -41,16 +41,25 @@ class ExamController extends Controller
             ->with('success', 'Exam schedule created successfully.');
     }
 
-    public function show(ExamSchedule $examSchedule)
+    public function show(Request $request, ExamSchedule $examSchedule)
     {
         $examSchedule->load(['exams.courseUnit', 'exams.mapping.programme', 'exams.invigilator']);
         
-        $exams = $examSchedule->exams()
+        $query = $examSchedule->exams()
             ->join('course_units', 'exams.course_unit_id', '=', 'course_units.id')
-            ->select('exams.*') // Avoid column collisions
-            ->orderBy('exams.exam_date')
-            ->orderBy('exams.start_time')
-            ->orderBy('course_units.code')
+            ->leftJoin('users', 'exams.user_id', '=', 'users.id')
+            ->select('exams.*');
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('course_units.code', 'like', "%{$search}%")
+                  ->orWhere('course_units.name', 'like', "%{$search}%")
+                  ->orWhere('users.name', 'like', "%{$search}%");
+            });
+        }
+            
+        $exams = $query->orderBy('exams.exam_date')
             ->orderBy('exams.start_time')
             ->orderBy('course_units.code')
             ->paginate(20);
@@ -116,19 +125,26 @@ class ExamController extends Controller
 
     public function updateSlot(Request $request, Exam $exam)
     {
-        $request->validate([
+        $validated = $request->validate([
             'exam_date' => 'nullable|date',
-            'start_time' => 'nullable', // Flexible validation, strict could be date_format:H:i
+            'start_time' => 'nullable', 
             'duration_minutes' => 'nullable|integer|min:1',
             'user_id' => 'nullable|exists:users,id',
         ]);
         
-        $exam->update([
-            'exam_date' => $request->exam_date,
-            'start_time' => $request->start_time,
-            'duration_minutes' => $request->duration_minutes ?? 120,
-            'user_id' => $request->user_id,
-        ]);
+        // Remove nulls only if they were not explicitly sent as null?
+        // Actually, we want to update only keys present in request.
+        // But validate() returns only validated keys.
+        // If we want to allow unsetting (setting to null), we need to distinguish between "not sent" and "sent as null".
+        // For this use case (separate modals), we can merge with current values or check $request->has().
+
+        $data = [];
+        if ($request->has('exam_date')) $data['exam_date'] = $request->exam_date;
+        if ($request->has('start_time')) $data['start_time'] = $request->start_time;
+        if ($request->has('duration_minutes')) $data['duration_minutes'] = $request->duration_minutes;
+        if ($request->has('user_id')) $data['user_id'] = $request->user_id;
+
+        $exam->update($data);
         
         return response()->json(['success' => true, 'message' => 'Slot updated']);
     }

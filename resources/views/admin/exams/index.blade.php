@@ -53,12 +53,16 @@
                                         </span>
                                     </td>
                                     <td>
-                                        <div class="btn-group btn-group-sm">
-                                            <a href="{{ route('admin.exams.show', $schedule) }}" class="btn btn-outline-primary">Manage</a>
-                                            <form action="{{ route('admin.exams.destroy', $schedule) }}" method="POST" onsubmit="return confirm('Are you sure?');">
+                                        <div class="d-flex gap-2">
+                                            <a href="{{ route('admin.exams.show', $schedule) }}" class="btn btn-sm btn-primary">
+                                                <i class="bi bi-gear-fill me-1"></i> Manage
+                                            </a>
+                                            <form action="{{ route('admin.exams.destroy', $schedule) }}" method="POST" onsubmit="return confirm('Are you sure you want to delete this schedule?');">
                                                 @csrf
                                                 @method('DELETE')
-                                                <button type="submit" class="btn btn-outline-danger">Delete</button>
+                                                <button type="submit" class="btn btn-sm btn-outline-danger">
+                                                    <i class="bi bi-trash-fill me-1"></i> Delete
+                                                </button>
                                             </form>
                                         </div>
                                     </td>
