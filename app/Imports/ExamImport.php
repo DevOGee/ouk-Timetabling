@@ -46,9 +46,33 @@ class ExamImport implements ToModel, WithHeadingRow
         
         $mapping = $mappingQuery->first();
         
-        // Prepare Data
-        $examDate = isset($row['date']) ? Carbon::parse($row['date']) : null;
-        $startTime = isset($row['start_time']) ? Carbon::parse($row['start_time']) : null;
+        // Parse Date
+        $examDate = null;
+        if (isset($row['date']) && $row['date']) {
+            try {
+                // Try d/m/Y first (common in many regions)
+                $examDate = Carbon::createFromFormat('d/m/Y', $row['date']);
+            } catch (\Exception $e) {
+                try {
+                    // Fallback to standard parse
+                    $examDate = Carbon::parse($row['date']);
+                } catch (\Exception $e) {
+                    // Log or handle invalid date? For now, leave null.
+                }
+            }
+        }
+
+        // Parse Time
+        $startTime = null;
+        if (isset($row['start_time']) && $row['start_time']) {
+            try {
+                // Try to parse standard time format
+                $startTime = Carbon::parse($row['start_time']);
+            } catch (\Exception $e) {
+                // Handle invalid time
+            }
+        }
+
         $duration = isset($row['duration']) ? (int)$row['duration'] : 120;
 
         // Update existing or create new
