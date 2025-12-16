@@ -44,7 +44,6 @@ class ExamController extends Controller
     public function show(ExamSchedule $examSchedule)
     {
         $examSchedule->load(['exams.courseUnit', 'exams.mapping.programme', 'exams.invigilator']);
-        $instructors = \App\Models\User::role('instructor')->orderBy('name')->get();
         
         $exams = $examSchedule->exams()
             ->join('course_units', 'exams.course_unit_id', '=', 'course_units.id')
@@ -56,7 +55,7 @@ class ExamController extends Controller
             ->orderBy('course_units.code')
             ->paginate(20);
 
-        return view('admin.exams.show', compact('examSchedule', 'exams', 'instructors'));
+        return view('admin.exams.show', compact('examSchedule', 'exams'));
     }
 
     public function rollover(Request $request, ExamSchedule $examSchedule)
