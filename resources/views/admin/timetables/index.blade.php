@@ -46,7 +46,7 @@
                 <div class="card-body p-0">
                     <!-- Enhanced Tabs Navigation -->
                     <div class="tabs-container">
-                        <ul class="nav nav-pills nav-fill mb-3" id="timetableTabs" role="tablist">
+                        <ul class="nav nav-tabs mb-0" id="timetableTabs" role="tablist">
                             <li class="nav-item" role="presentation">
                                 <button class="nav-link active d-flex align-items-center justify-content-center" id="all-tab" data-bs-toggle="tab" data-bs-target="#all" type="button" role="tab">
                                     <i class="bi bi-grid-3x3-gap-fill me-2"></i>
@@ -58,53 +58,21 @@
                                 <button class="nav-link d-flex align-items-center justify-content-center" id="published-tab" data-bs-toggle="tab" data-bs-target="#published" type="button" role="tab">
                                     <i class="bi bi-check-circle-fill me-2"></i>
                                     <span>Published</span>
-                                    <span class="badge rounded-pill bg-success ms-2">{{ $programs->filter(fn($p) => ($p->programmeTimetables->first()?->status ?? '') === 'published')->count() }}</span>
+                                    <span class="badge rounded-pill bg-success ms-2">{{ $publishedPrograms->count() }}</span>
                                 </button>
                             </li>
                             <li class="nav-item" role="presentation">
                                 <button class="nav-link d-flex align-items-center justify-content-center" id="ready-tab" data-bs-toggle="tab" data-bs-target="#ready" type="button" role="tab">
                                     <i class="bi bi-check2-all me-2"></i>
                                     <span>Ready</span>
-                                    @php
-                                        $readyCount = 0;
-                                        foreach($programs as $program) {
-                                            // Skip if already published
-                                            $timetable = $program->programmeTimetables->first();
-                                            if ($timetable && $timetable->status === 'published') {
-                                                continue;
-                                            }
-                                            
-                                            $mappings = $program->courseUnitMappings()
-                                                ->where('academic_session_id', $academicSession->id)
-                                                ->get();
-                                            
-                                            $totalMappings = $mappings->count();
-                                            if ($totalMappings === 0) continue;
-                                            
-                                            $completed = 0;
-                                            foreach ($mappings as $mapping) {
-                                                $hasMorning = $mapping->morning_start_time !== null && $mapping->morning_duration !== null;
-                                                $hasEvening = $mapping->evening_start_time !== null && $mapping->evening_duration !== null;
-                                                
-                                                if ($hasMorning || $hasEvening) {
-                                                    $completed++;
-                                                }
-                                            }
-                                            
-                                            if ($completed === $totalMappings) {
-                                                $readyCount++;
-                                            }
-                                        }
-                                        
-                                    @endphp
-                                    <span class="badge rounded-pill bg-info ms-2">{{ $readyCount }}</span>
+                                    <span class="badge rounded-pill bg-info ms-2">{{ $readyPrograms->count() }}</span>
                                 </button>
                             </li>
                             <li class="nav-item" role="presentation">
                                 <button class="nav-link d-flex align-items-center justify-content-center" id="pending-tab" data-bs-toggle="tab" data-bs-target="#pending" type="button" role="tab">
                                     <i class="bi bi-hourglass-split me-2"></i>
                                     <span>Pending</span>
-                                    <span class="badge rounded-pill bg-warning ms-2">{{ $programs->filter(fn($p) => in_array($p->programmeTimetables->first()?->status ?? '', ['pending', 'draft', 'in_progress', 'not_started']))->count() }}</span>
+                                    <span class="badge rounded-pill bg-warning ms-2">{{ $pendingPrograms->count() }}</span>
                                 </button>
                             </li>
                         </ul>
@@ -124,164 +92,18 @@
                                         </tr>
                                     </thead>
                                     <tbody id="programs-table-body">
-                                    @if($academicSession)
-                                        @php
-                                            // Store program data for JavaScript
-                                            $programsData = [];
-                                        @endphp
                                         @forelse($programs as $program)
-                                            @php
-                                                // Get the timetable and mapping status for this program
-                                                $timetable = $program->programmeTimetables->first();
-                                                
-                                                // Get mapping counts for this program in the current session
-                                                $mappings = $program->courseUnitMappings()
-                                                    ->where('academic_session_id', $academicSession->id)
-                                                    ->get();
-                                                
-                                                // Count completed and in-progress mappings based on actual scheduled times
-                                                $completed = 0;
-                                                $inProgress = 0;
-                                                
-                                                foreach ($mappings as $mapping) {
-                                                    $hasMorning = $mapping->morning_start_time !== null && $mapping->morning_duration !== null;
-                                                    $hasEvening = $mapping->evening_start_time !== null && $mapping->evening_duration !== null;
-                                                    
-                                                    if ($hasMorning || $hasEvening) {
-                                                        $completed++;
-                                                    } elseif ($mapping->day_id !== null || $mapping->user_id !== null) {
-                                                        $inProgress++;
-                                                    }
-                                                }
-                                                
-                                                $totalMappings = $mappings->count();
-                                                $notStarted = $totalMappings - $completed - $inProgress;
-                                                
-                                                // Determine status based on mappings and timetable status
-                                                if ($timetable && $timetable->status === 'published') {
-                                                    // Published status takes highest priority
-                                                    $status = 'published';
-                                                    $statusText = 'Published';
-                                                    $statusClass = 'success';
-                                                } elseif ($totalMappings === 0) {
-                                                    // No mappings exist yet
-                                                    $status = 'not_started';
-                                                    $statusText = 'Not Started';
-                                                    $statusClass = 'secondary';
-                                                } elseif ($completed === $totalMappings) {
-                                                    // All mappings are complete - ready for publishing
-                                                    $status = 'ready';
-                                                    $statusText = 'Ready';
-                                                    $statusClass = 'info';
-                                                } elseif ($completed > 0 || $inProgress > 0) {
-                                                    // Some progress has been made
-                                                    $status = 'in_progress';
-                                                    $statusText = 'In Progress';
-                                                    $statusClass = 'primary';
-                                                } else {
-                                                    // Default case
-                                                    $status = 'not_started';
-                                                    $statusText = 'Not Started';
-                                                    $statusClass = 'secondary';
-                                                }
-
-                                                // Store program data for JavaScript
-                                                $programsData[] = [
-                                                    'id' => $program->id,
-                                                    'name' => $program->name,
-                                                    'programme_code' => $program->programme_code,
-                                                    'status' => $status,
-                                                    'statusText' => $statusText,
-                                                    'statusClass' => $statusClass,
-                                                    'timetable' => $timetable ? [
-                                                        'id' => $timetable->id,
-                                                        'status' => $timetable->status
-                                                    ] : null,
-                                                    'mappings' => [
-                                                        'completed' => $completed,
-                                                        'inProgress' => $inProgress,
-                                                        'notStarted' => $notStarted,
-                                                        'total' => $totalMappings
-                                                    ]
-                                                ];
-                                            @endphp
-                                        <tr class="program-row" data-status="{{ $status }}">
-                                            <td>{{ $loop->iteration }}</td>
-                                            <td>
-                                                <strong>{{ $program->programme_code }}:</strong> {{ $program->name }}
-                                            </td>
-                                            <td>
-                                                <span class="badge bg-{{ $statusClass }}" 
-                                                      data-bs-toggle="tooltip" 
-                                                      title="Scheduled: {{ $completed }} | In Progress: {{ $inProgress }} | Not Started: {{ $notStarted }}">
-                                                    {{ $statusText }}
-                                                </span>
-                                            </td>
-                                            <td class="text-end">
-                                                @if($status === 'in_progress' && !$timetable)
-                                                    <a href="{{ route('admin.timetables.create', ['programme_id' => $program->id, 'academic_session_id' => $academicSession->id]) }}" class="btn btn-sm btn-primary">
-                                                        <i class="bi bi-plus-circle"></i> Create Timetable
-                                                    </a>
-                                                @else
-                                                    <div class="btn-group" role="group">
-                                                        @if(auth()->user()->hasRole('admin'))
-                                                            @if($status === 'published')
-                                                                <button class="btn btn-sm btn-outline-warning btn-unpublish" 
-                                                                        data-timetable-id="{{ $timetable->id }}" 
-                                                                        data-program-name="{{ $program->name }}"
-                                                                        title="Unpublish">
-                                                                    <i class="bi bi-x-circle"></i> Unpublish
-                                                                </button>
-                                                            @elseif($status === 'ready')
-                                                                <button class="btn btn-sm btn-success btn-publish" 
-                                                                        data-timetable-id="{{ $timetable->id }}" 
-                                                                        data-program-name="{{ $program->name }}"
-                                                                        title="Publish">
-                                                                    <i class="bi bi-check-circle"></i> Publish
-                                                                </button>
-                                                            @endif
-                                                        @endif
-                                                        
-                                                        @if($timetable)
-                                                            <a href="/academic-sessions/{{ $academicSession->id }}/programmes/{{ $program->id }}/scheduling" class="btn btn-sm btn-outline-primary" title="Edit">
-                                                                <i class="bi bi-pencil"></i> Edit
-                                                            </a>
-                                                        @endif
+                                            @include('admin.timetables.partials.program-row', ['program' => $program])
+                                        @empty
+                                            <tr>
+                                                <td colspan="4" class="text-center py-4">
+                                                    <div class="text-muted">
+                                                        <i class="bi bi-info-circle me-1"></i>
+                                                        No programs found.
                                                     </div>
-                                                @endif
-                                            </td>
-                                        </tr>
-                                    @empty
-                                        <tr>
-                                            <td colspan="4" class="text-center py-4">
-                                                <div class="text-muted">
-                                                    <i class="bi bi-info-circle me-1"></i>
-                                                    No programs are mapped to the current academic session.
-                                                </div>
-                                                <a href="{{ route('admin.academic-sessions.show', $academicSession) }}" class="btn btn-sm btn-outline-primary mt-2">
-                                                    <i class="bi bi-plus-circle me-1"></i> Map Programs to This Session
-                                                </a>
-                                            </td>
-                                        </tr>
-                                    @endforelse
-                                    
-                                    <!-- Store programs data for JavaScript -->
-                                    @if(isset($programsData))
-                                        <div id="programs-data" data-programs='@json($programsData)'></div>
-                                    @endif
-                                @else
-                                    <tr>
-                                        <td colspan="4" class="text-center py-4">
-                                            <div class="text-muted">
-                                                <i class="bi bi-exclamation-triangle me-1"></i>
-                                                No active academic session found. Please set an active academic session first.
-                                            </div>
-                                            <a href="{{ route('admin.academic-sessions.index') }}" class="btn btn-sm btn-outline-primary mt-2">
-                                                <i class="bi bi-calendar-plus me-1"></i> Manage Academic Sessions
-                                            </a>
-                                        </td>
-                                    </tr>
-                                @endif
+                                                </td>
+                                            </tr>
+                                        @endforelse
                                     </tbody>
                                 </table>
                             </div>
@@ -300,15 +122,18 @@
                                         </tr>
                                     </thead>
                                     <tbody id="published-programs">
-                                        <!-- Will be populated by JavaScript -->
-                                        <tr>
-                                            <td colspan="4" class="text-center py-4">
-                                                <div class="text-muted">
-                                                    <i class="bi bi-hourglass-split me-1"></i>
-                                                    Loading published programs...
-                                                </div>
-                                            </td>
-                                        </tr>
+                                        @forelse($publishedPrograms as $program)
+                                            @include('admin.timetables.partials.program-row', ['program' => $program])
+                                        @empty
+                                            <tr>
+                                                <td colspan="4" class="text-center py-4">
+                                                    <div class="text-muted">
+                                                        <i class="bi bi-inbox me-1"></i>
+                                                        No published programs found.
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        @endforelse
                                     </tbody>
                                 </table>
                             </div>
@@ -327,15 +152,18 @@
                                         </tr>
                                     </thead>
                                     <tbody id="ready-programs">
-                                        <!-- Will be populated by JavaScript -->
-                                        <tr>
-                                            <td colspan="4" class="text-center py-4">
-                                                <div class="text-muted">
-                                                    <i class="bi bi-hourglass-split me-1"></i>
-                                                    Loading ready programs...
-                                                </div>
-                                            </td>
-                                        </tr>
+                                        @forelse($readyPrograms as $program)
+                                            @include('admin.timetables.partials.program-row', ['program' => $program])
+                                        @empty
+                                            <tr>
+                                                <td colspan="4" class="text-center py-4">
+                                                    <div class="text-muted">
+                                                        <i class="bi bi-inbox me-1"></i>
+                                                        No ready programs found.
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        @endforelse
                                     </tbody>
                                 </table>
                             </div>
@@ -354,15 +182,18 @@
                                         </tr>
                                     </thead>
                                     <tbody id="pending-programs">
-                                        <!-- Will be populated by JavaScript -->
-                                        <tr>
-                                            <td colspan="4" class="text-center py-4">
-                                                <div class="text-muted">
-                                                    <i class="bi bi-hourglass-split me-1"></i>
-                                                    Loading pending programs...
-                                                </div>
-                                            </td>
-                                        </tr>
+                                        @forelse($pendingPrograms as $program)
+                                            @include('admin.timetables.partials.program-row', ['program' => $program])
+                                        @empty
+                                            <tr>
+                                                <td colspan="4" class="text-center py-4">
+                                                    <div class="text-muted">
+                                                        <i class="bi bi-inbox me-1"></i>
+                                                        No pending programs found.
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        @endforelse
                                     </tbody>
                                 </table>
                             </div>
@@ -423,149 +254,9 @@
 
 @push('scripts')
 <script>
-// Initialize programs data from PHP
-const programsData = [];
-const programsDataElement = document.getElementById('programs-data');
-if (programsDataElement) {
-    try {
-        programsData.push(...JSON.parse(programsDataElement.dataset.programs));
-    } catch (e) {
-        console.error('Error parsing programs data:', e);
-    }
-}
+    // Legacy client-side rendering logic removed in favor of server-side rendering
+    
 
-// Function to render programs in a specific tab
-function renderPrograms(containerId, filterFn) {
-    const container = document.getElementById(containerId);
-    if (!container) return;
-    
-    const filteredPrograms = programsData.filter(filterFn);
-    
-    if (filteredPrograms.length === 0) {
-        container.innerHTML = `
-            <tr>
-                <td colspan="4" class="text-center py-4">
-                    <div class="text-muted">
-                        <i class="bi bi-inbox me-1"></i>
-                        No programs found in this category.
-                    </div>
-                </td>
-            </tr>
-        `;
-        return;
-    }
-    
-    let html = '';
-    filteredPrograms.forEach((program, index) => {
-        const { id, name, programme_code, status, statusText, statusClass, timetable, mappings } = program;
-        
-        // Generate action buttons based on status
-        let actionButtons = '';
-        
-        if (status === 'in_progress' && !timetable) {
-            actionButtons = `
-                <a href="{{ route('admin.timetables.create', ['programme_id' => '${id}', 'academic_session_id' => '${$academicSession->id}'] ?? '') }}" class="btn btn-sm btn-primary">
-                    <i class="bi bi-plus-circle"></i> Create Timetable
-                </a>
-            `;
-        } else {
-            actionButtons = `
-                <div class="btn-group" role="group">
-                    ${status === 'published' ? `
-                        <button class="btn btn-sm btn-outline-warning btn-unpublish" 
-                                data-timetable-id="${timetable?.id || ''}" 
-                                data-program-name="${name}"
-                                title="Unpublish"
-                                ${!timetable ? 'disabled' : ''}>
-                            <i class="bi bi-x-circle"></i> Unpublish
-                        </button>
-                    ` : ''}
-                    
-                    ${status === 'ready' ? `
-                        <button class="btn btn-sm btn-success btn-publish" 
-                                data-timetable-id="${timetable?.id || ''}" 
-                                data-program-name="${name}"
-                                title="Publish"
-                                ${!timetable ? 'disabled' : ''}>
-                            <i class="bi bi-check-circle"></i> Publish
-                        </button>
-                    ` : ''}
-                    
-                    ${timetable ? `
-                        <a href="/academic-sessions/{{ $academicSession->id }}/programmes/${id}/scheduling" class="btn btn-sm btn-outline-primary" title="Edit">
-                            <i class="bi bi-pencil"></i> Edit
-                        </a>
-                    ` : ''}
-                </div>
-            `;
-        }
-        
-        // Add program row HTML
-        html += `
-            <tr class="program-row" data-status="${status}">
-                <td>${index + 1}</td>
-                <td><strong>${programme_code}:</strong> ${name}</td>
-                <td>
-                    <span class="badge bg-${statusClass}" 
-                          data-bs-toggle="tooltip" 
-                          title="Scheduled: ${mappings?.completed || 0} | In Progress: ${mappings?.inProgress || 0} | Not Started: ${mappings?.notStarted || 0}">
-                        ${statusText}
-                    </span>
-                </td>
-                <td class="text-end">
-                    ${actionButtons}
-                </td>
-            </tr>
-        `;
-    });
-    
-    container.innerHTML = html;
-    
-    // Reinitialize tooltips for the new elements
-    const tooltipTriggerList = [].slice.call(container.querySelectorAll('[data-bs-toggle="tooltip"]'));
-    tooltipTriggerList.map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl));
-}
-
-// Function to initialize tab content
-function initializeTabContent() {
-    // Initial render of all programs in the active tab (All Programs)
-    renderPrograms('programs-table-body', () => true);
-    
-    // Set up tab change handlers
-    const tabEls = document.querySelectorAll('#timetableTabs button[data-bs-toggle="tab"]');
-    tabEls.forEach(tabEl => {
-        // Skip if already initialized
-        if (tabEl.dataset.initialized) return;
-        
-        tabEl.addEventListener('shown.bs.tab', function (event) {
-            const targetId = event.target.getAttribute('data-bs-target').substring(1);
-            
-            switch(targetId) {
-                case 'published':
-                    renderPrograms('published-programs', p => p.status === 'published');
-                    break;
-                case 'ready':
-                    renderPrograms('ready-programs', p => p.status === 'ready');
-                    break;
-                case 'pending':
-                    renderPrograms('pending-programs', p => ['in_progress', 'not_started'].includes(p.status));
-                    break;
-                default:
-                    renderPrograms('programs-table-body', () => true);
-            }
-        });
-        
-        // Mark as initialized
-        tabEl.dataset.initialized = 'true';
-    });
-    
-    // Initial render of other tabs (but don't show them yet)
-    if (programsData.length > 0) {
-        renderPrograms('published-programs', p => p.status === 'published');
-        renderPrograms('ready-programs', p => p.status === 'ready');
-        renderPrograms('pending-programs', p => ['in_progress', 'not_started'].includes(p.status));
-    }
-}
 
 // Global functions for timetable actions
 function showAlert(type, message) {
@@ -597,85 +288,13 @@ function showAlert(type, message) {
     }, 5000);
 }
 
-// Show alert message
-function showAlert(type, message) {
-    // Create and show new alert
-    const alertDiv = document.createElement('div');
-    alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
-    alertDiv.role = 'alert';
-    alertDiv.innerHTML = `
-        ${message}
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    `;
-    
-    // Insert at the top of the main container
-    const container = document.querySelector('.container');
-    if (container) {
-        container.insertBefore(alertDiv, container.firstChild);
-    }
-    
-    // Auto-dismiss after 5 seconds
-    setTimeout(() => {
-        const bsAlert = new bootstrap.Alert(alertDiv);
-        bsAlert.close();
-    }, 5000);
-}
-
-// Initialize when the page loads
-document.addEventListener('DOMContentLoaded', function() {
-    // Check if programs data is available
-    if (typeof programsData !== 'undefined' && programsData.length > 0) {
-        initializeTabContent();
-    } else {
-            // If no programs data, show appropriate message
-            ['published-programs', 'ready-programs', 'pending-programs'].forEach(containerId => {
-                const container = document.getElementById(containerId);
-                if (container) {
-                    container.innerHTML = `
-                        <tr>
-                            <td colspan="4" class="text-center py-4">
-                                <div class="text-muted">
-                                    <i class="bi bi-inbox me-1"></i>
-                                    No programs available.
-                                </div>
-                            </td>
-                        </tr>
-                    `;
-                }
-            });
-        }
-        
-        // Set up event delegation for dynamic buttons
-        document.addEventListener('click', function(e) {
-            // Handle publish button clicks
-            if (e.target.closest('.btn-publish')) {
-                e.preventDefault();
-                const button = e.target.closest('.btn-publish');
-                const timetableId = button.dataset.timetableId;
-                const programName = button.dataset.programName;
-                
-                if (confirm(`Are you sure you want to publish the timetable for ${programName}?`)) {
-                    publishTimetable(timetableId, button);
-                }
-            }
-            
-            // Handle unpublish button clicks
-            if (e.target.closest('.btn-unpublish')) {
-                e.preventDefault();
-                const button = e.target.closest('.btn-unpublish');
-                const timetableId = button.dataset.timetableId;
-                const programName = button.dataset.programName;
-                
-                if (confirm(`Are you sure you want to unpublish the timetable for ${programName}?`)) {
-                    unpublishTimetable(timetableId, button);
-                }
-            }
-        });
-    });
-
     function publishTimetable(timetableId, button) {
+        // Show loading state
+        const originalContent = button.innerHTML;
+        button.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Publishing...';
+        button.disabled = true;
+
         const url = `/admin/timetables/${timetableId}/publish`;
-        const row = button.closest('tr');
         
         fetch(url, {
             method: 'POST',
@@ -690,7 +309,7 @@ document.addEventListener('DOMContentLoaded', function() {
         .then(data => {
             if (data.success) {
                 showAlert('success', data.message);
-                window.location.reload();
+                setTimeout(() => window.location.reload(), 1000);
             } else {
                 throw new Error(data.message || 'Failed to publish timetable');
             }
@@ -698,12 +317,19 @@ document.addEventListener('DOMContentLoaded', function() {
         .catch(error => {
             console.error('Error:', error);
             showAlert('danger', error.message || 'An error occurred while publishing the timetable.');
+            // Reset button
+            button.innerHTML = originalContent;
+            button.disabled = false;
         });
     }
 
     function unpublishTimetable(timetableId, button) {
+        // Show loading state
+        const originalContent = button.innerHTML;
+        button.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Unpublishing...';
+        button.disabled = true;
+
         const url = `/admin/timetables/${timetableId}/unpublish`;
-        const row = button.closest('tr');
         
         fetch(url, {
             method: 'POST',
@@ -718,7 +344,7 @@ document.addEventListener('DOMContentLoaded', function() {
         .then(data => {
             if (data.success) {
                 showAlert('success', data.message);
-                window.location.reload();
+                setTimeout(() => window.location.reload(), 1000);
             } else {
                 throw new Error(data.message || 'Failed to unpublish timetable');
             }
@@ -726,6 +352,9 @@ document.addEventListener('DOMContentLoaded', function() {
         .catch(error => {
             console.error('Error:', error);
             showAlert('danger', error.message || 'An error occurred while unpublishing the timetable.');
+            // Reset button
+            button.innerHTML = originalContent;
+            button.disabled = false;
         });
     }
 </script>
@@ -734,79 +363,46 @@ document.addEventListener('DOMContentLoaded', function() {
 @push('styles')
 {{-- Additional styles will be pushed here --}}
 <style>
-    /* Enhanced Tabs Styling */
+    /* Modern Tabs Styling */
     .tabs-container {
+        padding: 0 1rem;
         background: #fff;
-        padding: 0.5rem 1rem 0;
-        box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.05);
-        border-bottom: 2px solid #f0f0f0;
+        border-bottom: 1px solid #e3e6f0;
     }
     
-    .nav-pills {
-        --bs-nav-pills-link-active-bg: #037b90;
-        --bs-nav-link-padding-x: 1.5rem;
-        --bs-nav-link-padding-y: 0.75rem;
-        gap: 0.25rem;
+    .nav-tabs {
+        border-bottom: none;
+        gap: 1rem;
     }
     
-    .nav-pills .nav-link {
-        border-radius: 0;
-        color: #5a5c69;
-        font-weight: 500;
-        transition: all 0.2s ease;
+    .nav-tabs .nav-link {
         border: none;
-        background-color: transparent;
-        position: relative;
-        overflow: hidden;
-        margin: 0 2px;
-    }
-    
-    .nav-pills .nav-link::after {
-        content: '';
-        position: absolute;
-        bottom: -2px;
-        left: 0;
-        width: 100%;
-        height: 3px;
-        background: transparent;
+        border-bottom: 3px solid transparent;
+        color: #858796;
+        font-weight: 600;
+        padding: 1rem 0.5rem;
         transition: all 0.2s ease;
+        background: transparent;
     }
     
-    .nav-pills .nav-link:hover {
-        background-color: rgba(3, 123, 144, 0.1);
-        transform: translateY(-1px);
+    .nav-tabs .nav-link:hover {
+        border-color: transparent;
+        color: #4e73df;
     }
     
-    .nav-pills .nav-link.active {
-        background-color: #037b90;
-        color: white;
-        box-shadow: none;
-        transform: none;
+    .nav-tabs .nav-link.active {
+        color: #4e73df;
+        background: transparent;
+        border-bottom-color: #4e73df;
     }
     
-    .nav-pills .nav-link.active::after {
-        background: #ff7f50;
+    .nav-tabs .nav-link i {
+        margin-right: 0.5rem;
     }
-    
-    .nav-pills .nav-link i {
-        font-size: 1.1em;
-        transition: transform 0.3s ease;
-    }
-    
-    .nav-pills .nav-link:hover i {
-        transform: scale(1.1);
-    }
-    
-    .nav-pills .nav-link.active i {
-        color: white;
-    }
-    
-    .tab-content {
-        background: #fff;
-        box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.1);
-        padding: 1.5rem;
-        border: 1px solid #f0f0f0;
-        border-top: none;
+
+    .nav-tabs .badge {
+        font-size: 0.7rem;
+        padding: 0.35em 0.6em;
     }
     
     /* Badge styling */
@@ -815,8 +411,6 @@ document.addEventListener('DOMContentLoaded', function() {
         padding: 0.35em 0.65em;
         font-size: 0.7em;
         border-radius: 2px;
-        background-color: #ff7f50;
-        color: white;
     }
     
     /* Button group styling */
@@ -836,10 +430,11 @@ document.addEventListener('DOMContentLoaded', function() {
     
     /* Responsive adjustments */
     @media (max-width: 768px) {
-        .nav-pills {
+        .nav-tabs {
             flex-wrap: nowrap;
             overflow-x: auto;
             padding-bottom: 0.5rem;
+        }
             -webkit-overflow-scrolling: touch;
         }
         
@@ -983,91 +578,35 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // Handle publish/unpublish actions
-    document.querySelectorAll('.btn-publish, .btn-unpublish').forEach(button => {
-        button.addEventListener('click', function(e) {
+    // Handle publish/unpublish actions via delegation (since buttons are dynamic)
+    document.addEventListener('click', function(e) {
+        // Handle publish button clicks
+        const publishBtn = e.target.closest('.btn-publish');
+        if (publishBtn) {
             e.preventDefault();
-            const timetableId = this.dataset.timetableId;
-            const isPublish = this.classList.contains('btn-publish');
-            const action = isPublish ? 'publish' : 'unpublish';
-            const programName = this.dataset.programName || 'this timetable';
+            const timetableId = publishBtn.dataset.timetableId;
+            const programName = publishBtn.dataset.programName;
             
-            // Show confirmation dialog
-            const modal = new bootstrap.Modal(document.getElementById('confirmModal'));
-            const modalTitle = document.getElementById('confirmModalLabel');
-            const modalBody = document.getElementById('confirmModalBody');
-            const confirmBtn = document.getElementById('confirmAction');
-            
-            // Update modal content
-            modalTitle.textContent = isPublish ? 'Publish Timetable' : 'Unpublish Timetable';
-            modalBody.innerHTML = isPublish 
-                ? `Are you sure you want to publish the timetable for <strong>${programName}</strong>? This will unpublish any other timetables for this academic session.`
-                : `Are you sure you want to unpublish the timetable for <strong>${programName}</strong>?`;
-            
-            // Set up the confirm button
-            confirmBtn.textContent = isPublish ? 'Publish' : 'Unpublish';
-            confirmBtn.className = isPublish ? 'btn btn-success' : 'btn btn-warning';
-            
-            // Remove previous event listeners
-            const newConfirmBtn = confirmBtn.cloneNode(true);
-            confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
-            
-            // Add click handler for the confirm button
-            newConfirmBtn.onclick = function() {
-                const url = isPublish 
-                    ? `{{ route('admin.timetables.publish', ['timetable' => '__ID__']) }}`.replace('__ID__', timetableId)
-                    : `{{ route('admin.timetables.unpublish', ['timetable' => '__ID__']) }}`.replace('__ID__', timetableId);
-                
-                fetch(url, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                        'Accept': 'application/json',
-                        'X-Requested-With': 'XMLHttpRequest'
-                    },
-                    body: JSON.stringify({})
-                })
-                .then(response => {
-                    if (!response.ok) {
-                        return response.json().then(err => {
-                            throw new Error(err.message || 'Network response was not ok');
-                        });
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    if (data.success) {
-                        // Show success message
-                        const toast = new bootstrap.Toast(document.getElementById('successToast'));
-                        const toastMessage = document.getElementById('toastMessage');
-                        toastMessage.textContent = data.message;
-                        toast.show();
-                        
-                        // Reload the page after a short delay
-                        setTimeout(() => {
-                            window.location.reload();
-                        }, 1500);
-                    } else {
-                        throw new Error(data.message || 'An error occurred');
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    const toast = new bootstrap.Toast(document.getElementById('errorToast'));
-                    const toastMessage = document.getElementById('errorToastMessage');
-                    toastMessage.textContent = error.message || 'An error occurred while processing your request';
-                    toast.show();
-                })
-                .finally(() => {
-                    modal.hide();
-                });
-            };
-            
-            modal.show();
-        });
-    });
+            if (confirm(`Are you sure you want to publish the timetable for ${programName}?`)) {
+                publishTimetable(timetableId, publishBtn);
+            }
+            return;
+        }
         
+        // Handle unpublish button clicks
+        const unpublishBtn = e.target.closest('.btn-unpublish');
+        if (unpublishBtn) {
+            e.preventDefault();
+            const timetableId = unpublishBtn.dataset.timetableId;
+            const programName = unpublishBtn.dataset.programName;
+            
+            if (confirm(`Are you sure you want to unpublish the timetable for ${programName}?`)) {
+                unpublishTimetable(timetableId, unpublishBtn);
+            }
+            return;
+        }
+    });
+
     // Handle delete button
     document.querySelectorAll('.btn-delete').forEach(button => {
         button.addEventListener('click', function(e) {

@@ -48,20 +48,41 @@
                                         {{ $schedule->end_date->format('M d, Y') }}
                                     </td>
                                     <td>
-                                        <span class="badge bg-{{ $schedule->is_active ? 'success' : 'secondary' }}">
-                                            {{ $schedule->is_active ? 'Active' : 'Inactive' }}
-                                        </span>
+                                        <div class="d-flex flex-column gap-1">
+                                            <span class="badge bg-{{ $schedule->is_active ? 'success' : 'secondary' }}">
+                                                {{ $schedule->is_active ? 'Active' : 'Inactive' }}
+                                            </span>
+                                            <span class="badge bg-{{ $schedule->is_published ? 'info' : 'warning' }}">
+                                                {{ $schedule->is_published ? 'Published' : 'Draft' }}
+                                            </span>
+                                        </div>
                                     </td>
                                     <td>
                                         <div class="d-flex gap-2">
-                                            <a href="{{ route('admin.exams.show', $schedule) }}" class="btn btn-sm btn-primary">
-                                                <i class="bi bi-gear-fill me-1"></i> Manage
+                                            @if($schedule->is_published)
+                                                <form action="{{ route('admin.exams.unpublish', $schedule) }}" method="POST" onsubmit="return confirm('Are you sure you want to unpublish this schedule?');">
+                                                    @csrf
+                                                    <button type="submit" class="btn btn-sm btn-outline-warning" title="Unpublish">
+                                                        <i class="bi bi-eye-slash-fill"></i>
+                                                    </button>
+                                                </form>
+                                            @else
+                                                <form action="{{ route('admin.exams.publish', $schedule) }}" method="POST" onsubmit="return confirm('Are you sure you want to publish this schedule?');">
+                                                    @csrf
+                                                    <button type="submit" class="btn btn-sm btn-success" title="Publish">
+                                                        <i class="bi bi-eye-fill"></i>
+                                                    </button>
+                                                </form>
+                                            @endif
+                                            
+                                            <a href="{{ route('admin.exams.show', $schedule) }}" class="btn btn-sm btn-primary" title="Manage">
+                                                <i class="bi bi-gear-fill"></i>
                                             </a>
                                             <form action="{{ route('admin.exams.destroy', $schedule) }}" method="POST" onsubmit="return confirm('Are you sure you want to delete this schedule?');">
                                                 @csrf
                                                 @method('DELETE')
-                                                <button type="submit" class="btn btn-sm btn-outline-danger">
-                                                    <i class="bi bi-trash-fill me-1"></i> Delete
+                                                <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete">
+                                                    <i class="bi bi-trash-fill"></i>
                                                 </button>
                                             </form>
                                         </div>

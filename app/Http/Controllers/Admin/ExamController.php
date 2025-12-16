@@ -189,4 +189,16 @@ class ExamController extends Controller
         $examSchedule->delete();
         return redirect()->route('admin.exams.index')->with('success', 'Exam schedule deleted.');
     }
+
+    public function publish(ExamSchedule $examSchedule)
+    {
+        $examSchedule->update(['is_published' => true]);
+        return back()->with('success', 'Exam schedule published successfully.');
+    }
+
+    public function unpublish(ExamSchedule $examSchedule)
+    {
+        $examSchedule->update(['is_published' => false]);
+        return back()->with('success', 'Exam schedule unpublished successfully.');
+    }
 }

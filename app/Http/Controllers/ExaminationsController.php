@@ -10,13 +10,17 @@ class ExaminationsController extends Controller
     public function index(Request $request)
     {
         $activeSchedule = ExamSchedule::where('is_active', true)
+            ->where('is_published', true)
             ->whereDate('start_date', '<=', now())
             ->whereDate('end_date', '>=', now()) // Optional: logic to find "current" schedule
             ->first();
 
-        // If no currently active one by date, just get the one marked is_active
+        // If no currently active one by date, just get the one marked is_active AND published
         if (!$activeSchedule) {
-            $activeSchedule = ExamSchedule::where('is_active', true)->latest()->first();
+            $activeSchedule = ExamSchedule::where('is_active', true)
+                ->where('is_published', true)
+                ->latest()
+                ->first();
         }
 
         if (!$activeSchedule) {

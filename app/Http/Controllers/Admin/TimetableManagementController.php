@@ -25,6 +25,9 @@ class TimetableManagementController extends Controller
         if (!$academicSession) {
             return view('admin.timetables.index', [
                 'programs' => collect(),
+                'publishedPrograms' => collect(),
+                'readyPrograms' => collect(),
+                'pendingPrograms' => collect(),
                 'academicSession' => null,
                 'chartData' => [
                     'published' => 0,
@@ -36,72 +39,111 @@ class TimetableManagementController extends Controller
             ]);
         }
         
-        // Initialize chart data
-        $chartData = [
-            'published' => 0,
-            'pending' => 0,
-            'not_assigned' => 0,
-            'labels' => ['Published (0)', 'Pending (0)', 'Not Assigned (0)'],
-            'colors' => ['#28a745', '#ffc107', '#dc3545']
-        ];
-        
         $programs = collect();
         
-        if ($academicSession) {
-            // Base query for programs
-            $programQuery = Programme::with(['programmeTimetables' => function($query) use ($academicSession) {
-                $query->where('academic_session_id', $academicSession->id);
-            }])
-            ->whereHas('academicSessions', function($query) use ($academicSession) {
-                $query->where('academic_session_id', $academicSession->id);
-            });
+        // Base query for programs
+        $programQuery = Programme::with(['programmeTimetables' => function($query) use ($academicSession) {
+            $query->where('academic_session_id', $academicSession->id);
+        }, 'courseUnitMappings' => function($query) use ($academicSession) {
+            $query->where('academic_session_id', $academicSession->id);
+        }])
+        ->whereHas('academicSessions', function($query) use ($academicSession) {
+            $query->where('academic_session_id', $academicSession->id);
+        });
+        
+        // If user is a timetabler, only show programs from their school
+        if ($isTimetabler && $user->school_id) {
+            $programQuery->where('school_id', $user->school_id);
+        }
+        
+        $programs = $programQuery->orderBy('name')->get();
+        
+        // Get total count of programs (filtered by school if timetabler)
+        $totalProgramsQuery = Programme::query();
+        if ($isTimetabler && $user->school_id) {
+            $totalProgramsQuery->where('school_id', $user->school_id);
+        }
+        $totalPrograms = $totalProgramsQuery->count();
+        $mappedCount = $programs->count();
+        $notMappedCount = $totalPrograms - $mappedCount;
+        
+        // Categorize programs
+        $publishedPrograms = collect();
+        $readyPrograms = collect();
+        $pendingPrograms = collect();
+        
+        // Chart counters
+        $chartPublished = 0;
+        $chartPending = 0; // Includes pending, ready, draft
+
+        foreach ($programs as $program) {
+            $timetable = $program->programmeTimetables->first();
+            $mappings = $program->courseUnitMappings;
             
-            // If user is a timetabler, only show programs from their school
-            if ($isTimetabler && $user->school_id) {
-                $programQuery->where('school_id', $user->school_id);
-            }
+            $completed = 0;
+            $inProgress = 0;
             
-            $programs = $programQuery->orderBy('name')->get();
-            
-            // Get total count of programs (filtered by school if timetabler)
-            $totalProgramsQuery = Programme::query();
-            if ($isTimetabler && $user->school_id) {
-                $totalProgramsQuery->where('school_id', $user->school_id);
-            }
-            $totalPrograms = $totalProgramsQuery->count();
-            
-            $mappedCount = $programs->count();
-            $notMappedCount = $totalPrograms - $mappedCount;
-            
-            $publishedCount = 0;
-            $pendingCount = 0;
-            
-            foreach ($programs as $program) {
-                $timetable = $program->programmeTimetables->first();
-                if ($timetable) {
-                    if ($timetable->status === 'published') {
-                        $publishedCount++;
-                    } else {
-                        $pendingCount++;
-                    }
-                } else {
-                    $pendingCount++; // Count as pending if mapped but no timetable
+            foreach ($mappings as $mapping) {
+                $hasMorning = $mapping->morning_start_time !== null && $mapping->morning_duration !== null;
+                $hasEvening = $mapping->evening_start_time !== null && $mapping->evening_duration !== null;
+                
+                if ($hasMorning || $hasEvening) {
+                    $completed++;
+                } elseif ($mapping->day_id !== null || $mapping->user_id !== null) {
+                    $inProgress++;
                 }
             }
             
-            $chartData['published'] = $publishedCount;
-            $chartData['pending'] = $pendingCount;
-            $chartData['not_assigned'] = $notMappedCount;
+            $totalMappings = $mappings->count();
+            $notStarted = $totalMappings - $completed - $inProgress;
             
-            $chartData['labels'] = [
-                "Published ($publishedCount)",
-                "Pending ($pendingCount)",
-                "Not Assigned ($notMappedCount)"
+            // Determine status
+            $status = 'not_started';
+            if ($timetable && $timetable->status === 'published') {
+                $status = 'published';
+            } elseif ($totalMappings === 0) {
+                $status = 'not_started';
+            } elseif ($completed === $totalMappings) {
+                $status = 'ready';
+            } elseif ($completed > 0 || $inProgress > 0) {
+                $status = 'in_progress';
+            }
+            
+            // Attach calculated status to program object for easier view rendering
+            $program->calculated_status = $status;
+            $program->stats = [
+                'completed' => $completed,
+                'inProgress' => $inProgress,
+                'notStarted' => $notStarted,
+                'total' => $totalMappings
             ];
+
+            // Sort into buckets
+            if ($status === 'published') {
+                $publishedPrograms->push($program);
+                $chartPublished++;
+            } elseif ($status === 'ready') {
+                $readyPrograms->push($program);
+                $chartPending++;
+            } else {
+                $pendingPrograms->push($program);
+                $chartPending++;
+            }
         }
         
+        $chartData = [
+            'published' => $chartPublished,
+            'pending' => $chartPending,
+            'not_assigned' => $notMappedCount,
+            'labels' => ["Published ($chartPublished)", "Pending ($chartPending)", "Not Assigned ($notMappedCount)"],
+            'colors' => ['#28a745', '#ffc107', '#dc3545']
+        ];
+        
         return view('admin.timetables.index', [
-            'programs' => $programs,
+            'programs' => $programs, // All
+            'publishedPrograms' => $publishedPrograms,
+            'readyPrograms' => $readyPrograms,
+            'pendingPrograms' => $pendingPrograms,
             'academicSession' => $academicSession,
             'chartData' => $chartData
         ]);
