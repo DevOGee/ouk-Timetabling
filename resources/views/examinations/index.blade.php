@@ -110,9 +110,9 @@
                         <thead class="table-light">
                             <tr>
                                 <th style="width: 20%">Time (Start - End)</th>
-                                <th style="width: 40%">Programmes</th>
-                                <th style="width: 15%">Level</th>
                                 <th style="width: 25%">Course</th>
+                                <th style="width: 15%">Level</th>
+                                <th style="width: 40%">Programmes</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -138,6 +138,15 @@
                                             @endif
                                         </td>
                                         <td>
+                                            <div class="fw-bold text-dark">{{ $exam->courseUnit->code }}</div>
+                                            <small class="text-muted">{{ $exam->courseUnit->name }}</small>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-secondary">
+                                                {{ $exam->mapping->yearOfStudy->name ?? '?' }}.{{ $exam->mapping->semester->name ?? '?' }}
+                                            </span>
+                                        </td>
+                                        <td>
                                             @php
                                                 // Get all programmes or filter if one is selected
                                                 $programmes = $exam->courseUnit->programmes;
@@ -157,15 +166,6 @@
                                             @else
                                                 <span class="text-muted small"><em>Not specified</em></span>
                                             @endif
-                                        </td>
-                                        <td>
-                                            <span class="badge bg-secondary">
-                                                {{ $exam->mapping->yearOfStudy->name ?? '?' }}.{{ $exam->mapping->semester->name ?? '?' }}
-                                            </span>
-                                        </td>
-                                        <td>
-                                            <div class="fw-bold text-dark">{{ $exam->courseUnit->code }}</div>
-                                            <small class="text-muted">{{ $exam->courseUnit->name }}</small>
                                         </td>
                                     </tr>
                                 @endforeach
