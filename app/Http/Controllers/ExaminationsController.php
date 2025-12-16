@@ -76,10 +76,12 @@ class ExaminationsController extends Controller
         $schools = \App\Models\School::with('programmes')->get(); 
         
         // Construct combined levels (Year.Semester e.g., 1.1, 1.2)
+        // AND Determine which levels are valid for which programme
         $levels = [];
         $years = \App\Models\YearOfStudy::orderBy('name')->get();
         $semesters = \App\Models\Semester::orderBy('name')->get();
         
+        // Build the full list of potential levels (for the dropdown text)
         foreach ($years as $year) {
             foreach ($semesters as $semester) {
                 $levels[] = (object)[
@@ -89,6 +91,20 @@ class ExaminationsController extends Controller
             }
         }
 
-        return view('examinations.index', compact('activeSchedule', 'exams', 'schools', 'levels'));
+        // Fetch valid Programme -> Level mappings for the current session
+        // This ensures dependent filtering works correctly
+        $validMappings = \App\Models\CourseUnitProgrammeMapping::where('academic_session_id', $activeSchedule->academic_session_id)
+            ->select('programme_id', 'year_of_study_id', 'semester_id')
+            ->distinct()
+            ->get()
+            ->map(function($mapping) {
+                return [
+                    'programme_id' => $mapping->programme_id,
+                    'level_id' => $mapping->year_of_study_id . '.' . $mapping->semester_id
+                ];
+            })
+            ->groupBy('programme_id');
+
+        return view('examinations.index', compact('activeSchedule', 'exams', 'schools', 'levels', 'validMappings'));
     }
 }

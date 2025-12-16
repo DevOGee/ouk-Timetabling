@@ -50,17 +50,6 @@
                             @endforeach
                         </select>
                     </div>
-                    <div class="col-md-2">
-                         <label for="level" class="form-label fw-bold small text-uppercase text-muted">Level</label>
-                         <select name="level" id="level" class="form-select">
-                            <option value="">All Levels</option>
-                            @foreach($levels as $level)
-                                <option value="{{ $level->id }}" {{ request('level') == $level->id ? 'selected' : '' }}>
-                                    Level {{ $level->name }}
-                                </option>
-                            @endforeach
-                         </select>
-                    </div>
                     <div class="col-md-3">
                         <label for="programme" class="form-label fw-bold small text-uppercase text-muted">Programme</label>
                         <select name="programme" id="programme" class="form-select">
@@ -77,6 +66,17 @@
                                 </optgroup>
                             @endforeach
                         </select>
+                    </div>
+                    <div class="col-md-2">
+                         <label for="level" class="form-label fw-bold small text-uppercase text-muted">Level</label>
+                         <select name="level" id="level" class="form-select">
+                            <option value="">All Levels</option>
+                            @foreach($levels as $level)
+                                <option value="{{ $level->id }}" {{ request('level') == $level->id ? 'selected' : '' }}>
+                                    {{ $level->name }}
+                                </option>
+                            @endforeach
+                         </select>
                     </div>
                     <div class="col-md-2">
                         <label for="start_date" class="form-label fw-bold small text-uppercase text-muted">From Date</label>
@@ -110,9 +110,9 @@
                         <thead class="table-light">
                             <tr>
                                 <th style="width: 20%">Time (Start - End)</th>
+                                <th style="width: 40%">Programmes</th>
                                 <th style="width: 15%">Level</th>
                                 <th style="width: 25%">Course</th>
-                                <th style="width: 40%">Programmes</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -138,15 +138,6 @@
                                             @endif
                                         </td>
                                         <td>
-                                            <span class="badge bg-secondary">
-                                                {{ $exam->mapping->yearOfStudy->name ?? '?' }}.{{ $exam->mapping->semester->name ?? '?' }}
-                                            </span>
-                                        </td>
-                                        <td>
-                                            <div class="fw-bold text-dark">{{ $exam->courseUnit->code }}</div>
-                                            <small class="text-muted">{{ $exam->courseUnit->name }}</small>
-                                        </td>
-                                        <td>
                                             @php
                                                 // Get all programmes or filter if one is selected
                                                 $programmes = $exam->courseUnit->programmes;
@@ -166,6 +157,15 @@
                                             @else
                                                 <span class="text-muted small"><em>Not specified</em></span>
                                             @endif
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-secondary">
+                                                {{ $exam->mapping->yearOfStudy->name ?? '?' }}.{{ $exam->mapping->semester->name ?? '?' }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <div class="fw-bold text-dark">{{ $exam->courseUnit->code }}</div>
+                                            <small class="text-muted">{{ $exam->courseUnit->name }}</small>
                                         </td>
                                     </tr>
                                 @endforeach
@@ -197,6 +197,8 @@
             const filterForm = document.getElementById('filterForm');
             const searchInput = document.getElementById('searchInput');
 
+            const validMappings = @json($validMappings);
+
             // 1. Handle School -> Programme dependency
             function filterProgrammes() {
                 const selectedSchoolId = schoolSelect.value;
@@ -213,18 +215,15 @@
                 groups.forEach(group => {
                     if (!selectedSchoolId || group.dataset.school === selectedSchoolId) {
                         group.style.display = '';
-                        // Re-enable options
                         Array.from(group.querySelectorAll('option')).forEach(opt => opt.hidden = false);
                     } else {
                         group.style.display = 'none';
-                        // Hide options (Safari/mobile sometimes ignores display:none on optgroup)
                         Array.from(group.querySelectorAll('option')).forEach(opt => opt.hidden = true);
                     }
                 });
                 
-                // Also handle direct options if they weren't in optgroups (safety)
                 options.forEach(option => {
-                    if (!option.value) return; // Skip "All Programmes"
+                    if (!option.value) return; 
                     if (selectedSchoolId && option.dataset.school !== selectedSchoolId) {
                         option.hidden = true;
                     } else {
@@ -233,12 +232,59 @@
                 });
             }
 
+            // 2. Handle Programme -> Level dependency
+            function filterLevels() {
+                const selectedProgrammeId = programmeSelect.value;
+                const levelOptions = document.getElementById('level').querySelectorAll('option');
+                
+                // If specific programme selected, only show levels valid for it
+                if (selectedProgrammeId && validMappings[selectedProgrammeId]) {
+                    const availableLevels = validMappings[selectedProgrammeId].map(m => m.level_id);
+                    
+                    levelOptions.forEach(opt => {
+                        if (!opt.value) return; // Keep "All Levels"
+                        if (availableLevels.includes(opt.value)) {
+                            opt.hidden = false;
+                            opt.disabled = false;
+                        } else {
+                            opt.hidden = true;
+                            opt.disabled = true; // Disable to prevent selection
+                        }
+                    });
+
+                    // Deselect if current level is now invalid
+                    const currentLevel = document.getElementById('level').value;
+                    if (currentLevel && !availableLevels.includes(currentLevel)) {
+                        document.getElementById('level').value = "";
+                    }
+                } else {
+                    // If no programme selected, show all levels? Or only levels that exist in GENERAL?
+                    // User said "check if the levels do not yet exist do not display them"
+                    // Better to just show all POSSIBLE levels if no programme is selected, 
+                    // or ideally show distinct levels from ALL valid mappings.
+                    // Let's reset to show all for now to avoid confusion.
+                    levelOptions.forEach(opt => {
+                         opt.hidden = false;
+                         opt.disabled = false;
+                    });
+                }
+            }
+
             // Initial run
             filterProgrammes();
+            filterLevels();
 
             // Event Listeners
             schoolSelect.addEventListener('change', function() {
                 filterProgrammes();
+                // When school changes, programme might reset, so level options might need update?
+                // But form auto-submits, so page reload handles state. 
+                // However, user might change school without submitting if we removed auto-submit?
+                // Current logic: Change -> filterForm.submit().
+                // So client-side filtering is mainly for the split second before reload 
+                // OR if we remove auto-submit. 
+                // Wait, logic says: change -> submit.
+                // But "filterLevels" needs to run on load to set correct state.
                 filterForm.submit();
             });
 
@@ -247,8 +293,12 @@
             });
 
             programmeSelect.addEventListener('change', function() {
+                // filterLevels(); // Not strictly needed if we submit immediately
                 filterForm.submit();
             });
+            
+            // ... dates ...
+
 
             startDateInput.addEventListener('change', function() {
                 filterForm.submit();
