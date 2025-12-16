@@ -50,8 +50,19 @@
                             @endforeach
                         </select>
                     </div>
-                    <div class="col-md-4">
-                        <label for="programme" class="form-label fw-bold small text-uppercase text-muted">Filter by Programme</label>
+                    <div class="col-md-2">
+                         <label for="level" class="form-label fw-bold small text-uppercase text-muted">Level</label>
+                         <select name="level" id="level" class="form-select">
+                            <option value="">All Levels</option>
+                            @foreach($levels as $level)
+                                <option value="{{ $level->id }}" {{ request('level') == $level->id ? 'selected' : '' }}>
+                                    Level {{ $level->name }}
+                                </option>
+                            @endforeach
+                         </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="programme" class="form-label fw-bold small text-uppercase text-muted">Programme</label>
                         <select name="programme" id="programme" class="form-select">
                             <option value="">All Programmes</option>
                             @foreach($schools as $school)
@@ -98,10 +109,10 @@
                     <table class="table table-hover align-middle mb-0" id="examsTable">
                         <thead class="table-light">
                             <tr>
-                                <th style="width: 15%">Time</th>
+                                <th style="width: 20%">Time (Start - End)</th>
+                                <th style="width: 15%">Level</th>
                                 <th style="width: 25%">Course</th>
                                 <th style="width: 40%">Programmes</th>
-                                <th style="width: 20%">Duration</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -119,7 +130,17 @@
                                 @foreach($dailyExams as $exam)
                                     <tr>
                                         <td class="fw-bold text-primary">
-                                            {{ $exam->start_time ? $exam->start_time->format('H:i') : 'TBA' }}
+                                            @if($exam->start_time)
+                                                {{ $exam->start_time->format('H:i') }} - 
+                                                {{ $exam->start_time->copy()->addMinutes($exam->duration_minutes)->format('H:i') }}
+                                            @else
+                                                TBA
+                                            @endif
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-secondary">
+                                                {{ $exam->mapping->yearOfStudy->name ?? '?' }}.{{ $exam->mapping->semester->name ?? '?' }}
+                                            </span>
                                         </td>
                                         <td>
                                             <div class="fw-bold text-dark">{{ $exam->courseUnit->code }}</div>
@@ -127,21 +148,24 @@
                                         </td>
                                         <td>
                                             @php
-                                                $programmes = $exam->courseUnit->programmes->pluck('name')->unique();
+                                                // Get all programmes or filter if one is selected
+                                                $programmes = $exam->courseUnit->programmes;
+                                                
+                                                if(request('programme')) {
+                                                    $programmes = $programmes->where('id', request('programme'));
+                                                }
+                                                
+                                                $programmeNames = $programmes->pluck('name')->unique();
                                             @endphp
-                                            @if($programmes->count() > 0)
-                                                @foreach($programmes as $programme)
+                                            @if($programmeNames->count() > 0)
+                                                @foreach($programmeNames as $name)
                                                     <span class="badge bg-info bg-opacity-10 text-info-emphasis border border-info-subtle mb-1">
-                                                        {{ $programme }}
+                                                        {{ $name }}
                                                     </span>
                                                 @endforeach
                                             @else
                                                 <span class="text-muted small"><em>Not specified</em></span>
                                             @endif
-                                        </td>
-                                        <td>
-                                            <i class="bi bi-hourglass-split me-1 text-secondary"></i>
-                                            {{ $exam->duration_minutes }} min
                                         </td>
                                     </tr>
                                 @endforeach
@@ -215,6 +239,10 @@
             // Event Listeners
             schoolSelect.addEventListener('change', function() {
                 filterProgrammes();
+                filterForm.submit();
+            });
+
+            document.getElementById('level').addEventListener('change', function() {
                 filterForm.submit();
             });
 

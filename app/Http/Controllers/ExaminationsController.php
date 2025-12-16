@@ -45,6 +45,20 @@ class ExaminationsController extends Controller
             });
         }
 
+        // Filter by Level (Year.Semester)
+        if ($request->filled('level')) {
+            $parts = explode('.', $request->level);
+            if(count($parts) == 2) {
+                $yearId = $parts[0];
+                $semesterId = $parts[1];
+                
+                $query->whereHas('mapping', function($q) use ($yearId, $semesterId) {
+                    $q->where('year_of_study_id', $yearId)
+                      ->where('semester_id', $semesterId);
+                });
+            }
+        }
+
         // Filter by Date Range
         if ($request->filled('start_date')) {
             $query->whereDate('exam_date', '>=', $request->start_date);
@@ -59,8 +73,22 @@ class ExaminationsController extends Controller
             });
 
         // Get filter data
-        $schools = \App\Models\School::with('programmes')->get(); // Eager load for dependent dropdown logic if passing to view
+        $schools = \App\Models\School::with('programmes')->get(); 
+        
+        // Construct combined levels (Year.Semester e.g., 1.1, 1.2)
+        $levels = [];
+        $years = \App\Models\YearOfStudy::orderBy('name')->get();
+        $semesters = \App\Models\Semester::orderBy('name')->get();
+        
+        foreach ($years as $year) {
+            foreach ($semesters as $semester) {
+                $levels[] = (object)[
+                    'id' => $year->id . '.' . $semester->id,
+                    'name' => $year->name . '.' . $semester->name,
+                ];
+            }
+        }
 
-        return view('examinations.index', compact('activeSchedule', 'exams', 'schools'));
+        return view('examinations.index', compact('activeSchedule', 'exams', 'schools', 'levels'));
     }
 }
