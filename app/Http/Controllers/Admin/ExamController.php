@@ -118,9 +118,17 @@ class ExamController extends Controller
             'file' => 'required|file|mimes:csv,txt,xlsx',
         ]);
 
-        Excel::import(new ExamImport($examSchedule->id, $examSchedule->academic_session_id), $request->file('file'));
+        $behavior = $request->input('import_behavior', 'update');
+        $import = new ExamImport($examSchedule->id, $examSchedule->academic_session_id, $behavior);
+        Excel::import($import, $request->file('file'));
 
-        return back()->with('success', 'Exam schedule imported successfully.');
+        $message = "Import processing complete. Updated/Created: {$import->getRowCount()}. Skipped: {$import->getSkippedCount()}.";
+
+        if ($import->getSkippedCount() > 0) {
+            $message .= " (Skipped rows likely had invalid Course Codes)";
+        }
+
+        return back()->with('success', $message);
     }
 
     public function updateSlot(Request $request, Exam $exam)

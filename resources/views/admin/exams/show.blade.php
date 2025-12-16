@@ -234,8 +234,35 @@
                     </div>
 
                     <div class="mb-3">
+                        <label class="form-label fw-bold">Import Options</label>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="import_behavior" id="behavior_update" value="update" checked>
+                            <label class="form-check-label" for="behavior_update">
+                                Update Existing Exams (Default)
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="import_behavior" id="behavior_skip" value="skip">
+                            <label class="form-check-label" for="behavior_skip">
+                                Skip Existing Exams
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
                         <label for="file" class="form-label fw-bold">Step 2: Upload CSV</label>
                         <input type="file" name="file" id="file" class="form-control" accept=".csv" required>
+                    </div>
+
+                    <div id="preview" class="d-none mt-3">
+                        <h6 class="fw-bold">File Preview (First 5 Rows)</h6>
+                        <div class="table-responsive border rounded bg-light" style="max-height: 200px; overflow-y: auto;">
+                            <table class="table table-sm table-striped mb-0" style="font-size: 0.85rem;">
+                                <thead id="preview-head" class="table-dark sticky-top"></thead>
+                                <tbody id="preview-body"></tbody>
+                            </table>
+                        </div>
+                        <small class="text-muted fst-italic mt-1 d-block">Check columns: course_code, programme_code, date, start_time, duration</small>
                     </div>
                     <div class="alert alert-info small mb-0">
                         <strong>Expected Columns:</strong><br>
@@ -451,6 +478,54 @@
             })
             .catch(error => console.error('Error:', error));
         });
+        // CSV Preview Logic
+        const fileInput = document.getElementById('file');
+        const preview = document.getElementById('preview');
+        const previewHead = document.getElementById('preview-head');
+        const previewBody = document.getElementById('preview-body');
+
+        if (fileInput) {
+            fileInput.addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (!file) {
+                    preview.classList.add('d-none');
+                    return;
+                }
+                
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const text = e.target.result;
+                    // Split by newline filter empty rows
+                    const rows = text.split('\n').filter(row => row.trim() !== '');
+                    
+                    if (rows.length < 1) return;
+                    
+                    // Parse headers (handling potential quotes)
+                    // Simple split by comma for preview (robust parsing happens backend)
+                    let headers = rows[0].split(',').map(h => h.trim().replace(/^"|"$/g, ''));
+                    
+                    // Render Header
+                    previewHead.innerHTML = '<tr>' + headers.map(h => `<th>${h}</th>`).join('') + '</tr>';
+                    
+                    // Render First 5 Data Rows
+                    const rowCount = Math.min(5, rows.length - 1);
+                    let bodyHtml = '';
+                    
+                    for (let i = 1; i <= rowCount; i++) {
+                        let cells = rows[i].split(',').map(c => c.trim().replace(/^"|"$/g, ''));
+                        // Pad cells if missing to match header count
+                        while(cells.length < headers.length) cells.push('');
+                        
+                        bodyHtml += '<tr>' + cells.map(c => `<td>${c}</td>`).join('') + '</tr>';
+                    }
+                    
+                    previewBody.innerHTML = bodyHtml;
+                    preview.classList.remove('d-none');
+                };
+                
+                reader.readAsText(file);
+            });
+        }
     });
 </script>
 @endpush

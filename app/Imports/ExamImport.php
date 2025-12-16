@@ -16,10 +16,17 @@ class ExamImport implements ToModel, WithHeadingRow
     protected $examScheduleId;
     protected $academicSessionId;
 
-    public function __construct($examScheduleId, $academicSessionId)
+    public $updatedCount = 0;
+    public $skippedCount = 0;
+    public $skippedRows = [];
+
+    public $behavior;
+
+    public function __construct($examScheduleId, $academicSessionId, $behavior = 'update')
     {
         $this->examScheduleId = $examScheduleId;
         $this->academicSessionId = $academicSessionId;
+        $this->behavior = $behavior;
     }
 
     public function model(array $row)
@@ -27,10 +34,35 @@ class ExamImport implements ToModel, WithHeadingRow
         // Headers: course_code, programme_code, date, start_time, duration
         
         $courseCode = $row['course_code'] ?? null;
-        if (!$courseCode) return null;
+        if (!$courseCode) {
+            $this->skippedCount++;
+            return null;
+        }
 
         $courseUnit = CourseUnit::where('code', $courseCode)->first();
-        if (!$courseUnit) return null; // Skip if invalid course
+        if (!$courseUnit) {
+            $this->skippedCount++;
+            $this->skippedRows[] = "Row with Course Code '{$courseCode}' skipped: Course unit not found.";
+            return null; // Skip if invalid course
+        }
+
+        // If Behavior is 'skip', check existence before doing anything expensive
+        if ($this->behavior === 'skip') {
+            $exists = Exam::where('exam_schedule_id', $this->examScheduleId)
+                ->where('course_unit_id', $courseUnit->id)
+                ->exists();
+            
+            if ($exists) {
+                // Count as skipped (existing)? Or do we want a separate counter?
+                // User asked for "updated and skipped". 
+                // Let's count it as skipped but maybe log it differently or just silently skip.
+                // For simplicity, let's just return null and maybe log it if we want detailed stats.
+                // Or maybe we consider "skipped" to mean "not processed".
+                $this->skippedCount++; 
+                $this->skippedRows[] = "Row with Course Code '{$courseCode}' skipped: Exam already exists.";
+                return null;
+            }
+        }
 
         // Find Programme if provided
         $programmeCode = $row['programme_code'] ?? null;
@@ -76,7 +108,7 @@ class ExamImport implements ToModel, WithHeadingRow
         $duration = isset($row['duration']) ? (int)$row['duration'] : 120;
 
         // Update existing or create new
-        return Exam::updateOrCreate(
+        $exam = Exam::updateOrCreate(
             [
                 'exam_schedule_id' => $this->examScheduleId,
                 'course_unit_id' => $courseUnit->id,
@@ -89,5 +121,23 @@ class ExamImport implements ToModel, WithHeadingRow
                 'duration_minutes' => $duration,
             ]
         );
+
+        if ($exam->wasRecentlyCreated || $exam->wasChanged()) {
+             $this->updatedCount++;
+        } else {
+             $this->updatedCount++;
+        }
+        
+        return $exam;
+    }
+
+    public function getRowCount(): int
+    {
+        return $this->updatedCount;
+    }
+
+    public function getSkippedCount(): int
+    {
+        return $this->skippedCount;
     }
 }
