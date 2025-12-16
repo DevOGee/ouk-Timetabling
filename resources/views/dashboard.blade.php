@@ -177,6 +177,15 @@
         margin-right: 0.25rem;
         border: 1px solid rgba(0,0,0,0.1);
     }
+    .transition-icon {
+        transition: transform 0.3s ease;
+    }
+    [aria-expanded="true"] .transition-icon {
+        transform: rotate(0deg);
+    }
+    [aria-expanded="false"] .transition-icon {
+        transform: rotate(-90deg);
+    }
 </style>
 @endpush
 
@@ -196,6 +205,8 @@
             </span>
         </div>
     </div>
+
+
 
     <!-- Stats Cards -->
     <div class="row g-4 mb-4">
@@ -494,6 +505,105 @@
                         @endif
                     </div>
                     @endif
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Happening Today Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow h-100">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between" 
+                     role="button" 
+                     data-bs-toggle="collapse" 
+                     data-bs-target="#happeningTodayCollapse" 
+                     aria-expanded="true" 
+                     aria-controls="happeningTodayCollapse">
+                    <h6 class="m-0 font-weight-bold text-{{ $eventType === 'exam' ? 'danger' : 'primary' }}">
+                        <i class="bi {{ $eventType === 'exam' ? 'bi-exclamation-circle' : 'bi-calendar-event' }} me-2"></i>
+                        Happening Today: {{ $eventType === 'exam' ? 'Exams' : 'Classes' }}
+                        <span class="badge bg-light text-dark ms-2">{{ \Carbon\Carbon::today()->format('D, M d, Y') }}</span>
+                    </h6>
+                    <div class="d-flex align-items-center">
+                        @if($eventType === 'exam')
+                            <span class="badge bg-danger me-2">Exam Period Active</span>
+                        @endif
+                        <i class="bi bi-chevron-down transition-icon"></i>
+                    </div>
+                </div>
+                <div class="collapse show" id="happeningTodayCollapse">
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Time</th>
+                                        <th>Course</th>
+                                        <th>{{ $eventType === 'exam' ? 'Invigilator' : 'Programme' }}</th>
+                                        <th>Location</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @forelse($todaysEvents as $event)
+                                        <tr>
+                                            <td style="white-space: nowrap;">
+                                                @if($eventType === 'exam')
+                                                    {{ $event->start_time ? $event->start_time->format('H:i') : 'N/A' }} 
+                                                    - 
+                                                    {{ $event->start_time ? $event->start_time->addMinutes($event->duration_minutes)->format('H:i') : 'N/A' }}
+                                                @else
+                                                    {{-- LessonSlot start_time might be string '08:00' or Carbon --}}
+                                                    {{ \Carbon\Carbon::parse($event->start_time)->format('H:i') }} 
+                                                    - 
+                                                    {{ \Carbon\Carbon::parse($event->start_time)->addHours($event->duration)->format('H:i') }}
+                                                @endif
+                                            </td>
+                                            <td>
+                                                <div class="fw-bold">{{ $event->courseUnit->code ?? 'N/A' }}</div>
+                                                <small class="text-muted">{{ $event->courseUnit->name ?? '' }}</small>
+                                            </td>
+                                            <td>
+                                                @if($eventType === 'exam')
+                                                    @if($event->invigilator)
+                                                        <div class="d-flex align-items-center">
+                                                            <div class="rounded-circle bg-gray-200 d-flex align-items-center justify-content-center me-2" style="width: 24px; height: 24px;">
+                                                                <span class="small fw-bold text-gray-600">{{ substr($event->invigilator->name, 0, 1) }}</span>
+                                                            </div>
+                                                            {{ $event->invigilator->name }}
+                                                        </div>
+                                                    @else
+                                                        <span class="text-muted fst-italic">Unassigned</span>
+                                                    @endif
+                                                @else
+                                                    <span class="badge bg-info text-dark">{{ $event->programme->code ?? 'N/A' }}</span>
+                                                @endif
+                                            </td>
+                                            <td>
+                                                @if($eventType === 'exam')
+                                                    {{-- Room model does not exist, use room_id directly --}}
+                                                    {{ $event->room_id ? 'Room ' . $event->room_id : 'TBA' }}
+                                                @else
+                                                    {{-- LessonSlots don't typically have room directly in this simple schema, usually in Timetable structure. 
+                                                         If no room, show 'Classroom' or similar. --}}
+                                                    <span class="text-muted">Classroom</span>
+                                                @endif
+                                            </td>
+                                        </tr>
+                                    @empty
+                                        <tr>
+                                            <td colspan="4" class="text-center py-4">
+                                                <div class="text-muted">
+                                                    <i class="bi bi-calendar-x me-2"></i>
+                                                    No {{ $eventType === 'exam' ? 'exams' : 'classes' }} scheduled for today.
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    @endforelse
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

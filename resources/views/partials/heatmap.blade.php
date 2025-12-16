@@ -2,7 +2,13 @@
     <!-- Heatmap Section -->
     <div class="heatmap-container">
         <div class="card border-0 shadow-sm rounded-3 overflow-hidden">
-            <div class="card-header bg-white border-0 py-3 d-flex justify-content-between align-items-center">
+            <div class="card-header bg-white border-0 py-3 d-flex justify-content-between align-items-center" 
+                 role="button" 
+                 data-bs-toggle="collapse" 
+                 data-bs-target="#heatmapCollapse" 
+                 aria-expanded="true" 
+                 aria-controls="heatmapCollapse"
+                 style="cursor: pointer;">
                 <h5 class="mb-0 fw-bold text-primary">
                     <i class="bi bi-grid-3x3-gap-fill text-primary me-2"></i>
                     @if(auth()->user()->hasRole('timetabler'))
@@ -21,9 +27,11 @@
                         <i class="bi bi-calendar-week me-1"></i>
                         {{ $selectedSession->name }}
                     </span>
+                    <i class="bi bi-chevron-down text-muted transition-icon"></i>
                 </div>
             </div>
-            <div>
+            <div id="heatmapCollapse" class="collapse show">
+                <div>
                 <!-- Heatmap Grid -->
                 <div class="heatmap-grid">
                     <!-- Header Row -->
@@ -114,11 +122,20 @@
                         @endif
                     @endfor
                 </div>
+                </div>
             </div>
         </div>
     </div>
 
     <style>
+        .transition-icon {
+            transition: transform 0.3s ease;
+        }
+        
+        [aria-expanded="false"] .transition-icon {
+            transform: rotate(-90deg);
+        }
+
         .heatmap-container {
             width: 100%;
             overflow-x: auto;

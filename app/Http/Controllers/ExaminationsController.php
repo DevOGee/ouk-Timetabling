@@ -32,6 +32,8 @@ class ExaminationsController extends Controller
                 // Filter pivot by academic session to only show relevant programmes
                 $query->wherePivot('academic_session_id', $activeSchedule->academic_session_id);
             }])
+            ->whereNotNull('exam_date') // Hide unscheduled
+            ->whereDate('exam_date', '>=', now()->startOfDay()) // Hide passed exams
             ->orderBy('exam_date')
             ->orderBy('start_time');
 

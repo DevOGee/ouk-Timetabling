@@ -6,9 +6,13 @@ use App\Models\AcademicSession;
 use App\Models\Programme;
 use App\Models\CourseUnit;
 use App\Models\User;
-use App\Models\Room;
 use App\Models\CourseUnitProgrammeMapping;
 use Illuminate\Http\Request;
+use App\Models\ExamSchedule;
+use App\Models\Exam;
+use App\Models\LessonSlot;
+use App\Models\Day;
+use Carbon\Carbon;
 
 class DashboardController extends Controller
 {
@@ -104,6 +108,52 @@ class DashboardController extends Controller
             $heatmapData = $this->getHeatmapData($selectedSession->id, $schoolId);
         }
 
+        // --- Happening Today Logic ---
+        $today = Carbon::today();
+        $isExamPeriod = false;
+        $eventType = 'none';
+        $todaysEvents = collect();
+
+        // Check for active and published Exam Schedule covering today
+        $activeExamSchedule = ExamSchedule::where('is_active', true)
+            ->where('is_published', true)
+            ->whereDate('start_date', '<=', $today)
+            ->whereDate('end_date', '>=', $today)
+            ->first();
+
+        if ($activeExamSchedule) {
+            $isExamPeriod = true;
+            $eventType = 'exam';
+            
+            $query = Exam::with(['courseUnit', 'invigilator', 'schedule'])
+                ->where('exam_schedule_id', $activeExamSchedule->id)
+                ->whereDate('exam_date', $today)
+                ->orderBy('start_time');
+            
+            $todaysEvents = $query->take(10)->get();
+
+        } else {
+            // Check for Classes (Timetable Slots)
+            $eventType = 'class';
+            $dayName = $today->format('l'); // e.g., "Monday"
+            $day = Day::where('name', $dayName)->first();
+
+            if ($day && $selectedSession) {
+                // Use selectedSession for context if possible
+                $query = LessonSlot::with(['courseUnit', 'programme'])
+                    ->where('day_id', $day->id)
+                    ->orderBy('start_time');
+                
+                if ($isTimetabler) {
+                     $query->whereHas('programme', function($q) use ($user) {
+                         $q->where('school_id', $user->school_id);
+                     });
+                }
+                
+                $todaysEvents = $query->take(10)->get();
+            }
+        }
+
         return view('dashboard', [
             'academicSessions' => $academicSessions,
             'programmes' => $programmes,
@@ -116,7 +166,10 @@ class DashboardController extends Controller
             'isTimetabler' => $isTimetabler,
             'isAdmin' => $isAdmin,
             'isInstructor' => $isInstructor,
-            'recentProgrammes' => $programmes->take(5) // Add recent programmes (first 5)
+            'recentProgrammes' => $programmes->take(5), // Add recent programmes (first 5)
+            'todaysEvents' => $todaysEvents,
+            'eventType' => $eventType,
+            'isExamPeriod' => $isExamPeriod
         ]);
     }
 
