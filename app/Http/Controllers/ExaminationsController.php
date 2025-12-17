@@ -12,7 +12,7 @@ class ExaminationsController extends Controller
         $activeSchedule = ExamSchedule::where('is_active', true)
             ->where('is_published', true)
             ->whereDate('start_date', '<=', now())
-            ->whereDate('end_date', '>=', now()) // Optional: logic to find "current" schedule
+            ->whereDate('end_date', '>=', now())
             ->first();
 
         // If no currently active one by date, just get the one marked is_active AND published
@@ -27,13 +27,13 @@ class ExaminationsController extends Controller
             return view('examinations.no-schedule');
         }
 
+        // Base Query with Structural Filters
         $query = $activeSchedule->exams()
             ->with(['courseUnit.programmes' => function ($query) use ($activeSchedule) {
                 // Filter pivot by academic session to only show relevant programmes
                 $query->wherePivot('academic_session_id', $activeSchedule->academic_session_id);
             }])
             ->whereNotNull('exam_date') // Hide unscheduled
-            ->whereDate('exam_date', '>=', now()->startOfDay()) // Hide passed exams
             ->orderBy('exam_date')
             ->orderBy('start_time');
 
@@ -65,7 +65,20 @@ class ExaminationsController extends Controller
             }
         }
 
-        // Filter by Date Range
+        // 1. Get ALL dates for Calendar (ignoring time/view windows)
+        // This ensures the JS knows about ALL possible dates for index calculation if we switch views
+        $calendarQuery = clone $query;
+        $allExamDatesList = $calendarQuery->reorder()
+             ->orderBy('exam_date')
+             ->select('exam_date')
+             ->distinct()
+             ->pluck('exam_date')
+             ->map(fn($d) => $d instanceof \DateTimeInterface ? $d->format('Y-m-d') : $d)
+             ->values();
+             
+        $examDates = $allExamDatesList->toArray(); 
+
+        // 2. Apply Date/View Filters for the actual Table List
         if ($request->filled('start_date')) {
             $query->whereDate('exam_date', '>=', $request->start_date);
         }
@@ -73,21 +86,52 @@ class ExaminationsController extends Controller
             $query->whereDate('exam_date', '<=', $request->end_date);
         }
 
-        $exams = $query->get()
+        // Handle 'Show All' vs 'Upcoming' pivot
+        if ($request->input('view') !== 'all') {
+            $query->whereDate('exam_date', '>=', now()->startOfDay());
+        }
+
+        // 3. Pagination Logic (on the FILTERED set)
+        $dateQuery = clone $query;
+        
+        // Manual Pagination for 100% Accuracy
+        $filteredUniqueDates = $dateQuery->reorder()
+            ->orderBy('exam_date')
+            ->select('exam_date')
+            ->distinct()
+            ->pluck('exam_date')
+            ->map(fn($d) => $d instanceof \DateTimeInterface ? $d->format('Y-m-d') : $d)
+            ->values();
+            
+        // Setup Paginator
+        $page = $request->input('page', 1);
+        $perPage = 1;
+        $slicedDates = $filteredUniqueDates->slice(($page - 1) * $perPage, $perPage)->values();
+        
+        $paginatedDates = new \Illuminate\Pagination\LengthAwarePaginator(
+            $slicedDates,
+            $filteredUniqueDates->count(), // Total pages = Total filtered dates
+            $perPage,
+            $page,
+            ['path' => $request->url(), 'query' => $request->query()]
+        );
+
+        // Fetch exams ONLY for the dates on this page
+        $pageDateValues = $paginatedDates->items();
+        
+        $exams = $query->whereIn('exam_date', $pageDateValues)
+            ->get()
             ->groupBy(function($exam) {
                 return $exam->exam_date ? $exam->exam_date->format('Y-m-d') : 'Unscheduled';
             });
 
-        // Get filter data
+        // Get filter data for dropdowns
         $schools = \App\Models\School::with('programmes')->get(); 
         
-        // Construct combined levels (Year.Semester e.g., 1.1, 1.2)
-        // AND Determine which levels are valid for which programme
         $levels = [];
         $years = \App\Models\YearOfStudy::orderBy('name')->get();
         $semesters = \App\Models\Semester::orderBy('name')->get();
         
-        // Build the full list of potential levels (for the dropdown text)
         foreach ($years as $year) {
             foreach ($semesters as $semester) {
                 $levels[] = (object)[
@@ -97,8 +141,6 @@ class ExaminationsController extends Controller
             }
         }
 
-        // Fetch valid Programme -> Level mappings for the current session
-        // This ensures dependent filtering works correctly
         $validMappings = \App\Models\CourseUnitProgrammeMapping::where('academic_session_id', $activeSchedule->academic_session_id)
             ->select('programme_id', 'year_of_study_id', 'semester_id')
             ->distinct()
@@ -111,6 +153,6 @@ class ExaminationsController extends Controller
             })
             ->groupBy('programme_id');
 
-        return view('examinations.index', compact('activeSchedule', 'exams', 'schools', 'levels', 'validMappings'));
+        return view('examinations.index', compact('activeSchedule', 'exams', 'paginatedDates', 'schools', 'levels', 'validMappings', 'examDates', 'filteredUniqueDates'));
     }
 }
