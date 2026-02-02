@@ -429,15 +429,15 @@
 
             <form method="GET" action="{{ route('timetable.index') }}" class="filter-form">
                 <div class="d-flex align-items-end flex-wrap" style="gap: 8px;">
-                    {{-- School Dropdown --}}
+                    {{-- Department Dropdown --}}
                     <div class="flex-grow-1" style="min-width: 200px;">
-                        <label for="school_id" class="form-label mb-1 fw-bold" style="color: #333; font-size: 0.9rem; display: block;">School</label>
+                        <label for="department_id" class="form-label mb-1 fw-bold" style="color: #333; font-size: 0.9rem; display: block;">Department</label>
                         <div class="form-group mb-0">
-                            <select class="form-control form-control-sm" id="school_id" name="school_id" required style="border-radius: 5px; height: 38px;">
-                                <option value="">Select School</option>
-                                @foreach ($schools as $school)
-                                    <option value="{{ $school->id }}" {{ request('school_id') == $school->id ? 'selected' : '' }}>
-                                        {{ $school->name }}
+                            <select class="form-control form-control-sm" id="department_id" name="department_id" required style="border-radius: 5px; height: 38px;">
+                                <option value="">Select Department</option>
+                                @foreach ($departments as $department)
+                                    <option value="{{ $department->id }}" {{ request('department_id') == $department->id ? 'selected' : '' }}>
+                                        {{ $department->name }}
                                     </option>
                                 @endforeach
                             </select>
@@ -450,19 +450,25 @@
                         <div class="form-group mb-0">
                             <select class="form-control form-control-sm" id="programme_id" name="programme_id" required style="border-radius: 5px; height: 38px;">
                                 <option value="">Select Programme</option>
-                                @php
-                                    $selectedSchoolId = request('school_id');
-                                @endphp
-                                @foreach ($groupedProgrammes as $schoolId => $schoolProgrammes)
-                                    @foreach ($schoolProgrammes as $programme)
-                                        <option value="{{ $programme->id }}" data-school="{{ $schoolId }}"
-                                            {{ request('programme_id') == $programme->id ? 'selected' : '' }}
-                                            data-school-id="{{ $schoolId }}"
-                                            style="display: {{ (!$selectedSchoolId || $selectedSchoolId == $schoolId) ? '' : 'none' }};">
-                                            {{ $programme->programme_code }} - {{ $programme->name }}
-                                        </option>
+                                @if(request('department_id'))
+                                    @foreach($programmes as $programme)
+                                        @if($programme->department_id == request('department_id'))
+                                            <option value="{{ $programme->id }}" {{ request('programme_id') == $programme->id ? 'selected' : '' }}>
+                                                {{ $programme->programme_code }} - {{ $programme->name }}
+                                            </option>
+                                        @endif
                                     @endforeach
-                                @endforeach
+                                @endif
+                            </select>
+                        </div>
+                    </div>
+
+                    {{-- Specialisation Dropdown --}}
+                    <div class="flex-grow-1" style="min-width: 200px; display: none;" id="specialisation_container">
+                        <label for="specialisation_id" class="form-label mb-1 fw-bold" style="color: #333; font-size: 0.9rem; display: block;">Specialisation</label>
+                        <div class="form-group mb-0">
+                            <select class="form-control form-control-sm" id="specialisation_id" name="specialisation_id" style="border-radius: 5px; height: 38px;">
+                                <option value="">Select Specialisation</option>
                             </select>
                         </div>
                     </div>
@@ -473,48 +479,14 @@
                         <div class="form-group mb-0">
                             <select class="form-control form-control-sm" id="level" name="level" required style="border-radius: 5px; height: 38px;">
                                 <option value="">Select Level</option>
-                                @php
-                                    $selectedProgrammeId = request('programme_id');
-                                    $availableLevels = [];
-                                    
-                                    if ($selectedProgrammeId) {
-                                        // Get all year/semester combinations that have course units for the selected programme
-                                        $availableLevels = \DB::table('course_unit_programme_mappings')
-                                            ->where('programme_id', $selectedProgrammeId)
-                                            ->select('year_of_study_id', 'semester_id')
-                                            ->distinct()
-                                            ->get()
-                                            ->map(function($item) {
-                                                return $item->year_of_study_id . '.' . $item->semester_id;
-                                            })
-                                            ->toArray();
-                                    }
-                                @endphp
                                 @foreach ($levels as $level)
-                                    @php
-                                        $levelId = $level->year_id . '.' . $level->semester_id;
-                                        $shouldShow = in_array($levelId, $availableLevels) || (!$selectedProgrammeId && empty($availableLevels));
-                                    @endphp
-                                    @if($shouldShow)
-                                        <option value="{{ $levelId }}" 
-                                                data-year-id="{{ $level->year_id }}"
-                                                data-semester-id="{{ $level->semester_id }}"
-                                                data-programme-id="{{ $selectedProgrammeId }}"
-                                                {{ request('level') == $levelId ? 'selected' : '' }}>
-                                            {{ $level->name }}
-                                        </option>
-                                    @endif
+                                    <option value="{{ $level->id }}" {{ request('level') == $level->id ? 'selected' : '' }}>
+                                        {{ $level->name }}
+                                    </option>
                                 @endforeach
                             </select>
                         </div>
                     </div>
-
-                    {{-- Export Button --}}
-                    {{-- <div>
-                        <button type="button" id="exportPdfBtn" class="btn btn-success btn-sm" style="border-radius: 5px; height: 38px; white-space: nowrap;">
-                            <i class="fas fa-file-export me-1"></i> Export PDF
-                        </button>
-                    </div> --}}
                 </div>
             </form>
         </div>
@@ -522,6 +494,7 @@
 
     <div class="container-fluid p-0">
         @if ($timetable->isNotEmpty())
+            {{-- Timetable rendering logic remains same --}}
             @php
                 $selectedProgramme = request('programme_id') ? $programmes->where('id', request('programme_id'))->first() : null;
                 
@@ -533,7 +506,7 @@
                 }
                 
                 // --- FIX STARTS HERE ---
-                // Determine the earliest start time from the timetable data
+               // Determine the earliest start time from the timetable data
                 $earliestTime = null;
                 foreach ($timetable as $lesson) {
                     $morning = $lesson->morning_start_time ? \Carbon\Carbon::parse($lesson->morning_start_time) : null;
@@ -552,7 +525,9 @@
                 $startTimeInMinutes = $startHour * 60;
                 // --- FIX ENDS HERE ---
             @endphp
-            <h6 class="page-header">
+            {{-- ... --}}
+            {{-- Rest of the timetable rendering --}}
+             <h6 class="page-header">
                 Teaching &amp; Learning Schedule for {{ $selectedProgramme->name ?? 'Selected Programme' }} {{ $levelDisplay }}
             </h6>
 
@@ -700,7 +675,7 @@
                     <i class="fas fa-arrows-alt-h"></i> Scroll horizontally to view full schedule
                 </div>
             </div>
-        @elseif(request('school_id') && request('programme_id') && request('level'))
+        @elseif(request('department_id') && request('programme_id') && request('level'))
              <div class="text-center mt-5 text-muted">
                 <h4>No timetable available for the selected criteria.</h4>
             </div>
@@ -712,281 +687,140 @@
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         const form = document.querySelector('form.filter-form');
-        const selects = form.querySelectorAll('select[required]');
-
-        selects.forEach(select => {
-            select.addEventListener('change', function() {
-                const allFilled = Array.from(selects).every(s => s.value);
-                if (allFilled) {
-                    form.submit();
-                }
-            });
-        });
-
-        // Initial setup calls
-        filterProgrammes();
-        checkTimetableLoaded();
-
-        // Add event listener for school dropdown
-        document.getElementById('school_id').addEventListener('change', filterProgrammes);
-    });
-
-    function filterProgrammes() {
-        const schoolId = document.getElementById('school_id').value;
+        const departmentSelect = document.getElementById('department_id');
         const programmeSelect = document.getElementById('programme_id');
+        const specialisationContainer = document.getElementById('specialisation_container');
+        const specialisationSelect = document.getElementById('specialisation_id');
         const levelSelect = document.getElementById('level');
-        
-        if (!schoolId) {
-            // If no school is selected, show all programmes and reset level
-            const options = programmeSelect.getElementsByTagName('option');
-            for (let i = 0; i < options.length; i++) {
-                options[i].style.display = '';
-            }
-            levelSelect.innerHTML = '<option value="">Select Level</option>';
-            return;
-        }
-        
-        // Show loading state
-        programmeSelect.disabled = true;
-        programmeSelect.innerHTML = '<option value="">Loading programmes...</option>';
-        
-        // Clear level select
-        levelSelect.innerHTML = '<option value="">Select Level</option>';
-        levelSelect.disabled = true;
-        
-        // Fetch programmes for the selected school
-        fetch(`/api/programmes-by-school?school_id=${schoolId}`)
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Network response was not ok');
-                }
-                return response.json();
-            })
-            .then(data => {
-                // Repopulate programme select
-                programmeSelect.innerHTML = '<option value="">Select Programme</option>';
-                
-                if (data.programmes && data.programmes.length > 0) {
-                    data.programmes.forEach(programme => {
-                        const option = document.createElement('option');
-                        option.value = programme.id;
-                        option.textContent = `${programme.programme_code} - ${programme.name}`;
-                        programmeSelect.appendChild(option);
-                    });
-                } else {
-                    const option = document.createElement('option');
-                    option.value = '';
-                    option.textContent = 'No programmes found';
-                    programmeSelect.appendChild(option);
-                }
-                
-                // Enable the select
-                programmeSelect.disabled = false;
-                
-                // If there's a programme ID in the URL, select it
-                const urlParams = new URLSearchParams(window.location.search);
-                const programmeId = urlParams.get('programme_id');
-                if (programmeId) {
-                    programmeSelect.value = programmeId;
-                    // Trigger change to update levels
-                    const event = new Event('change');
-                    programmeSelect.dispatchEvent(event);
-                }
-            })
-            .catch(error => {
-                console.error('Error fetching programmes:', error);
-                programmeSelect.innerHTML = '<option value="">Error loading programmes</option>';
-                programmeSelect.disabled = false;
-            });
-    }
 
-    function checkTimetableLoaded() {
-        const schoolId = document.getElementById('school_id').value;
-        const programmeId = document.getElementById('programme_id').value;
-        const level = document.getElementById('level').value;
-        const exportBtn = document.getElementById('exportPdfBtn');
-        
-        // Only proceed if export button exists
-        if (!exportBtn) {
-            console.log('Export button not found in the DOM');
-            return;
-        }
+        // Check if we need to show specialisation based on current selection or URL params
+        checkSpecialisationVisibility();
 
-        if (schoolId && programmeId && level) {
-            // Enable export button and update its click handler
-            exportBtn.disabled = false;
-            exportBtn.onclick = function() {
-                try {
-                    // Get the current URL parameters
-                    const params = new URLSearchParams(window.location.search);
-                    
-                    // Construct the export URL
-                    let exportUrl = '{{ route("timetable.export.pdf") }}';
-                    exportUrl += `?school_id=${schoolId}&programme_id=${programmeId}&level=${level}`;
-                    
-                    // Add any additional filters that might be present
-                    if (params.get('campus')) {
-                        exportUrl += `&campus=${params.get('campus')}`;
-                    }
-                    
-                    // Open the export URL in a new tab
-                    window.open(exportUrl, '_blank');
-                } catch (error) {
-                    console.error('Error in export button click handler:', error);
-                }
-            };
+        // Department Change
+        departmentSelect.addEventListener('change', function() {
+            const departmentId = this.value;
+            
+            // Reset downstream filters
+            resetSelect(programmeSelect, 'Select Programme');
+            resetSelect(specialisationSelect, 'Select Specialisation');
+            specialisationContainer.style.display = 'none';
+            resetSelect(levelSelect, 'Select Level');
+            
+            if (!departmentId) return;
 
-            document.body.classList.add('timetable-loaded');
-        } else {
-            // Disable export button if not all required fields are selected
-            exportBtn.disabled = true;
-            document.body.classList.remove('timetable-loaded');
-        }
-    }
-    
-    // Function to update level dropdown based on selected programme
-    function updateLevels() {
-        const schoolId = document.getElementById('school_id').value;
-        const programmeId = document.getElementById('programme_id').value;
-        const levelSelect = document.getElementById('level');
-        
-        // Save the current value before making changes
-        const currentValue = levelSelect.value;
-        
-        // If no school or programme is selected, show all levels
-        if (!schoolId || !programmeId) {
-            // Restore original options if they exist
-            const originalOptions = levelSelect.dataset.originalOptions;
-            if (originalOptions) {
-                levelSelect.innerHTML = originalOptions;
-                
-                // Try to restore the previously selected value
-                if (currentValue) {
-                    const optionToSelect = levelSelect.querySelector(`option[value="${currentValue}"]`);
-                    if (optionToSelect) {
-                        optionToSelect.selected = true;
-                    }
-                }
-            }
-            levelSelect.disabled = true;
-            checkTimetableLoaded();
-            return;
-        }
-        
-        levelSelect.disabled = true;
-        levelSelect.innerHTML = '<option value="">Loading levels...</option>';
-        
-        // Include both school_id and programme_id in the API call
-        fetch(`/api/levels-with-timetables?school_id=${schoolId}&programme_id=${programmeId}`)
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Network response was not ok');
-                }
-                return response.json();
-            })
-            .then(data => {
-                // Clear existing options
-                levelSelect.innerHTML = '';
-                
-                // Add default option
-                const defaultOption = document.createElement('option');
-                defaultOption.value = '';
-                defaultOption.textContent = 'Select Level';
-                levelSelect.appendChild(defaultOption);
-                
-                if (data.data && data.data.length > 0) {
-                    // Add the levels from the API response
-                    data.data.forEach(level => {
-                        const option = document.createElement('option');
-                        option.value = level.id; // Format: "year_id.semester_id" (e.g., "1.1")
-                        option.textContent = level.name; // e.g., "Year 1 - Semester 1"
-                        levelSelect.appendChild(option);
+            fetch(`/api/programmes-by-department?department_id=${departmentId}`)
+                .then(r => r.json())
+                .then(data => {
+                    populateSelect(programmeSelect, data.programmes, 'id', function(item) {
+                        return `${item.programme_code} - ${item.name}`;
                     });
-                    
-                    // Try to restore the previously selected value if it exists in the new options
-                    if (currentValue) {
-                        const optionToSelect = levelSelect.querySelector(`option[value="${currentValue}"]`);
-                        if (optionToSelect) {
-                            optionToSelect.selected = true;
-                        }
-                    }
-                } else {
-                    // If no levels found, show a message
-                    const noLevelsOption = document.createElement('option');
-                    noLevelsOption.value = '';
-                    noLevelsOption.textContent = 'No levels found';
-                    levelSelect.appendChild(noLevelsOption);
-                }
-                
-                // Enable the select
-                levelSelect.disabled = false;
-                
-                // Update the export button state
-                checkTimetableLoaded();
-                
-                // Trigger change event to update the timetable
-                levelSelect.dispatchEvent(new Event('change'));
-            })
-            .catch(error => {
-                console.error('Error fetching levels:', error);
-                
-                // Clear existing options
-                levelSelect.innerHTML = '';
-                
-                // Add error message
-                const errorOption = document.createElement('option');
-                errorOption.value = '';
-                errorOption.textContent = 'Error loading levels. Please try again.';
-                levelSelect.appendChild(errorOption);
-                
-                // If we have the original levels, add them as fallback
-                const originalLevels = document.querySelectorAll('#level option[data-original]');
-                if (originalLevels.length > 0) {
-                    originalLevels.forEach(opt => {
-                        levelSelect.appendChild(opt.cloneNode(true));
-                    });
-                }
-            });
-    }
-    
-    // Initialize the page
-    document.addEventListener('DOMContentLoaded', function() {
-        // Store original level options for later use
-        const levelSelect = document.getElementById('level');
-        const originalLevels = levelSelect.innerHTML;
-        levelSelect.setAttribute('data-original', originalLevels);
-        
-        // Mark all level options with data-original="true" for reference
-        Array.from(levelSelect.options).forEach(option => {
-            if (option.value) {
-                option.setAttribute('data-original', 'true');
-            }
+                });
         });
-        
-        // Add event listeners for form changes
-        const schoolSelect = document.getElementById('school_id');
-        const programmeSelect = document.getElementById('programme_id');
-        
-        schoolSelect.addEventListener('change', function() {
-            filterProgrammes();
-            checkTimetableLoaded();
-        });
-        
+
+        // Programme Change
         programmeSelect.addEventListener('change', function() {
-            updateLevels();
-            checkTimetableLoaded();
+            const programmeId = this.value;
+            
+            // Reset downstream filters
+            resetSelect(specialisationSelect, 'Select Specialisation');
+            specialisationContainer.style.display = 'none';
+            resetSelect(levelSelect, 'Select Level');
+            
+            if (!programmeId) return;
+
+            // Check for specialisations
+            fetch(`/api/specialisations-by-programme?programme_id=${programmeId}`)
+                .then(r => r.json())
+                .then(data => {
+                    if (data.specialisations && data.specialisations.length > 0) {
+                        specialisationContainer.style.display = 'block';
+                        populateSelect(specialisationSelect, data.specialisations, 'id', 'name');
+                    } else {
+                        // No specialisations, fetch levels directly
+                        fetchLevels();
+                    }
+                });
         });
+
+        // Specialisation Change
+        specialisationSelect.addEventListener('change', function() {
+            fetchLevels();
+        });
+
+        // Level Change -> Submit
+        levelSelect.addEventListener('change', function() {
+            if (this.value) {
+                form.submit();
+            }
+        });
+
+        function fetchLevels() {
+            const departmentId = departmentSelect.value;
+            const programmeId = programmeSelect.value;
+            const specialisationId = specialisationSelect.value;
+
+            if (!departmentId || !programmeId) return;
+
+            resetSelect(levelSelect, 'Loading levels...');
+            levelSelect.disabled = true;
+
+            let url = `/api/levels-with-timetables?department_id=${departmentId}&programme_id=${programmeId}`;
+            if (specialisationId) {
+                url += `&specialisation_id=${specialisationId}`;
+            }
+
+            fetch(url)
+                .then(r => r.json())
+                .then(data => {
+                    resetSelect(levelSelect, 'Select Level');
+                    levelSelect.disabled = false;
+                    populateSelect(levelSelect, data.data, 'id', 'name');
+                });
+        }
+
+        function populateSelect(selectElement, items, valueKey, textKeyOrFn) {
+            // Keep the first option
+            const firstOption = selectElement.options[0];
+            selectElement.innerHTML = '';
+            selectElement.appendChild(firstOption);
+
+            items.forEach(item => {
+                const option = document.createElement('option');
+                option.value = item[valueKey];
+                
+                if (typeof textKeyOrFn === 'function') {
+                    option.textContent = textKeyOrFn(item);
+                } else {
+                    option.textContent = item[textKeyOrFn];
+                }
+                
+                selectElement.appendChild(option);
+            });
+        }
+
+        function resetSelect(selectElement, placeholderText) {
+            selectElement.innerHTML = `<option value="">${placeholderText}</option>`;
+        }
         
-        levelSelect.addEventListener('change', checkTimetableLoaded);
-        
-        // If a school is already selected, trigger the programme load
-        if (schoolSelect.value) {
-            filterProgrammes();
-        } else if (programmeSelect.value) {
-            // If no school but a programme is selected, update levels
-            updateLevels();
+        function checkSpecialisationVisibility() {
+             const programmeId = programmeSelect.value;
+             // If we have a programme selected (e.g. from page load/old input), check if it has specialisations
+             if(programmeId) {
+                 fetch(`/api/specialisations-by-programme?programme_id=${programmeId}`)
+                .then(r => r.json())
+                .then(data => {
+                    if (data.specialisations && data.specialisations.length > 0) {
+                        specialisationContainer.style.display = 'block';
+                         // Refill specialisation if previously selected (handled by server-side rendering usually, but for dynamic we might need to re-select)
+                         const currentSpecId = "{{ request('specialisation_id') }}";
+                         populateSelect(specialisationSelect, data.specialisations, 'id', 'name');
+                         if(currentSpecId) {
+                             setTimeout(() => { specialisationSelect.value = currentSpecId; }, 100);
+                         }
+                    }
+                });
+             }
         }
     });
 </script>
-
 </html>

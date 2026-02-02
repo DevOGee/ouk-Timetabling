@@ -18,27 +18,40 @@ class TimetableApiController extends Controller
     {
         try {
             $request->validate([
-                'school_id' => 'required|exists:schools,id',
+                'department_id' => 'required|exists:departments,id',
                 'programme_id' => 'required|exists:programmes,id',
+                'specialisation_id' => 'nullable|exists:specialisations,id',
             ]);
 
-            $schoolId = (int)$request->input('school_id');
+            $departmentId = (int)$request->input('department_id');
             $programmeId = (int)$request->input('programme_id');
+            $specialisationId = $request->input('specialisation_id') ? (int)$request->input('specialisation_id') : null;
             
             // Log the request
-            \Log::info("Fetching levels for school and programme", [
-                'school_id' => $schoolId,
-                'programme_id' => $programmeId
+            \Log::info("Fetching levels for department and programme", [
+                'department_id' => $departmentId,
+                'programme_id' => $programmeId,
+                'specialisation_id' => $specialisationId
             ]);
             
             // Get distinct year_of_study_id and semester_id combinations
-            $levels = \DB::table('course_unit_programme_mappings as cupm')
+            $query = \DB::table('course_unit_programme_mappings as cupm')
                 ->join('programmes as p', 'p.id', '=', 'cupm.programme_id')
                 ->join('years_of_study as y', 'y.id', '=', 'cupm.year_of_study_id')
                 ->join('semesters as s', 's.id', '=', 'cupm.semester_id')
-                ->where('p.school_id', $schoolId)
-                ->where('cupm.programme_id', $programmeId)
-                ->select(
+                ->where('p.department_id', $departmentId)
+                ->where('cupm.programme_id', $programmeId);
+                
+            // Filter by specialisation if provided
+            if ($specialisationId) {
+                // Include core courses (null specialisation) OR courses for this specific specialisation
+                $query->where(function($q) use ($specialisationId) {
+                    $q->whereNull('cupm.specialisation_id')
+                      ->orWhere('cupm.specialisation_id', $specialisationId);
+                });
+            }
+
+            $levels = $query->select(
                     'cupm.year_of_study_id',
                     'y.name as year_name',
                     'cupm.semester_id',
@@ -63,8 +76,9 @@ class TimetableApiController extends Controller
                 'success' => true,
                 'data' => $formattedLevels,
                 'meta' => [
-                    'school_id' => $schoolId,
+                    'department_id' => $departmentId,
                     'programme_id' => $programmeId,
+                    'specialisation_id' => $specialisationId,
                     'total_levels' => $formattedLevels->count()
                 ]
             ]);
@@ -81,26 +95,50 @@ class TimetableApiController extends Controller
     }
 
     /**
-     * Get programmes for a specific school
+     * Get programmes for a specific department
      *
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\JsonResponse
      */
-    public function getProgrammesBySchool(Request $request)
+    public function getProgrammesByDepartment(Request $request)
     {
         $request->validate([
-            'school_id' => 'required|exists:schools,id',
+            'department_id' => 'required|exists:departments,id',
         ]);
 
-        $schoolId = $request->input('school_id');
+        $departmentId = $request->input('department_id');
         
-        $programmes = \App\Models\Programme::where('school_id', $schoolId)
+        $programmes = \App\Models\Programme::where('department_id', $departmentId)
             ->orderBy('programme_code')
             ->get(['id', 'programme_code', 'name']);
 
         return response()->json([
             'success' => true,
             'programmes' => $programmes
+        ]);
+    }
+
+    /**
+     * Get specialisations for a specific programme
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getSpecialisationsByProgramme(Request $request)
+    {
+        $request->validate([
+            'programme_id' => 'required|exists:programmes,id',
+        ]);
+
+        $programmeId = $request->input('programme_id');
+        
+        $specialisations = \App\Models\Specialisation::where('programme_id', $programmeId)
+            ->orderBy('name')
+            ->get(['id', 'name']);
+
+        return response()->json([
+            'success' => true,
+            'specialisations' => $specialisations
         ]);
     }
 }

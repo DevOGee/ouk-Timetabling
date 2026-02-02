@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\AcademicYear;
 use App\Models\CourseUnitProgrammeMapping;
 use App\Models\Day;
+use App\Models\Department;
 use App\Models\Programme;
 use App\Models\School;
 use App\Models\Semester;
@@ -29,10 +30,12 @@ class TimetableController extends Controller
             ->with('programme')
             ->get()
             ->pluck('programme')
+            ->filter()
             ->unique('id')
             ->sortBy('name');
             
-        $schools = School::whereIn('id', $programmesWithPublishedTimetables->pluck('school_id'))->get();
+        // Get departments associated with these programmes
+        $departments = Department::whereIn('id', $programmesWithPublishedTimetables->pluck('department_id'))->orderBy('name')->get();
         $days = Day::where('id', '<=', 5)->get();
 
         // Create combined levels (e.g., 1.1, 1.2, 2.1, 2.2, etc.)
@@ -55,7 +58,7 @@ class TimetableController extends Controller
         $timetable = collect();
         $selectedProgramme = null;
 
-        if ($request->filled(['school_id', 'programme_id', 'level'])) {
+        if ($request->filled(['department_id', 'programme_id', 'level'])) {
             $selectedProgramme = Programme::find($request->programme_id);
             
             // Verify this programme has a published timetable
@@ -71,17 +74,28 @@ class TimetableController extends Controller
             
             list($yearId, $semesterId) = explode('.', $request->level);
             
-            // Get the filtered timetable
-            $timetable = CourseUnitProgrammeMapping::where('programme_id', $request->programme_id)
+            // Start query
+            $query = CourseUnitProgrammeMapping::where('programme_id', $request->programme_id)
                 ->where('year_of_study_id', $yearId)
                 ->where('semester_id', $semesterId)
-                ->where('academic_session_id', $currentAcademicSession->id)
-                ->with(['courseUnit', 'lecturer', 'day'])
+                ->where('academic_session_id', $currentAcademicSession->id);
+                
+            // Apply specialisation filter if selected
+            if ($request->filled('specialisation_id')) {
+                $specialisationId = $request->specialisation_id;
+                $query->where(function($q) use ($specialisationId) {
+                    $q->whereNull('specialisation_id') // Core courses
+                      ->orWhere('specialisation_id', $specialisationId); // Specific specialisation
+                });
+            }
+
+            // Get the filtered timetable
+            $timetable = $query->with(['courseUnit', 'lecturer', 'day'])
                 ->get();
         }
 
         return view('timetable.index', [
-            'schools' => $schools,
+            'departments' => $departments,
             'programmes' => $programmesWithPublishedTimetables,
             'days' => $days,
             'timetable' => $timetable,
@@ -137,7 +151,7 @@ class TimetableController extends Controller
         $yearOfStudy = null;
         $semester = null;
 
-        if ($request->filled(['school_id', 'programme_id', 'level'])) {
+        if ($request->filled(['department_id', 'programme_id', 'level'])) {
             list($yearId, $semesterId) = explode('.', $request->level);
             
             // Get level and semester names
@@ -152,11 +166,22 @@ class TimetableController extends Controller
                 $semesterName = $semester->name;
             }
             
-            // Get the timetable data with all necessary relationships
-            $timetable = CourseUnitProgrammeMapping::where('programme_id', $request->programme_id)
+            // Start query
+            $query = CourseUnitProgrammeMapping::where('programme_id', $request->programme_id)
                 ->where('year_of_study_id', $yearId)
-                ->where('semester_id', $semesterId)
-                ->with([
+                ->where('semester_id', $semesterId);
+                
+            // Apply specialisation filter if selected
+            if ($request->filled('specialisation_id')) {
+                $specialisationId = $request->specialisation_id;
+                $query->where(function($q) use ($specialisationId) {
+                    $q->whereNull('specialisation_id') // Core courses
+                      ->orWhere('specialisation_id', $specialisationId); // Specific specialisation
+                });
+            }
+
+            // Get the timetable data with all necessary relationships
+            $timetable = $query->with([
                     'courseUnit' => function($query) {
                         $query->with(['instructors.title']);
                     },

@@ -52,9 +52,13 @@ Route::prefix('api')->group(function () {
     Route::get('levels-with-timetables', [TimetableApiController::class, 'getLevelsWithTimetables'])
         ->name('api.levels-with-timetables');
         
-    // Get programmes by school
-    Route::get('programmes-by-school', [TimetableApiController::class, 'getProgrammesBySchool'])
-        ->name('api.programmes-by-school');
+    // Get programmes by department
+    Route::get('programmes-by-department', [TimetableApiController::class, 'getProgrammesByDepartment'])
+        ->name('api.programmes-by-department');
+        
+    // Get specialisations by programme
+    Route::get('specialisations-by-programme', [TimetableApiController::class, 'getSpecialisationsByProgramme'])
+        ->name('api.specialisations-by-programme');
 });
 
 // Test email route - Remove this in production
