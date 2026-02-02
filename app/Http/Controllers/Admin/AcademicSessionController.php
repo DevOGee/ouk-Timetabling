@@ -47,6 +47,11 @@ class AcademicSessionController extends Controller
         }
         return $this->show($session, 'curriculum');
     }
+    public function showCurriculum(AcademicSession $academicSession)
+    {
+        return $this->show($academicSession, "curriculum");
+    }
+
 
     public function teachingAllocation()
     {
