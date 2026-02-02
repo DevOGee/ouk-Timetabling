@@ -36,12 +36,26 @@ class AcademicSession extends Model
                 // Set all other sessions as not current
                 static::where('id', '!=', $model->id)->update(['is_current' => false]);
             }
+
+            if ($model->status === 'active') {
+                // Set all other active sessions to completed
+                static::where('id', '!=', $model->id)
+                    ->where('status', 'active')
+                    ->update(['status' => 'completed']);
+            }
         });
 
         static::updating(function ($model) {
             if ($model->isDirty('is_current') && $model->is_current) {
                 // Set all other sessions as not current when this one is set as current
                 static::where('id', '!=', $model->id)->update(['is_current' => false]);
+            }
+
+            if ($model->isDirty('status') && $model->status === 'active') {
+                // Set all other active sessions to completed
+                static::where('id', '!=', $model->id)
+                    ->where('status', 'active')
+                    ->update(['status' => 'completed']);
             }
         });
     }
