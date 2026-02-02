@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\AcademicSession;
 use App\Models\School;
+use App\Models\Department;
 use App\Models\Programme;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -82,23 +83,19 @@ class AcademicSessionController extends Controller
     {
         $user = auth()->user();
         
-        // If user is a school_timetabler, only show their school
+        // Get filter parameters
+        $departmentId = request('department_id');
+        $search = request('search');
+        
+        // Get departments for filter dropdown
+        $departmentsQuery = Department::query();
+        
+        // If user is a school_timetabler, only show their school's departments
         if ($user->hasRole('school_timetabler')) {
-            $schools = School::where('id', $user->school_id)
-                ->with(['programmes' => function($query) use ($academicSession) {
-                    $query->whereHas('academicSessions', function($q) use ($academicSession) {
-                        $q->where('academic_sessions.id', $academicSession->id);
-                    });
-                }])
-                ->get();
-        } else {
-            // For admin, show all schools
-            $schools = School::with(['programmes' => function($query) use ($academicSession) {
-                $query->whereHas('academicSessions', function($q) use ($academicSession) {
-                    $q->where('academic_sessions.id', $academicSession->id);
-                });
-            }])->get();
+            $departmentsQuery->where('school_id', $user->school_id);
         }
+        
+        $departments = $departmentsQuery->with('school')->orderBy('name')->get();
 
         $otherSessions = AcademicSession::where('id', '!=', $academicSession->id)
             ->orderBy('name', 'desc')
@@ -106,152 +103,69 @@ class AcademicSessionController extends Controller
             
         // Check if current session has any programmes
         $hasProgrammes = $academicSession->programmes()->exists();
-
-        $firstSchoolId = $schools->first() ? $schools->first()->id : null;
         
-        // Get all programmes for this academic session with their school
+        // Get all programmes for this academic session with their school and department
+        // Use subqueries to avoid N+1 queries
         $programmesQuery = $academicSession->programmes()
-            ->with(['school']);
+            ->with(['school', 'department']);
             
         // If user is a timetabler, only show programmes from their school
         if ($user->hasRole('timetabler') || $user->hasRole('school_timetabler')) {
             $programmesQuery->where('school_id', $user->school_id);
         }
         
+        // Apply department filter
+        if ($departmentId && $departmentId !== 'all') {
+            $programmesQuery->where('department_id', $departmentId);
+        }
+        
+        // Apply search filter
+        if ($search) {
+            $programmesQuery->where(function($q) use ($search) {
+                $q->where('name', 'like', '%' . $search . '%')
+                  ->orWhere('programme_code', 'like', '%' . $search . '%');
+            });
+        }
+        
+        // Add subqueries for counts
+        $programmesQuery->addSelect([
+            'programmes.*',
+            'mapped_course_units_count' => \DB::table('course_unit_programme_mappings')
+                ->selectRaw('COUNT(DISTINCT course_unit_id)')
+                ->whereColumn('programme_id', 'programmes.id')
+                ->where('academic_session_id', $academicSession->id),
+            'incomplete_mappings' => \DB::table('course_unit_programme_mappings')
+                ->selectRaw('COUNT(*)')
+                ->whereColumn('programme_id', 'programmes.id')
+                ->where('academic_session_id', $academicSession->id)
+                ->where(function($q) {
+                    $q->whereNull('user_id')
+                      ->orWhereNull('day_id')
+                      ->orWhereNull('morning_start_time')
+                      ->orWhereNull('morning_duration')
+                      ->orWhereNull('evening_start_time')
+                      ->orWhereNull('evening_duration');
+                }),
+            'has_timetable' => \App\Models\ProgrammeTimetable::selectRaw('COUNT(*) > 0')
+                ->whereColumn('programme_id', 'programmes.id')
+                ->where('academic_session_id', $academicSession->id)
+                ->limit(1)
+        ]);
+        
+        // Sort by department name, then programme code
+        $programmesQuery->leftJoin('departments', 'programmes.department_id', '=', 'departments.id')
+            ->orderBy('departments.name', 'asc')
+            ->orderBy('programmes.programme_code', 'asc');
+        
+        // Get all programmes (no pagination)
         $programmes = $programmesQuery->get();
 
-        // Manually count course units for each programme
-        $programmes->each(function($programme) use ($academicSession) {
-            // Count distinct course units for this programme in the current academic session
-            $countQuery = \App\Models\CourseUnitProgrammeMapping::where('programme_id', $programme->id)
-                ->where('academic_session_id', $academicSession->id)
-                ->whereHas('courseUnit');
-                
-            $programme->mapped_course_units_count = $countQuery->distinct('course_unit_id')->count('course_unit_id');
 
-            // Count incomplete mappings for this programme
-            $programme->incomplete_mappings = \App\Models\CourseUnitProgrammeMapping::where('programme_id', $programme->id)
-                ->where('academic_session_id', $academicSession->id)
-                ->whereHas('courseUnit')
-                ->where(function($query) {
-                    $query->whereNull('user_id')
-                          ->orWhereNull('day_id')
-                          ->orWhereNull('morning_start_time')
-                          ->orWhereNull('morning_duration')
-                          ->orWhereNull('evening_start_time')
-                          ->orWhereNull('evening_duration');
-                })
-                ->count();
-                
-            // Add has_timetable flag
-            $programme->has_timetable = \App\Models\ProgrammeTimetable::where('programme_id', $programme->id)
-                ->where('academic_session_id', $academicSession->id)
-                ->exists();
-            
-            // Add timetable status
+        // Add timetable status (lightweight operation)
+        $programmes->each(function($programme) {
             $programme->timetable_status = $this->getTimetableStatus($programme);
         });
 
-        // Get programmes that can have timetables added (have mappings but no timetable)
-        $programmesWithoutTimetableQuery = $academicSession->programmes()
-            ->whereDoesntHave('programmeTimetables', function($query) use ($academicSession) {
-                $query->where('academic_session_id', $academicSession->id);
-            })
-            ->whereHas('courseUnitMappings', function($query) use ($academicSession) {
-                $query->where('academic_session_id', $academicSession->id);
-            });
-            
-        // Get programmes with timetables
-        $programmesWithTimetableQuery = $academicSession->programmes()
-            ->whereHas('programmeTimetables', function($query) use ($academicSession) {
-                $query->where('academic_session_id', $academicSession->id);
-            })
-            ->with(['programmeTimetables' => function($query) use ($academicSession) {
-                $query->where('academic_session_id', $academicSession->id);
-            }]);
-            
-        // Filter by school if user is a timetabler
-        if ($user->hasRole('timetabler') || $user->hasRole('school_timetabler')) {
-            $programmesWithoutTimetableQuery->where('school_id', $user->school_id);
-            $programmesWithTimetableQuery->where('school_id', $user->school_id);
-        }
-        
-        $programmesWithoutTimetable = $programmesWithoutTimetableQuery->get();
-        $programmesWithTimetable = $programmesWithTimetableQuery->get();
-
-        // Convert to paginator for consistent interface
-        $page = \Illuminate\Pagination\Paginator::resolveCurrentPage('page');
-        $perPage = 10;
-        $programmes = new \Illuminate\Pagination\LengthAwarePaginator(
-            $programmes->forPage($page, $perPage),
-            $programmes->count(),
-            $perPage,
-            $page,
-            ['path' => \Illuminate\Pagination\Paginator::resolveCurrentPath()]
-        );
-        
-        // For AJAX requests, handle filtering and pagination
-        if (request()->ajax()) {
-            $tab = request('tab');
-            
-            // If no tab provided, default based on viewMode
-            if (!$tab && $viewMode) {
-                $tab = ($viewMode == 'curriculum') ? 'programmes' : 'timetables';
-            } else if (!$tab) {
-                $tab = 'programmes';
-            }
-            
-            if ($tab === 'timetables') {
-                $filteredProgrammes = $programmes;
-                
-                if (request()->has('school_id') && request('school_id') !== 'all') {
-                    $schoolId = request('school_id');
-                    $filteredProgrammes = new \Illuminate\Pagination\LengthAwarePaginator(
-                        $programmes->filter(function($programme) use ($schoolId) {
-                            return $programme->school_id == $schoolId;
-                        }),
-                        $programmes->where('school_id', $schoolId)->count(),
-                        $programmes->perPage(),
-                        $programmes->currentPage(),
-                        ['path' => \Illuminate\Pagination\Paginator::resolveCurrentPath()]
-                    );
-                }
-                
-                return response()->json([
-                    'html' => view('admin.academic-sessions.partials.timetables-table', [
-                        'programmes' => $filteredProgrammes,
-                        'academicSession' => $academicSession,
-                        'viewMode' => $viewMode
-                    ])->render(),
-                    'pagination' => (string) $filteredProgrammes->links()
-                ]);
-            } else if ($tab === 'programmes') {
-                $filteredProgrammes = $programmes;
-                
-                if (request()->has('school_id') && request('school_id') !== 'all') {
-                    $schoolId = request('school_id');
-                    $filteredProgrammes = new \Illuminate\Pagination\LengthAwarePaginator(
-                        $programmes->filter(function($programme) use ($schoolId) {
-                            return $programme->school_id == $schoolId;
-                        }),
-                        $programmes->where('school_id', $schoolId)->count(),
-                        $programmes->perPage(),
-                        $programmes->currentPage(),
-                        ['path' => \Illuminate\Pagination\Paginator::resolveCurrentPath()]
-                    );
-                }
-                
-                return response()->json([
-                    'html' => view('admin.academic-sessions.partials.programmes-table', [
-                        'programmes' => $filteredProgrammes,
-                        'academicSession' => $academicSession,
-                        'viewMode' => $viewMode
-                    ])->render(),
-                    'pagination' => (string) $filteredProgrammes->links()
-                ]);
-            }
-        }
-        
         // Get programmes that can have timetables added (have mappings but no timetable)
         $programmesForTimetable = $academicSession->programmes()
             ->whereDoesntHave('programmeTimetables', function($query) use ($academicSession) {
@@ -266,12 +180,11 @@ class AcademicSessionController extends Controller
 
         return view('admin.academic-sessions.show', [
             'academicSession' => $academicSession,
-            'programmes' => $programmes->isEmpty() ? collect() : $programmes,
-            'programmesWithoutTimetable' => $programmesWithoutTimetable,
-            'programmesWithTimetable' => $programmesWithTimetable,
+            'programmes' => $programmes,
             'programmesForTimetable' => $programmesForTimetable,
-            'schools' => $schools,
-            'selectedSchool' => $firstSchoolId,
+            'departments' => $departments,
+            'selectedDepartment' => $departmentId,
+            'searchTerm' => $search,
             'otherSessions' => $otherSessions,
             'hasProgrammes' => $hasProgrammes,
             'viewMode' => $viewMode

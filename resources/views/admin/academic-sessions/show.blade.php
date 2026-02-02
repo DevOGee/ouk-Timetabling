@@ -168,7 +168,46 @@
                     </div>
                 </div>
                 <div class="card-body">
-                    <!-- Programs Table Container (will be updated via AJAX) -->
+                    <!-- Department and Search Filters -->
+                    @if(!auth()->user()->hasRole('timetabler'))
+                    <form method="GET" action="{{ url()->current() }}" class="mb-3">
+                        <div class="row g-2 align-items-end">
+                            <div class="col-md-3">
+                                <label class="form-label mb-1">Department</label>
+                                <select name="department_id" class="form-select form-select-sm" onchange="this.form.submit()">
+                                    <option value="all">All Departments</option>
+                                    @foreach($departments->groupBy('school.name') as $schoolName => $schoolDepartments)
+                                        <optgroup label="{{ $schoolName }}">
+                                            @foreach($schoolDepartments as $department)
+                                                <option value="{{ $department->id }}" {{ $selectedDepartment == $department->id ? 'selected' : '' }}>
+                                                    {{ $department->name }}
+                                                </option>
+                                            @endforeach
+                                        </optgroup>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label mb-1">Search</label>
+                                <input type="search" name="search" class="form-control form-control-sm" 
+                                       placeholder="Programme name or code..." 
+                                       value="{{ $searchTerm ?? '' }}">
+                            </div>
+                            <div class="col-md-auto">
+                                <button type="submit" class="btn btn-sm btn-primary">
+                                    <i class="bi bi-search"></i> Filter
+                                </button>
+                                @if($selectedDepartment || $searchTerm)
+                                    <a href="{{ url()->current() }}" class="btn btn-sm btn-outline-secondary">
+                                        <i class="bi bi-x-circle"></i> Clear
+                                    </a>
+                                @endif
+                            </div>
+                        </div>
+                    </form>
+                    @endif
+
+                    <!-- Programs Table Container -->
                     <div id="programmes-container">
                         @include('admin.academic-sessions.partials.programmes-table', ['programmes' => $programmes, 'academicSession' => $academicSession])
                     </div>
@@ -225,7 +264,7 @@
                     </div>
                 </div>
                 <div class="card-body">
-                    <!-- Timetables Table Container (will be updated via AJAX) -->
+                    <!-- Timetables Table Container -->
                     <div id="timetables-container">
                         @include('admin.academic-sessions.partials.timetables-table', [
                             'programmes' => $programmes,
@@ -277,375 +316,6 @@
     </div>
 </div>
 
-@push('scripts')
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Programmes tab elements
-    const schoolFilter = document.getElementById('schoolFilter');
-    const programmesContainer = document.getElementById('programmes-container');
-    const loadingIndicator = document.getElementById('loadingIndicator');
-    
-    // Timetables tab elements
-    const timetableSchoolFilter = document.getElementById('timetableSchoolFilter');
-    const timetablesContainer = document.getElementById('timetables-container');
-    const timetableLoadingIndicator = document.getElementById('timetableLoadingIndicator');
-    
-    let currentPage = 1;
-    let isLoading = false;
-
-    // Function to load programmes via AJAX
-    function loadProgrammes(page = 1, schoolId = null) {
-        if (isLoading) return;
-        
-        isLoading = true;
-        currentPage = page;
-        
-        // Show loading indicator
-        programmesContainer.classList.add('d-none');
-        loadingIndicator.classList.remove('d-none');
-        
-        // Build URL with query parameters
-        const url = new URL(window.location);
-        url.searchParams.set('page', page);
-        url.searchParams.set('tab', 'programmes');
-        
-        // Use provided schoolId or fall back to filter value
-        const effectiveSchoolId = schoolId || (schoolFilter && schoolFilter.value !== 'all' ? schoolFilter.value : null);
-        
-        if (effectiveSchoolId && effectiveSchoolId !== 'all') {
-            url.searchParams.set('school_id', effectiveSchoolId);
-        } else {
-            url.searchParams.delete('school_id');
-        }
-        
-        // Update browser URL without reloading the page
-        window.history.pushState({}, '', url);
-        
-        // Get CSRF token from meta tag
-        const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
-        
-        // Make AJAX request with proper headers
-        fetch(url, {
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest',
-                'X-CSRF-TOKEN': csrfToken,
-                'Accept': 'application/json',
-                'Content-Type': 'application/json'
-            },
-            credentials: 'same-origin'
-        })
-        .then(async response => {
-            if (!response.ok) {
-                const error = await response.text();
-                throw new Error(`HTTP error! status: ${response.status}, body: ${error}`);
-            }
-            return response.json();
-        })
-        .then(data => {
-            if (data.html) {
-                programmesContainer.innerHTML = data.html;
-                programmesContainer.classList.remove('d-none');
-                
-                // Update pagination links with new styles
-                updatePaginationLinks('programmes');
-            } else {
-                throw new Error('Invalid response format from server');
-            }
-        })
-        .catch(error => {
-            console.error('Error loading programmes:', error);
-            programmesContainer.innerHTML = `
-                <div class="alert alert-danger">
-                    An error occurred while loading programmes. Please try again.<br>
-                    <small>${error.message}</small>
-                </div>
-            `;
-            programmesContainer.classList.remove('d-none');
-        })
-        .finally(() => {
-            loadingIndicator.classList.add('d-none');
-            isLoading = false;
-        });
-    }
-    
-    // Load timetables for the timetables tab
-    function loadTimetables(page = 1, schoolId = null) {
-        if (isLoading) return;
-        
-        isLoading = true;
-        currentPage = page;
-        
-        // Show loading indicator
-        timetablesContainer.classList.add('d-none');
-        if (timetableLoadingIndicator) {
-            timetableLoadingIndicator.classList.remove('d-none');
-        }
-        
-        // Build URL with query parameters
-        const url = new URL(window.location);
-        url.searchParams.set('page', page);
-        url.searchParams.set('tab', 'timetables');
-        
-        // Use provided schoolId or fall back to filter value
-        const effectiveSchoolId = schoolId || (timetableSchoolFilter && 
-            timetableSchoolFilter.value !== 'all' ? timetableSchoolFilter.value : null);
-        
-        if (effectiveSchoolId && effectiveSchoolId !== 'all') {
-            url.searchParams.set('school_id', effectiveSchoolId);
-        } else {
-            url.searchParams.delete('school_id');
-        }
-        
-        // Update browser URL without reloading the page
-        window.history.pushState({}, '', url);
-        
-        // Get CSRF token from meta tag
-        const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
-        
-        // Make AJAX request with proper headers
-        fetch(url, {
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest',
-                'X-CSRF-TOKEN': csrfToken,
-                'Accept': 'application/json',
-                'Content-Type': 'application/json'
-            },
-            credentials: 'same-origin'
-        })
-        .then(async response => {
-            if (!response.ok) {
-                const error = await response.text();
-                throw new Error(`HTTP error! status: ${response.status}, body: ${error}`);
-            }
-            return response.json();
-        })
-        .then(data => {
-            if (data.html) {
-                timetablesContainer.innerHTML = data.html;
-                timetablesContainer.classList.remove('d-none');
-                
-                // Update pagination links if available
-                if (data.pagination) {
-                    updatePagination(data, 'timetables');
-                }
-            } else {
-                throw new Error('Invalid response format from server');
-            }
-        })
-        .catch(error => {
-            console.error('Error loading timetables:', error);
-            timetablesContainer.innerHTML = `
-                <div class="alert alert-danger">
-                    An error occurred while loading timetables. Please try again.<br>
-                    <small>${error.message}</small>
-                </div>
-            `;
-            timetablesContainer.classList.remove('d-none');
-        })
-        .finally(() => {
-            timetableLoadingIndicator.classList.add('d-none');
-            isLoading = false;
-        });
-    }
-    
-    // Update pagination for a container
-    function updatePagination(data, containerType = 'programmes') {
-        const container = containerType === 'programmes' ? programmesContainer : timetablesContainer;
-        
-        if (data.html) {
-            // Create a temporary div to hold the new content
-            const tempDiv = document.createElement('div');
-            tempDiv.innerHTML = data.html;
-            
-            // Find the pagination in the new content
-            const newPagination = tempDiv.querySelector('.pagination');
-            
-            if (newPagination) {
-                // Find or create the pagination container
-                let paginationContainer = container.querySelector('.pagination-container');
-                
-                if (!paginationContainer) {
-                    paginationContainer = document.createElement('div');
-                    paginationContainer.className = 'mt-3 d-flex justify-content-center';
-                    
-                    // Add the container after the table or at the end of the container
-                    const table = container.querySelector('table');
-                    if (table) {
-                        table.insertAdjacentElement('afterend', paginationContainer);
-                    } else {
-                        container.appendChild(paginationContainer);
-                    }
-                }
-                
-                // Update the pagination content
-                paginationContainer.innerHTML = '';
-                const nav = document.createElement('nav');
-                nav.innerHTML = newPagination.outerHTML;
-                paginationContainer.appendChild(nav);
-                
-                // Update pagination links
-                updatePaginationLinks(containerType);
-            } else if (container.querySelector('.pagination-container')) {
-                // Remove pagination if no pages
-                container.querySelector('.pagination-container').remove();
-            }
-        }
-    }
-    
-    // Update pagination links to use AJAX with new styles
-    function updatePaginationLinks(containerType = 'programmes') {
-        const container = containerType === 'programmes' ? programmesContainer : timetablesContainer;
-        const paginationLinks = container.querySelectorAll('.pagination a');
-        const schoolFilterElement = containerType === 'programmes' ? schoolFilter : timetableSchoolFilter;
-        const loadFunction = containerType === 'programmes' ? loadProgrammes : loadTimetables;
-        
-        paginationLinks.forEach(link => {
-            // Skip if already processed or doesn't have a href
-            if (!link.getAttribute('href') || link.hasAttribute('data-handled')) {
-                return;
-            }
-            
-            // Get the page number from the URL
-            const url = new URL(link.href);
-            const page = url.searchParams.get('page') || 1;
-            const schoolId = schoolFilterElement ? schoolFilterElement.value : null;
-            
-            // Update the link to include all current query parameters
-            const newUrl = new URL(window.location);
-            newUrl.searchParams.set('page', page);
-            if (schoolId && schoolId !== 'all') {
-                newUrl.searchParams.set('school_id', schoolId);
-            } else {
-                newUrl.searchParams.delete('school_id');
-            }
-            newUrl.searchParams.set('tab', containerType);
-            
-            // Update the link's href
-            link.href = newUrl.toString();
-            
-            // Add click handler
-            link.addEventListener('click', function(e) {
-                e.preventDefault();
-                
-                // Update URL without reloading
-                window.history.pushState({}, '', newUrl);
-                
-                // Load the data
-                loadFunction(page, schoolId);
-                
-                // Scroll to top of container
-                container.scrollIntoView({ behavior: 'smooth' });
-            });
-            
-            // Mark as handled to prevent duplicate event listeners
-            link.setAttribute('data-handled', 'true');
-        });
-        
-        // Update active state based on current page
-        const currentPage = new URL(window.location).searchParams.get('page') || 1;
-        container.querySelectorAll('.page-item').forEach(item => {
-            item.classList.remove('active');
-            const pageLink = item.querySelector('.page-link');
-            if (pageLink && !pageLink.getAttribute('href')) {
-                const pageText = pageLink.textContent.trim();
-                if (pageText === currentPage.toString() || 
-                    (pageText === '« Prev' && currentPage > 1) ||
-                    (pageText === 'Next »' && currentPage < (container.dataset.lastPage || 1))) {
-                    item.classList.add('active');
-                }
-            }
-        });
-    }
-    
-    // Handle popstate (back/forward navigation)
-    window.addEventListener('popstate', function() {
-        const url = new URL(window.location);
-        const page = url.searchParams.get('page') || 1;
-        const schoolId = url.searchParams.get('school_id') || 'all';
-        const tab = url.searchParams.get('tab') || 'programmes';
-        
-        // Update active tab if needed
-        if (tab === 'timetables') {
-            document.querySelector('#timetables-tab').click();
-            if (timetableSchoolFilter) {
-                timetableSchoolFilter.value = schoolId;
-            }
-            loadTimetables(page, schoolId);
-        } else {
-            document.querySelector('#programmes-tab').click();
-            if (schoolFilter) {
-                schoolFilter.value = schoolId;
-            }
-            loadProgrammes(page, schoolId);
-        }
-    });
-    
-    // Handle tab changes
-    const tabEl = document.querySelector('button[data-bs-toggle="tab"][data-bs-target="#timetables"]');
-    if (tabEl) {
-        tabEl.addEventListener('shown.bs.tab', function (e) {
-            // Update URL to reflect the active tab
-            const url = new URL(window.location);
-            url.searchParams.set('tab', 'timetables');
-            window.history.pushState({}, '', url);
-        });
-    }
-    
-    // Initialize school filter for timetables
-    if (timetableSchoolFilter) {
-        timetableSchoolFilter.addEventListener('change', function() {
-            loadTimetables(1, this.value);
-        });
-    }
-    
-    // Initialize school filter for programmes
-    if (schoolFilter) {
-        schoolFilter.addEventListener('change', function() {
-            loadProgrammes(1, this.value);
-        });
-    }
-    
-    // Initial load based on current tab
-    const activeTab = window.location.hash === '#timetables' ? 'timetables' : 'programmes';
-    
-    // Set initial filter values from URL
-    const urlParams = new URLSearchParams(window.location.search);
-    const schoolId = urlParams.get('school_id');
-    const page = parseInt(urlParams.get('page')) || 1;
-    
-    if (activeTab === 'timetables') {
-        if (timetableSchoolFilter && schoolId) {
-            timetableSchoolFilter.value = schoolId;
-        }
-        loadTimetables(page, schoolId || (timetableSchoolFilter ? timetableSchoolFilter.value : null));
-    } else {
-        if (schoolFilter && schoolId) {
-            schoolFilter.value = schoolId;
-        }
-        loadProgrammes(page, schoolId || (schoolFilter ? schoolFilter.value : null));
-    }
-    
-    // Update URL hash when tabs are changed
-    const tabEls = document.querySelectorAll('button[data-bs-toggle="tab"]');
-    tabEls.forEach(tabEl => {
-        tabEl.addEventListener('shown.bs.tab', function (e) {
-            const target = e.target.getAttribute('data-bs-target');
-            const tab = target === '#timetables' ? 'timetables' : 'programmes';
-            
-            // Update URL to reflect the active tab
-            const url = new URL(window.location);
-            url.hash = tab === 'timetables' ? '#timetables' : '';
-            url.searchParams.set('tab', tab);
-            window.history.pushState({}, '', url);
-            
-            // Load data for the tab if it hasn't been loaded yet
-            if (tab === 'timetables' && timetablesContainer && timetablesContainer.children.length === 0) {
-                loadTimetables(1, timetableSchoolFilter ? timetableSchoolFilter.value : null);
-            }
-        });
-    });
-});
-</script>
-@endpush
 
 @endsection
+
