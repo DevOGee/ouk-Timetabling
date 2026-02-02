@@ -3,7 +3,7 @@
 /*
  * This file is part of Psy Shell.
  *
- * (c) 2012-2023 Justin Hileman
+ * (c) 2012-2026 Justin Hileman
  *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
@@ -16,7 +16,7 @@ namespace Psy\Exception;
  */
 class ErrorException extends \ErrorException implements Exception
 {
-    private $rawMessage;
+    private string $rawMessage;
 
     /**
      * Construct a Psy ErrorException.
@@ -67,8 +67,8 @@ class ErrorException extends \ErrorException implements Exception
                 break;
         }
 
-        $message = \sprintf('PHP %s:  %s%s on line %d', $type, $message, $filename ? ' in '.$filename : '', $lineno);
-        parent::__construct($message, $code, $severity, $filename, $lineno, $previous);
+        $message = \sprintf('PHP %s:  %s%s on line %d', $type, $message, $filename ? ' in '.$filename : '', $lineno ?? 0);
+        parent::__construct($message, $code, $severity, $filename ?? '', $lineno ?? 0, $previous);
     }
 
     /**

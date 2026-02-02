@@ -8,10 +8,10 @@ use Illuminate\Contracts\Debug\ExceptionHandler;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Log\LogManager;
 use Illuminate\Support\Env;
-use Monolog\Formatter\JsonFormatter;
 use Monolog\Handler\NullHandler;
-use Monolog\Handler\SocketHandler;
+use PHPUnit\Framework\TestCase;
 use PHPUnit\Runner\ErrorHandler;
+use PHPUnit\Runner\Version;
 use Symfony\Component\Console\Output\ConsoleOutput;
 use Symfony\Component\ErrorHandler\Error\FatalError;
 use Throwable;
@@ -54,10 +54,6 @@ class HandleExceptions
 
         if (! $app->environment('testing')) {
             ini_set('display_errors', 'Off');
-        }
-
-        if (laravel_cloud()) {
-            $this->configureCloudSocketLogChannel($app);
         }
     }
 
@@ -252,25 +248,6 @@ class HandleExceptions
     }
 
     /**
-     * Configure the Laravel Cloud socket log channel.
-     *
-     * @param  \Illuminate\Contracts\Foundation\Application  $app
-     * @return void
-     */
-    protected function configureCloudSocketLogChannel(Application $app)
-    {
-        $app['config']->set('logging.channels.laravel-cloud-socket', [
-            'driver' => 'monolog',
-            'handler' => SocketHandler::class,
-            'formatter' => JsonFormatter::class,
-            'with' => [
-                'connectionString' => $_ENV['LARAVEL_CLOUD_LOG_SOCKET'] ?? '127.0.0.1:8765',
-                'persistent' => true,
-            ],
-        ]);
-    }
-
-    /**
      * Forward a method call to the given method if an application instance exists.
      *
      * @return callable
@@ -329,15 +306,16 @@ class HandleExceptions
     /**
      * Flush the bootstrapper's global state.
      *
+     * @param  \PHPUnit\Framework\TestCase|null  $testCase
      * @return void
      */
-    public static function flushState()
+    public static function flushState(?TestCase $testCase = null)
     {
         if (is_null(static::$app)) {
             return;
         }
 
-        static::flushHandlersState();
+        static::flushHandlersState($testCase);
 
         static::$app = null;
 
@@ -347,9 +325,10 @@ class HandleExceptions
     /**
      * Flush the bootstrapper's global handlers state.
      *
+     * @param  \PHPUnit\Framework\TestCase|null  $testCase
      * @return void
      */
-    public static function flushHandlersState()
+    public static function flushHandlersState(?TestCase $testCase = null)
     {
         while (true) {
             $previousHandler = set_exception_handler(static fn () => null);
@@ -380,7 +359,12 @@ class HandleExceptions
 
             if ((fn () => $this->enabled ?? false)->call($instance)) {
                 $instance->disable();
-                $instance->enable();
+
+                if (version_compare(Version::id(), '12.3.4', '>=')) {
+                    $instance->enable($testCase);
+                } else {
+                    $instance->enable();
+                }
             }
         }
     }
