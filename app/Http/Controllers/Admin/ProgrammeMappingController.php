@@ -8,6 +8,7 @@ use App\Models\Programme;
 use App\Models\CourseUnit;
 use App\Models\YearOfStudy;
 use App\Models\Semester;
+use App\Models\Department;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -86,7 +87,8 @@ class ProgrammeMappingController extends Controller
         // Get the selected specialisation filter (if any)
         $selectedSpecialisationId = request('specialisation_id');
         
-        $courseUnits = CourseUnit::orderBy('code')->get();
+        $departments = Department::orderBy('name')->get();
+        $courseUnits = CourseUnit::with('department')->orderBy('code')->get();
         $yearsOfStudy = YearOfStudy::orderBy('id')->get();
         $semesters = Semester::orderBy('id')->get();
         
@@ -133,7 +135,8 @@ class ProgrammeMappingController extends Controller
             'specialisations' => $specialisations,
             'selectedSpecialisationId' => $selectedSpecialisationId,
             'tabs' => $tabs,
-            'mappings' => $mappings
+            'mappings' => $mappings,
+            'departments' => $departments
         ]);
     }
 
@@ -463,5 +466,26 @@ class ProgrammeMappingController extends Controller
         return redirect()
             ->route('admin.academic-sessions.show', $academicSession)
             ->with('success', 'Programme removed from academic session successfully');
+    }
+
+    public function bulkRemoveCourseUnits(Request $request, AcademicSession $academicSession, Programme $programme)
+    {
+        $request->validate([
+            'course_unit_ids' => 'required|array',
+            'course_unit_ids.*' => 'exists:course_units,id'
+        ]);
+
+        try {
+            $ids = $request->input('course_unit_ids');
+            
+            $deleted = $programme->courseUnitMappings()
+                ->where('academic_session_id', $academicSession->id)
+                ->whereIn('course_unit_id', $ids)
+                ->delete();
+
+            return back()->with('success', $deleted . ' course units removed successfully.');
+        } catch (\Exception $e) {
+            return back()->with('error', 'Failed to remove course units: ' . $e->getMessage());
+        }
     }
 }

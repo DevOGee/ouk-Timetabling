@@ -9,7 +9,12 @@ class CourseUnit extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['code', 'name', 'color']; // Added 'color'
+    protected $fillable = ['code', 'name', 'color', 'department_id'];
+
+    public function department()
+    {
+        return $this->belongsTo(Department::class);
+    }
 
     public function yearOfStudy()
     {

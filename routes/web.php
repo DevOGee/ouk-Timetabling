@@ -375,6 +375,8 @@ Route::prefix('admin')->middleware(['auth'])->group(function () {
                 ->name('course-units.remove');
             Route::delete('detach', [ProgrammeMappingController::class, 'detach'])
                 ->name('detach');
+            Route::post('course-units/bulk-remove', [ProgrammeMappingController::class, 'bulkRemoveCourseUnits'])
+                ->name('course-units.remove-bulk');
         });
         
         // Curriculum routes

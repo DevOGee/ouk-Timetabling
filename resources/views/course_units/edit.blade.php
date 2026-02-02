@@ -31,6 +31,21 @@
             </div>
 
             <div class="mb-3">
+                <label for="department_id" class="form-label">Department</label>
+                <select class="form-select" name="department_id" id="department_id">
+                    <option value="">Select Department (Optional)</option>
+                    @foreach ($departments as $department)
+                        <option value="{{ $department->id }}" {{ (old('department_id', $course_unit->department_id) == $department->id) ? 'selected' : '' }}>
+                            {{ $department->name }}
+                        </option>
+                    @endforeach
+                </select>
+                @error('department_id')
+                    <div class="text-danger">{{ $message }}</div>
+                @enderror
+            </div>
+
+            <div class="mb-3">
                 <label for="color" class="form-label">Color (optional)</label>
                 <div class="d-flex">
                     <div class="form-check me-3">

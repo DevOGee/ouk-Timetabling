@@ -7,6 +7,7 @@ use App\Models\CourseUnit;
 use App\Models\Lecturer;
 use App\Models\Semester;
 use App\Models\YearOfStudy;
+use App\Models\Department;
 use Illuminate\Http\Request;
 use Maatwebsite\Excel\Facades\Excel;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -16,18 +17,26 @@ class CourseUnitController extends Controller
     public function index(Request $request)
     {
         $search = $request->input('search');
+        $departmentId = $request->input('department_id');
 
-        $query = CourseUnit::with(['yearOfStudy', 'semester']);
+        $query = CourseUnit::with(['yearOfStudy', 'semester', 'department']);
 
         // Apply search filter if query exists
         if ($search) {
-            $query->where('code', 'LIKE', "%{$search}%")
-                ->orWhere('name', 'LIKE', "%{$search}%");
+            $query->where(function($q) use ($search) {
+                $q->where('code', 'LIKE', "%{$search}%")
+                  ->orWhere('name', 'LIKE', "%{$search}%");
+            });
         }
 
-        $courseUnits = $query->orderBy('code')->paginate(10)->appends(['search' => $search]);
+        if ($departmentId) {
+            $query->where('department_id', $departmentId);
+        }
 
-        return view('course_units.index', compact('courseUnits', 'search'));
+        $courseUnits = $query->orderBy('code')->paginate(10)->appends(['search' => $search, 'department_id' => $departmentId]);
+        $departments = Department::orderBy('name')->get();
+
+        return view('course_units.index', compact('courseUnits', 'search', 'departments', 'departmentId'));
     }
 
     public function show($id)
@@ -82,8 +91,9 @@ class CourseUnitController extends Controller
     {
         $yearsOfStudy = YearOfStudy::all();
         $semesters = Semester::all();
+        $departments = Department::orderBy('name')->get();
 
-        return view('course_units.create', compact('yearsOfStudy', 'semesters'));
+        return view('course_units.create', compact('yearsOfStudy', 'semesters', 'departments'));
     }
 
     public function store(Request $request)
@@ -94,6 +104,7 @@ class CourseUnitController extends Controller
             // 'year_of_study_id' => 'required|exists:years_of_study,id',
             // 'semester_id' => 'required|exists:semesters,id',
             'color' => 'nullable|string|max:7', // Allow color input
+            'department_id' => 'nullable|exists:departments,id',
         ]);
 
         CourseUnit::create($request->all());
@@ -104,7 +115,8 @@ class CourseUnitController extends Controller
     // Show form for editing
     public function edit(CourseUnit $course_unit)
     {
-        return view('course_units.edit', compact('course_unit'));
+        $departments = Department::orderBy('name')->get();
+        return view('course_units.edit', compact('course_unit', 'departments'));
     }
 
     // Update existing course unit
@@ -114,9 +126,10 @@ class CourseUnitController extends Controller
             'code' => 'required|unique:course_units,code,'.$course_unit->id,
             'name' => 'required|string',
             'color' => 'nullable|string',
+            'department_id' => 'nullable|exists:departments,id',
         ]);
 
-        $course_unit->update($request->only('code', 'name', 'color'));
+        $course_unit->update($request->only('code', 'name', 'color', 'department_id'));
 
         return redirect()->route('course_units.index')->with('success', 'Course unit updated successfully!');
     }

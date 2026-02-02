@@ -21,7 +21,15 @@
                 <a href="{{ route('course_units.create') }}" class="btn btn-primary">Add Course Unit</a>
                 <a href="{{ route('course_units.upload') }}" class="btn btn-secondary">Bulk Upload</a>
             </div>
-            <form method="GET" action="{{ route('course_units.index') }}" class="d-flex">
+            <form method="GET" action="{{ route('course_units.index') }}" class="d-flex align-items-center">
+                <select name="department_id" class="form-select me-2" style="max-width: 200px;" onchange="this.form.submit()">
+                    <option value="">All Departments</option>
+                    @foreach($departments as $dept)
+                        <option value="{{ $dept->id }}" {{ request('department_id') == $dept->id ? 'selected' : '' }}>
+                            {{ $dept->name }}
+                        </option>
+                    @endforeach
+                </select>
                 <input type="text" name="search" class="form-control me-2" placeholder="Search by Code or Name"
                     value="{{ request('search') }}">
                 <button type="submit" class="btn btn-outline-primary">Search</button>
@@ -36,6 +44,7 @@
                     <th></th>
                     <th>Course Code</th>
                     <th>Course Unit Name</th>
+                    <th>Department</th>
                     <th>Actions</th>
                 </tr>
             </thead>
@@ -51,6 +60,7 @@
                         </td>
                         <td>{{ $courseUnit->code }}</td>
                         <td>{{ $courseUnit->name }}</td>
+                        <td>{{ $courseUnit->department->name ?? '-' }}</td>
                         <td>
                             @can('view', $courseUnit)
                                 <a href="{{ route('course_units.show', $courseUnit) }}" class="btn btn-warning btn-sm">View</a>

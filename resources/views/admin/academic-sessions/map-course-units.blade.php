@@ -9,7 +9,7 @@
             <div class="d-flex justify-content-between align-items-center">
                 <div>
                     <h1 class="h3 mb-0 text-gray-800">Map Course Units</h1>
-                    <p class="mb-0 text-muted">{{ $programme->name }} ({{ $programme->code }}) - {{ $academicSession->name }}</p>
+                    <p class="mb-0 text-muted">{{ $programme->name }} ({{ $programme->programme_code }}) - {{ $academicSession->name }}</p>
                 </div>
                 <div>
                     <a href="{{ route('admin.academic-sessions.curriculum', $academicSession) }}" class="btn btn-secondary">
@@ -50,6 +50,9 @@
                                 @endforeach
                             </select>
                         </form>
+                        <button class="btn btn-danger btn-sm me-2" onclick="confirmBulkDelete()">
+                            <i class="bi bi-trash"></i> Drop Selected Courses
+                        </button>
                         <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addCourseUnitsModal">
                             <i class="bi bi-plus-circle"></i> Add Course Units
                         </button>
@@ -71,7 +74,9 @@
                         @endforeach
                     </ul>
                     
-                    <div class="tab-content" id="levelTabsContent">
+                    <form id="bulkDeleteForm" action="{{ route('admin.academic-sessions.programmes.course-units.remove-bulk', [$academicSession, $programme]) }}" method="POST">
+                        @csrf
+                        <div class="tab-content" id="levelTabsContent">
                         @forelse($tabs as $index => $tab)
                             <div class="tab-pane fade {{ $index === 0 ? 'show active' : '' }}" 
                                  id="content-{{ $tab['id'] }}" 
@@ -81,9 +86,9 @@
                                     <table class="table table-bordered table-striped">
                                         <thead>
                                             <tr>
+                                                <th style="width: 5%"><input type="checkbox" class="select-all-checkbox"></th>
                                                 <th style="width: 10%">Code</th>
                                                 <th style="width: 35%">Title</th>
-                                                <th style="width: 10%">Credit</th>
                                                 <th style="width: 15%">Type</th>
                                                 <th style="width: 15%">Actions</th>
                                             </tr>
@@ -91,9 +96,9 @@
                                         <tbody>
                                             @foreach($tab['mappings'] as $mapping)
                                                 <tr data-course-id="{{ $mapping->course_unit_id }}">
+                                                    <td><input type="checkbox" name="course_unit_ids[]" value="{{ $mapping->course_unit_id }}" class="course-checkbox"></td>
                                                     <td>{{ $mapping->courseUnit->code }}</td>
                                                     <td>{{ $mapping->courseUnit->name }}</td>
-                                                    <td>{{ $mapping->courseUnit->credit_hours ?? '-' }}</td>
                                                     <td>
                                                         @if($mapping->is_core)
                                                             <span class="badge bg-success">Core</span>
@@ -120,7 +125,8 @@
                                 <p class="small text-muted">Click "Add Course Units" to get started.</p>
                             </div>
                         @endforelse
-                    </div>
+                        </div>
+                    </form>
                 </div>
             </div>
         </div>
@@ -199,6 +205,16 @@
                     @endif
 
                     <div class="mb-3">
+                        <label for="department_filter" class="form-label">Filter by Department</label>
+                        <select id="department_filter" class="form-select">
+                            <option value="">All Departments</option>
+                            @foreach($departments as $dept)
+                                <option value="{{ $dept->id }}">{{ $dept->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
                         <div class="input-group">
                             <span class="input-group-text"><i class="bi bi-search"></i></span>
                             <input type="text" id="courseSearch" class="form-control" placeholder="Search course units...">
@@ -207,7 +223,7 @@
 
                     <div class="course-units-container">
                         @foreach($courseUnits as $courseUnit)
-                            <div class="course-unit-item" data-id="{{ $courseUnit->id }}">
+                            <div class="course-unit-item" data-id="{{ $courseUnit->id }}" data-department-id="{{ $courseUnit->department_id }}">
                                 <input type="checkbox" name="course_unit_ids[]" value="{{ $courseUnit->id }}" class="form-check-input" id="course_{{ $courseUnit->id }}" {{ in_array($courseUnit->id, old('course_unit_ids', [])) ? 'checked' : '' }}>
                                 <label class="form-check-label" for="course_{{ $courseUnit->id }}">
                                     <strong>{{ $courseUnit->code }}</strong> - {{ $courseUnit->name }}
@@ -260,15 +276,31 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
     
-    // Search functionality
-    if (courseSearch) {
-        courseSearch.addEventListener('input', function(e) {
-            const searchTerm = e.target.value.toLowerCase();
-            document.querySelectorAll('.course-unit-item').forEach(item => {
-                const text = item.textContent.toLowerCase();
-                item.style.display = text.includes(searchTerm) ? 'block' : 'none';
-            });
+    // Search and Filter functionality
+    const departmentFilter = document.getElementById('department_filter');
+
+    function filterCourses() {
+        const searchTerm = courseSearch ? courseSearch.value.toLowerCase() : '';
+        const deptId = departmentFilter ? departmentFilter.value : '';
+
+        document.querySelectorAll('.course-unit-item').forEach(item => {
+            const text = item.textContent.toLowerCase();
+            // Handle null/empty department_id safely
+            const itemDeptId = item.dataset.departmentId || '';
+            
+            const matchesSearch = text.includes(searchTerm);
+            const matchesDept = deptId === '' || itemDeptId === deptId;
+            
+            item.style.display = (matchesSearch && matchesDept) ? 'block' : 'none';
         });
+    }
+
+    if (courseSearch) {
+        courseSearch.addEventListener('input', filterCourses);
+    }
+    
+    if (departmentFilter) {
+        departmentFilter.addEventListener('change', filterCourses);
     }
     
     // Remove mapping
@@ -336,6 +368,31 @@ document.addEventListener('DOMContentLoaded', function() {
             toastElement.remove();
         });
     }
+    // Bulk Delete Logic
+    window.confirmBulkDelete = function() {
+        const checkboxes = document.querySelectorAll('.course-checkbox:checked');
+        if (checkboxes.length === 0) {
+            alert('Please select at least one course to remove.');
+            return;
+        }
+        
+        if (confirm(`Are you sure you want to remove ${checkboxes.length} selected course(s)?`)) {
+            document.getElementById('bulkDeleteForm').submit();
+        }
+    };
+
+    // Select All Logic
+    const selectAllCheckboxes = document.querySelectorAll('.select-all-checkbox');
+    selectAllCheckboxes.forEach(headerCheckbox => {
+        headerCheckbox.addEventListener('change', function() {
+            const table = this.closest('table');
+            if (table) {
+               const checkboxes = table.querySelectorAll('.course-checkbox');
+               checkboxes.forEach(cb => cb.checked = this.checked);
+            }
+        });
+    });
+
 });
 </script>
 @endpush

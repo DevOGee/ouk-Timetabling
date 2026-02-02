@@ -28,4 +28,12 @@ class Department extends Model
     {
         return $this->hasMany(Programme::class);
     }
+
+    /**
+     * Get the course units for the department.
+     */
+    public function courseUnits(): HasMany
+    {
+        return $this->hasMany(CourseUnit::class);
+    }
 }
