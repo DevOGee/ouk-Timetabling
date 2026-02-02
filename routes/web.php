@@ -308,6 +308,19 @@ Route::prefix('admin')->middleware(['auth'])->group(function () {
         ]
     ]);
 
+    // Specialisations
+    Route::resource('specialisations', \App\Http\Controllers\Admin\SpecialisationController::class, [
+        'names' => [
+            'index' => 'admin.specialisations.index',
+            'create' => 'admin.specialisations.create',
+            'store' => 'admin.specialisations.store',
+            'show' => 'admin.specialisations.show',
+            'edit' => 'admin.specialisations.edit',
+            'update' => 'admin.specialisations.update',
+            'destroy' => 'admin.specialisations.destroy',
+        ]
+    ]);
+
     // Academic Sessions
     // Academic Sessions resource with show method included
     Route::resource('academic-sessions', AcademicSessionController::class, [

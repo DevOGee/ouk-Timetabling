@@ -923,6 +923,13 @@
                             <i class="bi bi-journal-bookmark me-2"></i>Programmes
                         </a>
                     </li>
+
+                    {{-- Specialisations - Using admin prefix --}}
+                    <li class="submenu-item {{ request()->routeIs('admin.specialisations.*') ? 'active' : '' }}">
+                        <a href="{{ route('admin.specialisations.index') }}" class="submenu-link">
+                            <i class="bi bi-journals me-2"></i>Specialisations
+                        </a>
+                    </li>
                     
                     {{-- Course Units - Using non-admin route since it's defined at root --}}
                     <li class="submenu-item {{ request()->routeIs('course_units.*') ? 'active' : '' }}">

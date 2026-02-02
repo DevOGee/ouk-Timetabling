@@ -31,13 +31,16 @@ class ProgrammeController extends Controller
 
     public function store(Request $request)
     {
-        $request->validate([
+        $validated = $request->validate([
             'department_id' => 'required|exists:departments,id',
             'name' => 'required|unique:programmes,name',
             'programme_code' => 'required|unique:programmes,programme_code|max:10',
+            'has_specialisations' => 'sometimes|boolean',
         ]);
 
-        Programme::create($request->all());
+        $validated['has_specialisations'] = $request->has('has_specialisations');
+
+        Programme::create($validated);
 
         return redirect()->route('programmes.index')->with('success', 'Programme added successfully.');
     }
@@ -51,13 +54,16 @@ class ProgrammeController extends Controller
 
     public function update(Request $request, Programme $programme)
     {
-        $request->validate([
+        $validated = $request->validate([
             'department_id' => 'required|exists:departments,id',
             'name' => 'required|unique:programmes,name,'.$programme->id,
             'programme_code' => 'required|unique:programmes,programme_code,'.$programme->id.'|max:10',
+            'has_specialisations' => 'sometimes|boolean',
         ]);
 
-        $programme->update($request->all());
+        $validated['has_specialisations'] = $request->has('has_specialisations');
+
+        $programme->update($validated);
 
         return redirect()->route('programmes.index')->with('success', 'Programme updated successfully.');
     }

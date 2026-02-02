@@ -4,14 +4,17 @@
 
 @section('content')
     <div class="container mt-5">
-        <h2 class="mb-4">Programme Scheduling</h2>
-
         @if (session('success'))
             <div class="alert alert-success">{{ session('success') }}</div>
         @endif
 
-        <a href="{{ route('admin.programmes.create') }}" class="mb-3 btn btn-primary">Add Programme</a>
-
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>Programmes</h2>
+            <div>
+                <a href="{{ route('admin.specialisations.index') }}" class="btn btn-outline-primary me-2">Manage Specialisations</a>
+                <a href="{{ route('admin.programmes.create') }}" class="btn btn-success">Add Programme</a>
+            </div>
+        </div>
 
         @foreach ($schools as $school)
             <div class="mb-5">
@@ -34,6 +37,10 @@
                                                 <strong>{{ $programme->programme_code }}</strong> – {{ $programme->name }}
                                             </div>
                                             <div>
+                                                @if($programme->has_specialisations)
+                                                    <a href="{{ route('admin.specialisations.index', ['programme_id' => $programme->id]) }}"
+                                                        class="btn btn-outline-primary btn-sm me-1">View Specialisations</a>
+                                                @endif
                                                 <a href="{{ route('admin.programmes.edit', $programme) }}"
                                                     class="btn btn-warning btn-sm me-1">Edit</a>
                                                 <form action="{{ route('admin.programmes.destroy', $programme) }}" method="POST"

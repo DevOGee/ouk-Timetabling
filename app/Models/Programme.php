@@ -16,7 +16,7 @@ class Programme extends Model
 {
     use HasFactory, SoftDeletes;
 
-    protected $fillable = ['name', 'department_id', 'programme_code'];
+    protected $fillable = ['name', 'department_id', 'programme_code', 'has_specialisations'];
 
     /**
      * Get all course unit mappings for this programme.
@@ -80,6 +80,14 @@ class Programme extends Model
     public function department(): BelongsTo
     {
         return $this->belongsTo(Department::class);
+    }
+
+    /**
+     * Get the specialisations for the programme.
+     */
+    public function specialisations(): HasMany
+    {
+        return $this->hasMany(Specialisation::class);
     }
 
     /**

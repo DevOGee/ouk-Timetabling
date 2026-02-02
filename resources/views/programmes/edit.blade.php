@@ -49,6 +49,11 @@
                     value="{{ old('name', $programme->name) }}" required>
             </div>
 
+            <div class="mb-3 form-check">
+                <input type="checkbox" class="form-check-input" id="has_specialisations" name="has_specialisations" value="1" {{ $programme->has_specialisations ? 'checked' : '' }}>
+                <label class="form-check-label" for="has_specialisations">This programme has specialisations</label>
+            </div>
+
             <button type="submit" class="btn btn-primary">Update</button>
             <a href="{{ route('admin.programmes.index') }}" class="btn btn-secondary">Cancel</a>
         </form>
