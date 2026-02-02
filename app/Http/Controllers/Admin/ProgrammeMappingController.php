@@ -80,32 +80,60 @@ class ProgrammeMappingController extends Controller
      */
     public function mapCourseUnits(AcademicSession $academicSession, Programme $programme)
     {
+        // Get all specialisations for this programme
+        $specialisations = $programme->specialisations()->orderBy('name')->get();
+        
+        // Get the selected specialisation filter (if any)
+        $selectedSpecialisationId = request('specialisation_id');
+        
         $courseUnits = CourseUnit::orderBy('code')->get();
         $yearsOfStudy = YearOfStudy::orderBy('id')->get();
         $semesters = Semester::orderBy('id')->get();
         
-        // Get all mappings for this programme and academic session
-        $mappings = $programme->sessionMappings($academicSession->id)
-            ->with(['courseUnit', 'yearOfStudy', 'semester'])
-            ->get();
-            
-        // Group mappings by year and semester (e.g., 1.1, 1.2, 2.1, etc.)
-        $groupedMappings = $mappings->groupBy(function($mapping) {
+        // Build mappings query
+        $mappingsQuery = $programme->sessionMappings($academicSession->id)
+            ->with(['courseUnit', 'yearOfStudy', 'semester', 'specialisation']);
+        
+        // Filter by specialisation if selected
+        if ($selectedSpecialisationId && $selectedSpecialisationId !== 'all') {
+            if ($selectedSpecialisationId === 'core_only') {
+                $mappingsQuery->core();
+            } else {
+                $mappingsQuery->forSpecialisation($selectedSpecialisationId);
+            }
+        }
+        
+        $mappings = $mappingsQuery->get();
+        
+        // Group by level and build tabs structure
+        $tabs = collect();
+        $mappings->groupBy(function($mapping) {
             return $mapping->yearOfStudy->name . '.' . $mapping->semester->name;
-        })->sortBy(function($items, $key) {
-            // Sort by year and semester (e.g., 1.1 comes before 1.2, 2.1, etc.)
-            list($year, $semester) = explode('.', $key);
-            return (int)$year * 10 + (int)$semester;
+        })->each(function($levelMappings, $level) use ($tabs) {
+            list($year, $semester) = explode('.', $level);
+            $tabs->push([
+                'id' => str_replace('.', '-', $level),
+                'label' => "Level $level",
+                'year' => $year,
+                'semester' => $semester,
+                'sortKey' => (int)$year * 10 + (int)$semester,
+                'mappings' => $levelMappings
+            ]);
         });
-
+        
+        // Sort tabs by level
+        $tabs = $tabs->sortBy('sortKey')->values();
+        
         return view('admin.academic-sessions.map-course-units', [
             'academicSession' => $academicSession,
             'programme' => $programme,
             'courseUnits' => $courseUnits,
             'yearsOfStudy' => $yearsOfStudy,
             'semesters' => $semesters,
-            'groupedMappings' => $groupedMappings,
-            'mappings' => $mappings // Keep original mappings for backward compatibility if needed
+            'specialisations' => $specialisations,
+            'selectedSpecialisationId' => $selectedSpecialisationId,
+            'tabs' => $tabs,
+            'mappings' => $mappings
         ]);
     }
 
@@ -337,13 +365,30 @@ class ProgrammeMappingController extends Controller
      */
     public function addCourseUnit(Request $request, AcademicSession $academicSession, Programme $programme)
     {
-        $request->validate([
+        $validated = $request->validate([
             'course_unit_id' => 'required|exists:course_units,id',
             'year_of_study_id' => 'required|exists:years_of_study,id',
-            'semester_id' => 'required|exists:semesters,id'
+            'semester_id' => 'required|exists:semesters,id',
+            'is_core' => 'required|boolean',
+            'specialisation_id' => 'nullable|exists:specialisations,id'
         ]);
 
         try {
+            // Validation logic
+            if (!$validated['is_core'] && !$validated['specialisation_id']) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Non-core courses must be assigned to a specialisation'
+                ], 422);
+            }
+            
+            if ($validated['is_core'] && $validated['specialisation_id']) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Core courses cannot be assigned to a specific specialisation'
+                ], 422);
+            }
+
             // Check if this course unit is already mapped to this programme in this session
             $existingMapping = $programme->sessionMappings($academicSession->id)
                 ->where('course_unit_id', $request->course_unit_id)
@@ -352,8 +397,10 @@ class ProgrammeMappingController extends Controller
             if ($existingMapping) {
                 // Update existing mapping
                 $existingMapping->update([
-                    'year_of_study_id' => $request->year_of_study_id,
-                    'semester_id' => $request->semester_id,
+                    'year_of_study_id' => $validated['year_of_study_id'],
+                    'semester_id' => $validated['semester_id'],
+                    'is_core' => $validated['is_core'],
+                    'specialisation_id' => $validated['specialisation_id'],
                     'updated_at' => now()
                 ]);
                 $message = 'Course unit mapping updated successfully';
@@ -361,9 +408,11 @@ class ProgrammeMappingController extends Controller
                 // Create new mapping
                 $mapping = $programme->courseUnitMappings()->create([
                     'academic_session_id' => $academicSession->id,
-                    'course_unit_id' => $request->course_unit_id,
-                    'year_of_study_id' => $request->year_of_study_id,
-                    'semester_id' => $request->semester_id
+                    'course_unit_id' => $validated['course_unit_id'],
+                    'year_of_study_id' => $validated['year_of_study_id'],
+                    'semester_id' => $validated['semester_id'],
+                    'is_core' => $validated['is_core'],
+                    'specialisation_id' => $validated['specialisation_id']
                 ]);
                 $message = 'Course unit added successfully';
             }
@@ -371,11 +420,7 @@ class ProgrammeMappingController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => $message,
-                'course_unit' => [
-                    'id' => $request->course_unit_id,
-                    'year_of_study_id' => $request->year_of_study_id,
-                    'semester_id' => $request->semester_id
-                ]
+                'mapping' => $existingMapping ? $existingMapping->load(['courseUnit', 'specialisation']) : $mapping->load(['courseUnit', 'specialisation'])
             ]);
 
         } catch (\Exception $e) {
