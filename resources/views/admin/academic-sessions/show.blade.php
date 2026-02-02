@@ -232,34 +232,58 @@
                     <h5 class="mb-0">Programme Timetables</h5>
                     <div class="d-flex align-items-center">
                         @if(!auth()->user()->hasRole('timetabler'))
-                            @if(isset($schools) && $schools->count() > 0)
-                                <div class="me-3">
-                                    <label for="timetableSchoolFilter" class="form-label mb-0 me-2">Filter by School:</label>
-                                    <select id="timetableSchoolFilter" class="form-select form-select-sm" style="width: auto; display: inline-block;">
-                                        <option value="all">All Schools</option>
-                                        @foreach($schools as $school)
-                                            <option value="{{ $school->id }}">{{ $school->name }}</option>
+                            <div class="d-flex align-items-center">
+                                @if(isset($schools) && $schools->count() > 0)
+                                    <!-- School Filter (if needed, though we are grouping by school) -->
+                                @endif
+                                
+                                <form method="GET" action="{{ url()->current() }}" class="d-flex gap-2 align-items-center me-3">
+                                    <select name="department_id" class="form-select form-select-sm" style="width: auto;" onchange="this.form.submit()">
+                                        <option value="all">All Departments</option>
+                                        @foreach($departments->groupBy('school.name') as $schoolName => $schoolDepartments)
+                                            <optgroup label="{{ $schoolName }}">
+                                                @foreach($schoolDepartments as $department)
+                                                    <option value="{{ $department->id }}" {{ $selectedDepartment == $department->id ? 'selected' : '' }}>
+                                                        {{ $department->name }}
+                                                    </option>
+                                                @endforeach
+                                            </optgroup>
                                         @endforeach
                                     </select>
-                                </div>
-                            @endif
-                            
-                            @if($programmesForTimetable->isNotEmpty())
-                                <div class="dropdown">
-                                    <button class="btn btn-sm btn-primary dropdown-toggle" type="button" id="addTimetableDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-                                        <i class="bi bi-plus"></i> Add Timetable
-                                    </button>
-                                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="addTimetableDropdown">
-                                        @foreach($programmesForTimetable as $programme)
-                                            <li>
-                                                <a class="dropdown-item" href="#" data-programme-id="{{ $programme->id }}">
-                                                    {{ $programme->name }} ({{ $programme->programme_code }})
-                                                </a>
-                                            </li>
-                                        @endforeach
-                                    </ul>
-                                </div>
-                            @endif
+                                    
+                                    <div class="input-group input-group-sm">
+                                        <input type="search" name="search" class="form-control" 
+                                               placeholder="Search..." 
+                                               value="{{ $searchTerm ?? '' }}">
+                                        <button type="submit" class="btn btn-outline-secondary">
+                                            <i class="bi bi-search"></i>
+                                        </button>
+                                    </div>
+                                    
+                                    @if($selectedDepartment || $searchTerm)
+                                        <a href="{{ url()->current() }}" class="btn btn-sm btn-outline-secondary" title="Clear Filters">
+                                            <i class="bi bi-x-lg"></i>
+                                        </a>
+                                    @endif
+                                </form>
+
+                                @if($programmesForTimetable->isNotEmpty())
+                                    <div class="dropdown">
+                                        <button class="btn btn-sm btn-primary dropdown-toggle" type="button" id="addTimetableDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                            <i class="bi bi-plus"></i> Add Timetable
+                                        </button>
+                                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="addTimetableDropdown">
+                                            @foreach($programmesForTimetable as $programme)
+                                                <li>
+                                                    <a class="dropdown-item" href="#" data-programme-id="{{ $programme->id }}">
+                                                        {{ $programme->name }} ({{ $programme->programme_code }})
+                                                    </a>
+                                                </li>
+                                            @endforeach
+                                        </ul>
+                                    </div>
+                                @endif
+                            </div>
                         @endif
                     </div>
                 </div>

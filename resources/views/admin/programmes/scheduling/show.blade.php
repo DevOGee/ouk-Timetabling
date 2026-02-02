@@ -67,9 +67,10 @@
                 <table class="table table-borderless table-hover w-100">
                     <thead class="table-light">
                         <tr>
-                            <th class="w-35">Course</th>
-                            <th class="w-25">Instructor</th>
-                            <th class="w-30">Schedule</th>
+                            <th class="w-30">Course</th>
+                            <th class="w-15">Specialisation</th>
+                            <th class="w-20">Instructor</th>
+                            <th class="w-25">Schedule</th>
                             <th class="w-10 text-end">Actions</th>
                         </tr>
                     </thead>
@@ -85,41 +86,56 @@
                                     <div class="text-muted small">{{ $course->name }}</div>
                                 </td>
                                 <td class="align-middle">
-                                    @if ($instructor)
-                                        {{ $instructor->name }}
+                                    @if($mapping->is_core)
+                                        <span class="badge bg-secondary">Core</span>
+                                    @elseif($mapping->specialisation)
+                                        <span class="badge bg-info text-dark">{{ $mapping->specialisation->name }}</span>
                                     @else
-                                        <span class="text-muted">No Instructor Assigned</span>
+                                        <span class="text-muted small">N/A</span>
+                                    @endif
+                                </td>
+                                <td class="align-middle">
+                                    @if ($instructor)
+                                        <div class="d-flex align-items-center">
+                                            <div class="avatar-sm me-2 bg-light rounded-circle d-flex align-items-center justify-content-center text-primary fw-bold" style="width: 32px; height: 32px;">
+                                                {{ substr($instructor->name, 0, 1) }}
+                                            </div>
+                                            <div>
+                                                <div class="fw-semibold">{{ $instructor->name }}</div>
+                                                <div class="small text-muted">{{ $instructor->email }}</div>
+                                            </div>
+                                        </div>
+                                    @else
+                                        <span class="badge bg-danger">Unassigned</span>
                                     @endif
                                 </td>
                                 <td class="align-middle">
                                     @if ($mapping->morning_start_time || $mapping->evening_start_time)
-                                        <div class="d-flex flex-column gap-1">
+                                        <div class="d-flex flex-column gap-2">
                                             @if ($mapping->day)
-                                                <div class="fw-semibold">{{ $mapping->day->name }}</div>
+                                                <div class="fw-bold text-dark">{{ $mapping->day->name }}</div>
                                             @endif
                                             
-                                            @if ($mapping->morning_start_time)
-                                                <div class="d-flex align-items-center gap-2">
-                                                    <span class="badge bg-primary">
+                                            <div class="d-flex flex-wrap gap-2">
+                                                @if ($mapping->morning_start_time)
+                                                    <span class="badge bg-soft-primary text-primary border border-primary-subtle d-flex align-items-center">
                                                         <i class="bi bi-sun me-1"></i>
                                                         {{ \Carbon\Carbon::parse($mapping->morning_start_time)->format('h:i A') }}
-                                                        ({{ $mapping->morning_duration }} min)
+                                                        <span class="ms-1 opacity-75">({{ $mapping->morning_duration }} min)</span>
                                                     </span>
-                                                </div>
-                                            @endif
-                                            
-                                            @if ($mapping->evening_start_time)
-                                                <div class="d-flex align-items-center gap-2">
-                                                    <span class="badge bg-dark text-white">
+                                                @endif
+                                                
+                                                @if ($mapping->evening_start_time)
+                                                    <span class="badge bg-soft-dark text-dark border border-dark-subtle d-flex align-items-center">
                                                         <i class="bi bi-moon-stars me-1"></i>
                                                         {{ \Carbon\Carbon::parse($mapping->evening_start_time)->format('h:i A') }}
-                                                        ({{ $mapping->evening_duration }} min)
+                                                        <span class="ms-1 opacity-75">({{ $mapping->evening_duration }} min)</span>
                                                     </span>
-                                                </div>
-                                            @endif
+                                                @endif
+                                            </div>
                                         </div>
                                     @else
-                                        <span class="text-muted small">No slot assigned</span>
+                                        <span class="badge bg-warning text-dark">Unscheduled</span>
                                     @endif
                                 </td>
 
@@ -137,14 +153,14 @@
                                                 @csrf
                                                 @method('DELETE')
                                                 <input type="hidden" name="mapping_id" value="{{ $mapping->id }}">
-                                                <button type="submit" class="btn btn-warning btn-sm">
+                                                <button type="submit" class="btn btn-outline-danger btn-sm" title="Unassign Instructor">
                                                     <i class="bi bi-person-dash"></i>
                                                 </button>
                                             </form>
                                         @else
-                                            <button class="btn btn-success btn-sm" data-bs-toggle="modal"
+                                            <button class="btn btn-outline-primary btn-sm" data-bs-toggle="modal"
                                                 data-bs-target="#assignInstructorModal{{ $mapping->id }}" 
-                                                data-toggle="tooltip" title="Assign Instructor">
+                                                title="Assign Instructor">
                                                 <i class="bi bi-person-plus"></i>
                                             </button>
                                         @endif
@@ -153,13 +169,13 @@
                                         @if (!$mapping->morning_start_time && !$mapping->evening_start_time)
                                             <button class="btn btn-primary btn-sm" data-bs-toggle="modal"
                                                 data-bs-target="#assignSlotModal{{ $mapping->id }}"
-                                                data-toggle="tooltip" title="Assign Time Slot">
-                                                <i class="bi bi-clock"></i>
+                                                title="Assign Time Slot">
+                                                <i class="bi bi-calendar-plus"></i>
                                             </button>
                                         @else
-                                            <button class="btn btn-info btn-sm" data-bs-toggle="modal"
+                                            <button class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal"
                                                 data-bs-target="#editSlotModal{{ $mapping->id }}"
-                                                data-toggle="tooltip" title="Edit Time Slot">
+                                                title="Edit Schedule">
                                                 <i class="bi bi-pencil"></i>
                                             </button>
                                         @endif

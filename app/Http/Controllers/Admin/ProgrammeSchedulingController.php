@@ -20,7 +20,7 @@ class ProgrammeSchedulingController extends Controller
     public function show(AcademicSession $academicSession, Programme $programme)
     {
         // Get all course unit mappings for this programme in the current academic session
-        $mappings = CourseUnitProgrammeMapping::with(['courseUnit', 'instructor.title', 'day', 'semester', 'yearOfStudy'])
+        $mappings = CourseUnitProgrammeMapping::with(['courseUnit', 'instructor.title', 'day', 'semester', 'yearOfStudy', 'specialisation'])
             ->where('programme_id', $programme->id)
             ->where('academic_session_id', $academicSession->id)
             ->get();
