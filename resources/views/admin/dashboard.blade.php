@@ -147,16 +147,11 @@
                                 @forelse($todaysEvents as $event)
                                     <tr>
                                         <td style="white-space: nowrap;">
-                                            @if($eventType === 'exam')
-                                                {{ $event->start_time ? $event->start_time->format('H:i') : 'N/A' }} 
-                                                - 
-                                                {{ $event->start_time ? $event->start_time->addMinutes($event->duration_minutes)->format('H:i') : 'N/A' }}
-                                            @else
-                                                {{-- LessonSlot start_time might be string '08:00' or Carbon --}}
-                                                {{ \Carbon\Carbon::parse($event->start_time)->format('H:i') }} 
-                                                - 
-                                                {{ \Carbon\Carbon::parse($event->start_time)->addHours($event->duration)->format('H:i') }}
-                                            @endif
+                                        <td style="white-space: nowrap;">
+                                            {{-- Controller ensures start_time is Carbon --}}
+                                            {{ $event->start_time ? $event->start_time->format('H:i') : 'N/A' }} 
+                                            - 
+                                            {{ $event->start_time ? $event->start_time->copy()->addMinutes($eventType === 'exam' ? $event->duration_minutes : ($event->duration ?? 0))->format('H:i') : 'N/A' }}
                                         </td>
                                         <td>
                                             <div class="fw-bold">{{ $event->courseUnit->code ?? 'N/A' }}</div>

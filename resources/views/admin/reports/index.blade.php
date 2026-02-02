@@ -103,6 +103,29 @@
             </div>
         </div>
 
+        <!-- Today's Classes Card -->
+        <div class="col-xl-4 col-md-6 mb-4">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                Today's Classes</div>
+                            <p class="mb-0 text-muted">View all classes scheduled for today</p>
+                        </div>
+                        <div class="col-auto">
+                            <i class="bi bi-calendar-day fa-3x text-gray-300"></i>
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <a href="{{ route('admin.reports.todays-classes') }}" class="btn btn-sm btn-primary">
+                            <i class="bi bi-eye me-1"></i> View Report
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Exam Conflicts Card -->
         <div class="col-xl-4 col-md-6 mb-4">
             <div class="card border-left-danger shadow h-100 py-2">

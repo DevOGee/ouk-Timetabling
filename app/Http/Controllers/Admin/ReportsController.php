@@ -713,6 +713,83 @@ class ReportsController extends Controller
         
         // Default to Excel
         return Excel::download(new TimeConflictsExport($reportData), $filename . '.xlsx');
+        return Excel::download(new TimeConflictsExport($reportData), $filename . '.xlsx');
+    }
+
+    /**
+     * Display Today's Classes Report
+     */
+    public function todaysClasses(Request $request)
+    {
+        $today = Carbon::today();
+        $dayName = $today->format('l');
+        $day = Day::where('name', $dayName)->first();
+        
+        // Get active academic session
+        $academicSessionId = $request->input(
+            'academic_session_id',
+            AcademicSession::where('is_current', true)->first()?->id
+        );
+        
+        $academicSessions = AcademicSession::orderBy('start_date', 'desc')->get();
+        $todaysClasses = collect();
+
+        if ($day && $academicSessionId) {
+            // Fetch mappings for today
+            $mappings = CourseUnitProgrammeMapping::with(['courseUnit', 'programme', 'instructor'])
+                ->where('day_id', $day->id)
+                ->where('academic_session_id', $academicSessionId)
+                ->where(function ($q) {
+                    $q->whereNotNull('morning_start_time')
+                      ->orWhereNotNull('evening_start_time');
+                })
+                ->get();
+            
+            // Process mappings into a flat list of events
+            $events = collect();
+            foreach ($mappings as $mapping) {
+                // Morning Slot
+                if ($mapping->morning_start_time) {
+                    $events->push((object)[
+                        'start_time' => $mapping->morning_start_time,
+                        'end_time' => Carbon::parse($mapping->morning_start_time)
+                            ->addMinutes($mapping->morning_duration ?? 60)
+                            ->format('H:i:s'),
+                        'type' => 'Morning',
+                        'courseUnit' => $mapping->courseUnit,
+                        'programme' => $mapping->programme,
+                        'instructor' => $mapping->instructor,
+                        'mapping' => $mapping
+                    ]);
+                }
+                // Evening Slot
+                if ($mapping->evening_start_time) {
+                    $events->push((object)[
+                        'start_time' => $mapping->evening_start_time,
+                        'end_time' => Carbon::parse($mapping->evening_start_time)
+                            ->addMinutes($mapping->evening_duration ?? 60)
+                            ->format('H:i:s'),
+                        'type' => 'Evening',
+                        'courseUnit' => $mapping->courseUnit,
+                        'programme' => $mapping->programme,
+                        'instructor' => $mapping->instructor,
+                        'mapping' => $mapping
+                    ]);
+                }
+            }
+
+            // Group by Programme Name
+            $todaysClasses = $events->sortBy('start_time')->groupBy(function($event) {
+                return $event->programme->name ?? 'Unknown Programme';
+            });
+        }
+
+        return view('admin.reports.todays-classes', [
+            'todaysClasses' => $todaysClasses,
+            'academicSessions' => $academicSessions,
+            'selectedAcademicSessionId' => $academicSessionId,
+            'date' => $today
+        ]);
     }
 
     public function instructorSchedules(Request $request, $instructorId = null)

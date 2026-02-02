@@ -14,7 +14,7 @@ use Illuminate\Http\Request;
 
 use App\Models\ExamSchedule;
 use App\Models\Exam;
-use App\Models\LessonSlot;
+use App\Models\CourseUnitProgrammeMapping;
 use App\Models\Day;
 
 class DashboardController extends Controller
@@ -84,31 +84,54 @@ class DashboardController extends Controller
             $day = Day::where('name', $dayName)->first();
 
             if ($day && $currentSession) {
-                // Find active timetables for current session
-                // Since LessonSlots belong to specific ProgrammeTimetable or similar, 
-                // we assume LessonSlot links to things we can filter.
-                // LessonSlot -> day_id.
-                // But LessonSlot doesn't directly link to 'Active Session' easily unless we join through Programme?
-                // Actually LessonSlot is usually part of a generated timetable structure.
-                // Looking at LessonSlot model: it has 'programme_id'.
-                // We'll just fetch slots for the day. Ideally we should filter by active session context.
-                // However, without a direct link on LessonSlot to Session, we rely on the fact that 
-                // typically valid slots are from current curriculum.
-                // Wait, LessonSlot might be persistent.
-                
-                // Let's just fetch for the day for now. To be more robust we'd check if the programme is active.
-                
-                $query = LessonSlot::with(['courseUnit', 'programme'])
+                // Fetch TimeTable Mappings for today
+                $query = CourseUnitProgrammeMapping::with(['courseUnit', 'programme', 'instructor'])
                     ->where('day_id', $day->id)
-                    ->orderBy('start_time');
-                
+                    ->where('academic_session_id', $currentSession->id)
+                    ->where(function ($q) {
+                        $q->whereNotNull('morning_start_time')
+                          ->orWhereNotNull('evening_start_time');
+                    });
+
                 if ($isTimetabler) {
                      $query->whereHas('programme', function($q) use ($user) {
                          $q->where('school_id', $user->school_id);
                      });
                 }
                 
-                $todaysEvents = $query->take(10)->get();
+                $mappings = $query->get();
+
+                // Process mappings into events (splitting morning/evening if both exist)
+                foreach ($mappings as $mapping) {
+                    // Add morning slot if exists
+                    if ($mapping->morning_start_time) {
+                        $todaysEvents->push((object)[
+                            'start_time' => $mapping->morning_start_time,
+                            'duration' => $mapping->morning_duration,
+                            'courseUnit' => $mapping->courseUnit,
+                            'programme' => $mapping->programme,
+                            'type' => 'Morning',
+                            'room_id' => null, // Placeholder if needed
+                            'invigilator' => null // Consistent structure
+                        ]);
+                    }
+                    
+                    // Add evening slot if exists
+                    if ($mapping->evening_start_time) {
+                        $todaysEvents->push((object)[
+                            'start_time' => $mapping->evening_start_time,
+                            'duration' => $mapping->evening_duration,
+                            'courseUnit' => $mapping->courseUnit,
+                            'programme' => $mapping->programme,
+                            'type' => 'Evening',
+                            'room_id' => null,
+                            'invigilator' => null
+                        ]);
+                    }
+                }
+
+                // Sort by start time and limit
+                $todaysEvents = $todaysEvents->sortBy('start_time')->take(10);
             }
         }
 

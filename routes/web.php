@@ -226,6 +226,9 @@ Route::prefix('admin')->middleware(['auth'])->group(function () {
         // Exam Conflicts Report
         Route::get('exam-conflicts', [\App\Http\Controllers\Admin\ExamReportController::class, 'conflicts'])
             ->name('exam-conflicts');
+
+        // Today's Classes Report
+        Route::get('todays-classes', [\App\Http\Controllers\Admin\ReportsController::class, 'todaysClasses'])->name('todays-classes');
     });
     
     // User Management

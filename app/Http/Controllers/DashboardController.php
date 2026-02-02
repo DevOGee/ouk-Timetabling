@@ -10,7 +10,7 @@ use App\Models\CourseUnitProgrammeMapping;
 use Illuminate\Http\Request;
 use App\Models\ExamSchedule;
 use App\Models\Exam;
-use App\Models\LessonSlot;
+// use App\Models\LessonSlot;
 use App\Models\Day;
 use Carbon\Carbon;
 
@@ -139,18 +139,54 @@ class DashboardController extends Controller
             $day = Day::where('name', $dayName)->first();
 
             if ($day && $selectedSession) {
-                // Use selectedSession for context if possible
-                $query = LessonSlot::with(['courseUnit', 'programme'])
+                // Fetch TimeTable Mappings for today
+                $query = CourseUnitProgrammeMapping::with(['courseUnit', 'programme', 'instructor'])
                     ->where('day_id', $day->id)
-                    ->orderBy('start_time');
-                
+                    ->where('academic_session_id', $selectedSession->id)
+                    ->where(function ($q) {
+                        $q->whereNotNull('morning_start_time')
+                        ->orWhereNotNull('evening_start_time');
+                    });
+
                 if ($isTimetabler) {
-                     $query->whereHas('programme', function($q) use ($user) {
-                         $q->where('school_id', $user->school_id);
-                     });
+                        $query->whereHas('programme', function($q) use ($user) {
+                            $q->where('school_id', $user->school_id);
+                        });
                 }
                 
-                $todaysEvents = $query->take(10)->get();
+                $mappings = $query->get();
+
+                // Process mappings into events (splitting morning/evening if both exist)
+                foreach ($mappings as $mapping) {
+                    // Add morning slot if exists
+                    if ($mapping->morning_start_time) {
+                        $todaysEvents->push((object)[
+                            'start_time' => $mapping->morning_start_time,
+                            'duration' => $mapping->morning_duration,
+                            'courseUnit' => $mapping->courseUnit,
+                            'programme' => $mapping->programme,
+                            'type' => 'Morning',
+                            'room_id' => null, // Placeholder if needed
+                            'invigilator' => null // Consistent structure
+                        ]);
+                    }
+                    
+                    // Add evening slot if exists
+                    if ($mapping->evening_start_time) {
+                        $todaysEvents->push((object)[
+                            'start_time' => $mapping->evening_start_time,
+                            'duration' => $mapping->evening_duration,
+                            'courseUnit' => $mapping->courseUnit,
+                            'programme' => $mapping->programme,
+                            'type' => 'Evening',
+                            'room_id' => null,
+                            'invigilator' => null
+                        ]);
+                    }
+                }
+
+                // Sort by start time and limit
+                $todaysEvents = $todaysEvents->sortBy('start_time')->take(10);
             }
         }
 
