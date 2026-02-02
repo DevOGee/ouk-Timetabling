@@ -237,14 +237,18 @@
                             </div>
                         @else
                             <!-- Timetabler Quick Actions -->
-                            <div class="col-12 mb-3">
-                                <a href="{{ $currentSession ? url('/admin/academic-sessions/' . $currentSession->id) : '#' }}" 
+                            <div class="col-md-6 mb-3">
+                                <a href="{{ route('admin.curriculum-mapping') }}" 
                                    class="btn btn-primary w-100 py-3 {{ !$currentSession ? 'disabled' : '' }}" 
                                    {{ !$currentSession ? 'aria-disabled="true"' : '' }}>
-                                    <i class="bi bi-diagram-3 me-2"></i>Course Mapping
-                                    @if(!$currentSession)
-                                        <span class="badge bg-warning ms-2">No active session</span>
-                                    @endif
+                                    <i class="bi bi-diagram-3 me-2"></i>Curriculum Mapping
+                                </a>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <a href="{{ route('admin.teaching-allocation') }}" 
+                                   class="btn btn-success w-100 py-3 {{ !$currentSession ? 'disabled' : '' }}" 
+                                   {{ !$currentSession ? 'aria-disabled="true"' : '' }}>
+                                    <i class="bi bi-person-badge me-2"></i>Teaching Allocation
                                 </a>
                             </div>
                             <div class="col-12">

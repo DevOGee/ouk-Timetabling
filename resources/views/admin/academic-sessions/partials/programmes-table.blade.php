@@ -25,7 +25,7 @@
                     <th>Code</th>
                     <th>Name</th>
                     <th>School</th>
-                    <th>Course Mapping</th>
+                    <th>Mapped Units</th>
                     <th>Actions</th>
                 </tr>
             </thead>
@@ -40,16 +40,41 @@
                         </td>
                         <td>
                             <div class="btn-group" role="group">
-                                <a href="{{ route('admin.academic-sessions.programmes.scheduling.show', ['academicSession' => $academicSession->id, 'programme' => $programme->id]) }}" 
-                                   class="btn btn-sm btn-outline-primary" 
-                                   title="Manage Schedule">
-                                    <i class="bi bi-calendar-plus"></i>
-                                </a>
-                                <a href="{{ route('admin.academic-sessions.programmes.map-course-units', ['academicSession' => $academicSession->id, 'programme' => $programme->id]) }}" 
-                                   class="btn btn-sm btn-outline-secondary" 
-                                   title="Map Course Units">
-                                    <i class="bi bi-list-check"></i>
-                                </a>
+                                @if(isset($viewMode) && $viewMode == 'curriculum')
+                                    <a href="{{ route('admin.academic-sessions.programmes.map-course-units', ['academicSession' => $academicSession->id, 'programme' => $programme->id]) }}" 
+                                       class="btn btn-sm btn-primary" 
+                                       title="Map Course Units">
+                                        <i class="bi bi-list-check"></i> Map Course Units
+                                    </a>
+                                    <a href="{{ route('admin.academic-sessions.programmes.scheduling.show', ['academicSession' => $academicSession->id, 'programme' => $programme->id]) }}" 
+                                       class="btn btn-sm btn-outline-secondary" 
+                                       title="Manage Schedule">
+                                        <i class="bi bi-calendar-plus"></i>
+                                    </a>
+                                @elseif(isset($viewMode) && $viewMode == 'allocation')
+                                    <a href="{{ route('admin.academic-sessions.programmes.scheduling.show', ['academicSession' => $academicSession->id, 'programme' => $programme->id]) }}" 
+                                       class="btn btn-sm btn-primary" 
+                                       title="Manage Schedule">
+                                        <i class="bi bi-calendar-plus"></i> Allocate Teachers
+                                    </a>
+                                    <a href="{{ route('admin.academic-sessions.programmes.map-course-units', ['academicSession' => $academicSession->id, 'programme' => $programme->id]) }}" 
+                                       class="btn btn-sm btn-outline-secondary" 
+                                       title="Map Course Units">
+                                        <i class="bi bi-list-check"></i>
+                                    </a>
+                                @else
+                                    <a href="{{ route('admin.academic-sessions.programmes.scheduling.show', ['academicSession' => $academicSession->id, 'programme' => $programme->id]) }}" 
+                                       class="btn btn-sm btn-outline-primary" 
+                                       title="Manage Schedule">
+                                        <i class="bi bi-calendar-plus"></i>
+                                    </a>
+                                    <a href="{{ route('admin.academic-sessions.programmes.map-course-units', ['academicSession' => $academicSession->id, 'programme' => $programme->id]) }}" 
+                                       class="btn btn-sm btn-outline-secondary" 
+                                       title="Map Course Units">
+                                        <i class="bi bi-list-check"></i>
+                                    </a>
+                                @endif
+                                
                                 <button class="btn btn-sm btn-outline-secondary" 
                                         disabled 
                                         title="View Programme (Disabled)">

@@ -799,13 +799,28 @@
             @endif
             @endauth
 
-            {{-- Course Mapping - Admin, Dean, and Timetabler --}}
+            {{-- Curriculum Mapping - Admin, Dean, and Timetabler --}}
             @auth
             @if(auth()->user()->hasRole(['admin', 'dean', 'timetabler']))
-            <li class="menu-item {{ request()->routeIs('admin.academic-sessions.show') ? 'active' : '' }}">
-                <a href="{{ isset($activeSession) ? url('/admin/academic-sessions/' . $activeSession->id) : '#' }}" class="menu-link {{ !isset($activeSession) ? 'disabled' : '' }}" {{ !isset($activeSession) ? 'aria-disabled="true"' : '' }}>
+            <li class="menu-item {{ request()->routeIs('admin.curriculum-mapping') || (request()->routeIs('admin.academic-sessions.show') && isset($viewMode) && $viewMode == 'curriculum') ? 'active' : '' }}">
+                <a href="{{ route('admin.curriculum-mapping') }}" class="menu-link {{ !isset($activeSession) ? 'disabled' : '' }}" {{ !isset($activeSession) ? 'aria-disabled="true"' : '' }}>
                     <i class="bi bi-diagram-3"></i>
-                    <span>Course Mapping</span>
+                    <span>Curriculum Mapping</span>
+                    @if(!isset($activeSession))
+                        <span class="badge bg-warning mt-1">No active session</span>
+                    @endif
+                </a>
+            </li>
+            @endif
+            @endauth
+
+            {{-- Teaching Allocation - Admin, Dean, and Timetabler --}}
+            @auth
+            @if(auth()->user()->hasRole(['admin', 'dean', 'timetabler']))
+            <li class="menu-item {{ request()->routeIs('admin.teaching-allocation') || (request()->routeIs('admin.academic-sessions.show') && isset($viewMode) && $viewMode == 'allocation') ? 'active' : '' }}">
+                <a href="{{ route('admin.teaching-allocation') }}" class="menu-link {{ !isset($activeSession) ? 'disabled' : '' }}" {{ !isset($activeSession) ? 'aria-disabled="true"' : '' }}>
+                    <i class="bi bi-person-badge"></i>
+                    <span>Teaching Allocation</span>
                     @if(!isset($activeSession))
                         <span class="badge bg-warning mt-1">No active session</span>
                     @endif

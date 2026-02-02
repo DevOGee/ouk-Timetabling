@@ -4,13 +4,21 @@
 <div class="container">
     <div class="row justify-content-between align-items-center mb-4">
         <div class="col-md-6">
-            <h2>Academic Session: {{ $academicSession->name }}</h2>
+            @if(isset($viewMode) && $viewMode == 'curriculum')
+                <h2>Curriculum Mapping: {{ $academicSession->name }}</h2>
+            @elseif(isset($viewMode) && $viewMode == 'allocation')
+                <h2>Teaching Allocation: {{ $academicSession->name }}</h2>
+            @else
+                <h2>Academic Session: {{ $academicSession->name }}</h2>
+            @endif
         </div>
         @if(auth()->user()->hasRole('admin'))
         <div class="col-md-6 text-end">
-            <a href="{{ route('admin.academic-sessions.edit', $academicSession) }}" class="btn btn-outline-primary">
-                <i class="bi bi-pencil"></i> Edit
-            </a>
+            @if(!isset($viewMode))
+                <a href="{{ route('admin.academic-sessions.edit', $academicSession) }}" class="btn btn-outline-primary">
+                    <i class="bi bi-pencil"></i> Edit
+                </a>
+            @endif
             <a href="{{ route('admin.academic-sessions.index') }}" class="btn btn-outline-secondary">
                 <i class="bi bi-arrow-left"></i> Back to List
             </a>
@@ -18,17 +26,18 @@
         @endif
     </div>
 
-    <div class="card mb-4">
+    @if(!isset($viewMode))
+    <div class="card mb-4 text-white" style="background: linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%);">
         <div class="card-body">
             <div class="row">
                 <div class="col-md-6">
                     <h5 class="card-title">Session Details</h5>
-                    <dl class="row">
+                    <dl class="row mb-0">
                         <dt class="col-sm-4">Code:</dt>
-                        <dd class="col-sm-8">{{ $academicSession->code }}</dd>
+                        <dd class="col-sm-8 text-white-50">{{ $academicSession->code }}</dd>
 
                         <dt class="col-sm-4">Duration:</dt>
-                        <dd class="col-sm-8">{{ $academicSession->duration }}</dd>
+                        <dd class="col-sm-8 text-white-50">{{ $academicSession->duration }}</dd>
 
                         <dt class="col-sm-4">Status:</dt>
                         <dd class="col-sm-8">
@@ -45,22 +54,22 @@
                         </dd>
 
                         <dt class="col-sm-4">Start Date:</dt>
-                        <dd class="col-sm-8">{{ $academicSession->start_date->format('F d, Y') }}</dd>
+                        <dd class="col-sm-8 text-white-50">{{ $academicSession->start_date->format('F d, Y') }}</dd>
 
                         <dt class="col-sm-4">End Date:</dt>
-                        <dd class="col-sm-8">{{ $academicSession->end_date->format('F d, Y') }}</dd>
+                        <dd class="col-sm-8 text-white-50">{{ $academicSession->end_date->format('F d, Y') }}</dd>
                     </dl>
                 </div>
                 <div class="col-md-6">
                     <h5 class="card-title">Description</h5>
-                    <p>{{ $academicSession->description ?? 'No description provided.' }}</p>
+                    <p class="text-white-50">{{ $academicSession->description ?? 'No description provided.' }}</p>
 
                     @if(!auth()->user()->hasRole('timetabler'))
                     <div class="mt-4">
                         <h5>Quick Actions</h5>
                         <div class="d-flex gap-2 flex-wrap">
                             @if(!$hasProgrammes && $otherSessions->isNotEmpty())
-                                <button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#copyFromPreviousSessionModal">
+                                <button type="button" class="btn btn-light btn-sm" data-bs-toggle="modal" data-bs-target="#copyFromPreviousSessionModal">
                                     <i class="bi bi-files"></i> Use Previous Session
                                 </button>
                             @endif
@@ -69,7 +78,7 @@
                                 <form action="{{ route('admin.academic-sessions.set-current', $academicSession) }}" method="POST">
                                         @csrf
                                         @method('PATCH')
-                                        <button type="submit" class="btn btn-sm btn-outline-primary">
+                                        <button type="submit" class="btn btn-sm btn-light">
                                             <i class="bi bi-check-circle"></i> Set as Current
                                         </button>
                                     </form>
@@ -79,7 +88,7 @@
                                     <form action="{{ route('admin.academic-sessions.archive', $academicSession) }}" method="POST">
                                         @csrf
                                         @method('PATCH')
-                                        <button type="submit" class="btn btn-sm btn-outline-warning" 
+                                        <button type="submit" class="btn btn-sm btn-light" 
                                                 onclick="return confirm('Are you sure you want to archive this session?')">
                                             <i class="bi bi-archive"></i> Archive
                                         </button>
@@ -90,7 +99,7 @@
                                     <form action="{{ route('admin.academic-sessions.destroy', $academicSession) }}" method="POST" class="d-inline">
                                         @csrf
                                         @method('DELETE')
-                                        <button type="submit" class="btn btn-sm btn-outline-danger" 
+                                        <button type="submit" class="btn btn-sm btn-danger" 
                                                 onclick="return confirm('Are you sure you want to delete this session?')">
                                             <i class="bi bi-trash"></i> Delete
                                         </button>
@@ -103,8 +112,10 @@
             </div>
         </div>
     </div>
+    @endif
 
     <!-- Navigation Tabs -->
+    @if(!isset($viewMode))
     <ul class="nav nav-tabs mb-4" id="sessionTabs" role="tablist">
         <li class="nav-item" role="presentation">
             <button class="nav-link active" id="programmes-tab" data-bs-toggle="tab" data-bs-target="#programmes" type="button" role="tab" aria-controls="programmes" aria-selected="true">
@@ -117,10 +128,12 @@
             </button>
         </li>
     </ul>
+    @endif
 
     <!-- Tab Content -->
     <div class="tab-content" id="sessionTabsContent">
         <!-- Programmes Tab -->
+        @if(!isset($viewMode) || $viewMode == 'curriculum')
         <div class="tab-pane fade show active" id="programmes" role="tabpanel" aria-labelledby="programmes-tab">
             <div class="card mb-4">
                 <div class="card-header d-flex justify-content-between align-items-center">
@@ -131,7 +144,7 @@
                             @if(isset($schools) && $schools->count() > 0)
                                 <div class="me-3">
                                     <label for="schoolFilter" class="form-label mb-0 me-2">Filter by School:</label>
-                                    <select id="schoolFilter" class="form-select form-select-sm" style="width: auto; display: inline-block;">
+                                    <select id="schoolFilter" class="form-select_school-filter form-select form-select-sm" style="width: auto; display: inline-block;">
                                         <option value="all" {{ !request()->has('school_id') ? 'selected' : '' }}>All Schools</option>
                                         @foreach($schools as $school)
                                             <option value="{{ $school->id }}" {{ request('school_id') == $school->id ? 'selected' : '' }}>
@@ -170,9 +183,11 @@
                 </div>
             </div>
         </div>
+        @endif
 
         <!-- Timetables Tab -->
-        <div class="tab-pane fade" id="timetables" role="tabpanel" aria-labelledby="timetables-tab">
+        @if(!isset($viewMode) || $viewMode == 'allocation')
+        <div class="tab-pane fade {{ (isset($viewMode) && $viewMode == 'allocation') ? 'show active' : '' }}" id="timetables" role="tabpanel" aria-labelledby="timetables-tab">
             <div class="card mb-4">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">Programme Timetables</h5>
@@ -226,7 +241,9 @@
                         <p class="mt-2">Loading timetables...</p>
                     </div>
                 </div>
+            </div>
         </div>
+        @endif
     </div>
 </div>
 <!-- Copy From Previous Session Modal -->

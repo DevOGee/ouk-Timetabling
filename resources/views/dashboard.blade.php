@@ -444,12 +444,12 @@
                             @endif
                             @if($isTimetabler && $selectedSession)
                             <div class="col-lg-3 col-md-6">
-                                <a href="{{ url('/admin/academic-sessions/' . $selectedSession->id) }}" class="btn btn-light w-100 p-3 text-start d-flex align-items-center quick-actions">
+                                <a href="{{ route('admin.curriculum-mapping') }}" class="btn btn-light w-100 p-3 text-start d-flex align-items-center quick-actions">
                                     <div class="bg-info bg-opacity-10 p-2 rounded me-3">
                                         <i class="bi bi-diagram-3 text-info"></i>
                                     </div>
                                     <div>
-                                        <h6 class="mb-0 fw-bold">Course Mapping</h6>
+                                        <h6 class="mb-0 fw-bold">Curriculum Mapping</h6>
                                         <small class="text-muted">Map courses to programmes</small>
                                     </div>
                                 </a>

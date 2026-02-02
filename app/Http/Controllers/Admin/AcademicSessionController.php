@@ -38,6 +38,24 @@ class AcademicSessionController extends Controller
         return view('admin.academic-sessions.create');
     }
 
+    public function curriculumMapping()
+    {
+        $session = AcademicSession::where('is_current', true)->first() ?? AcademicSession::latest()->first();
+        if (!$session) {
+            return redirect()->route('admin.academic-sessions.index')->with('error', 'No academic session found.');
+        }
+        return $this->show($session, 'curriculum');
+    }
+
+    public function teachingAllocation()
+    {
+        $session = AcademicSession::where('is_current', true)->first() ?? AcademicSession::latest()->first();
+        if (!$session) {
+            return redirect()->route('admin.academic-sessions.index')->with('error', 'No academic session found.');
+        }
+        return $this->show($session, 'allocation');
+    }
+
     public function store(Request $request)
     {
         $validated = $request->validate([
@@ -60,7 +78,7 @@ class AcademicSessionController extends Controller
             ->with('success', 'Academic session created successfully');
     }
 
-    public function show(AcademicSession $academicSession)
+    public function show(AcademicSession $academicSession, $viewMode = null)
     {
         $user = auth()->user();
         
@@ -173,8 +191,15 @@ class AcademicSessionController extends Controller
         );
         
         // For AJAX requests, handle filtering and pagination
-        if (request()->ajax() && request()->has('tab')) {
+        if (request()->ajax()) {
             $tab = request('tab');
+            
+            // If no tab provided, default based on viewMode
+            if (!$tab && $viewMode) {
+                $tab = ($viewMode == 'curriculum') ? 'programmes' : 'timetables';
+            } else if (!$tab) {
+                $tab = 'programmes';
+            }
             
             if ($tab === 'timetables') {
                 $filteredProgrammes = $programmes;
@@ -195,7 +220,8 @@ class AcademicSessionController extends Controller
                 return response()->json([
                     'html' => view('admin.academic-sessions.partials.timetables-table', [
                         'programmes' => $filteredProgrammes,
-                        'academicSession' => $academicSession
+                        'academicSession' => $academicSession,
+                        'viewMode' => $viewMode
                     ])->render(),
                     'pagination' => (string) $filteredProgrammes->links()
                 ]);
@@ -218,7 +244,8 @@ class AcademicSessionController extends Controller
                 return response()->json([
                     'html' => view('admin.academic-sessions.partials.programmes-table', [
                         'programmes' => $filteredProgrammes,
-                        'academicSession' => $academicSession
+                        'academicSession' => $academicSession,
+                        'viewMode' => $viewMode
                     ])->render(),
                     'pagination' => (string) $filteredProgrammes->links()
                 ]);
@@ -246,7 +273,8 @@ class AcademicSessionController extends Controller
             'schools' => $schools,
             'selectedSchool' => $firstSchoolId,
             'otherSessions' => $otherSessions,
-            'hasProgrammes' => $hasProgrammes
+            'hasProgrammes' => $hasProgrammes,
+            'viewMode' => $viewMode
         ]);
     }
     

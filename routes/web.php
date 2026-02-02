@@ -340,6 +340,12 @@ Route::prefix('admin')->middleware(['auth'])->group(function () {
     Route::post('academic-sessions/{academicSession}/copy-mappings', [AcademicSessionController::class, 'copyMappings'])
         ->name('admin.academic-sessions.copy-mappings');
     
+    // New split mapping routes
+    Route::get('curriculum-mapping', [AcademicSessionController::class, 'curriculumMapping'])
+        ->name('admin.curriculum-mapping');
+    Route::get('teaching-allocation', [AcademicSessionController::class, 'teachingAllocation'])
+        ->name('admin.teaching-allocation');
+    
     Route::prefix('academic-sessions/{academicSession}')->name('admin.academic-sessions.')->group(function () {
         Route::get('select-programmes', [ProgrammeMappingController::class, 'selectProgrammes'])
             ->name('select-programmes');
