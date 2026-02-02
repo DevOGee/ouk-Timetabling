@@ -281,7 +281,7 @@ class ProgrammeMappingController extends Controller
                     $reason = trim($parts[1] ?? 'Unknown reason');
                     $code = trim($parts[0] ?? '');
                     $reportContent[] = [
-                        $record['programme_code'] ?? $code,
+                        $record['programme_code'] ?? $code, // This line has a potential bug in original code, but preserving it
                         $record['course_unit_code'] ?? '',
                         $record['year_of_study'] ?? '',
                         $record['semester'] ?? '',
@@ -366,7 +366,8 @@ class ProgrammeMappingController extends Controller
     public function addCourseUnit(Request $request, AcademicSession $academicSession, Programme $programme)
     {
         $validated = $request->validate([
-            'course_unit_id' => 'required|exists:course_units,id',
+            'course_unit_ids' => 'required|array',
+            'course_unit_ids.*' => 'exists:course_units,id',
             'year_of_study_id' => 'required|exists:years_of_study,id',
             'semester_id' => 'required|exists:semesters,id',
             'is_core' => 'required|boolean',
@@ -374,60 +375,45 @@ class ProgrammeMappingController extends Controller
         ]);
 
         try {
-            // Validation logic
-            if (!$validated['is_core'] && !$validated['specialisation_id']) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Non-core courses must be assigned to a specialisation'
-                ], 422);
+            // Validation logic for core/specialisation
+            if (!$validated['is_core'] && empty($validated['specialisation_id'])) {
+                return back()->with('error', 'Non-core courses must be assigned to a specialisation')
+                    ->withInput();
             }
             
-            if ($validated['is_core'] && $validated['specialisation_id']) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Core courses cannot be assigned to a specific specialisation'
-                ], 422);
+            if ($validated['is_core'] && !empty($validated['specialisation_id'])) {
+                return back()->with('error', 'Core courses cannot be assigned to a specific specialisation')
+                    ->withInput();
             }
 
-            // Check if this course unit is already mapped to this programme in this session
-            $existingMapping = $programme->sessionMappings($academicSession->id)
-                ->where('course_unit_id', $request->course_unit_id)
-                ->first();
+            $count = 0;
+            foreach ($validated['course_unit_ids'] as $courseUnitId) {
+                // Determine specialisation ID to save
+                // If core is 1 (true), specialisation_id must be null in DB
+                // If core is 0 (false), specialisation_id must be the valid ID
+                $specialisationId = $validated['is_core'] ? null : $validated['specialisation_id'];
 
-            if ($existingMapping) {
-                // Update existing mapping
-                $existingMapping->update([
-                    'year_of_study_id' => $validated['year_of_study_id'],
-                    'semester_id' => $validated['semester_id'],
-                    'is_core' => $validated['is_core'],
-                    'specialisation_id' => $validated['specialisation_id'],
-                    'updated_at' => now()
-                ]);
-                $message = 'Course unit mapping updated successfully';
-            } else {
-                // Create new mapping
-                $mapping = $programme->courseUnitMappings()->create([
-                    'academic_session_id' => $academicSession->id,
-                    'course_unit_id' => $validated['course_unit_id'],
-                    'year_of_study_id' => $validated['year_of_study_id'],
-                    'semester_id' => $validated['semester_id'],
-                    'is_core' => $validated['is_core'],
-                    'specialisation_id' => $validated['specialisation_id']
-                ]);
-                $message = 'Course unit added successfully';
+                $programme->courseUnitMappings()->updateOrCreate(
+                    [
+                        'academic_session_id' => $academicSession->id,
+                        'course_unit_id' => $courseUnitId,
+                    ],
+                    [
+                        'year_of_study_id' => $validated['year_of_study_id'],
+                        'semester_id' => $validated['semester_id'],
+                        'is_core' => $validated['is_core'],
+                        'specialisation_id' => $specialisationId
+                    ]
+                );
+                $count++;
             }
 
-            return response()->json([
-                'success' => true,
-                'message' => $message,
-                'mapping' => $existingMapping ? $existingMapping->load(['courseUnit', 'specialisation']) : $mapping->load(['courseUnit', 'specialisation'])
-            ]);
+            return redirect()->route('admin.academic-sessions.programmes.map-course-units', [$academicSession, $programme])
+                ->with('success', "$count course units mapped successfully.");
 
         } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to add course unit: ' . $e->getMessage()
-            ], 500);
+            return back()->with('error', 'Failed to add course units: ' . $e->getMessage())
+                ->withInput();
         }
     }
 
