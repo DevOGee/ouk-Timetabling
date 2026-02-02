@@ -16,9 +16,4 @@ class Specialisation extends Model
     {
         return $this->belongsTo(Programme::class);
     }
-    
-    public function courseUnitMappings()
-    {
-        return $this->hasMany(CourseUnitProgrammeMapping::class);
-    }
 }

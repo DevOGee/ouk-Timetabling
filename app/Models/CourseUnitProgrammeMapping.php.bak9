@@ -184,20 +184,6 @@ class CourseUnitProgrammeMapping extends Model
         return $query->where('course_unit_id', $courseUnitId);
     }
     
-
-    public function scopeCore(Builder $query): Builder
-    {
-        return $query->where('is_core', true);
-    }
-
-    public function scopeForSpecialisation(Builder $query, $specialisationId): Builder
-    {
-        return $query->where(function($q) use ($specialisationId) {
-            $q->where('is_core', true)
-              ->orWhere('specialisation_id', $specialisationId);
-        });
-    }
-
     public function scopeWithInstructors(Builder $query): Builder
     {
         return $query->whereNotNull('user_id');
