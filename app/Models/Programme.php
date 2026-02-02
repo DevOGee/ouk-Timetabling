@@ -16,7 +16,7 @@ class Programme extends Model
 {
     use HasFactory, SoftDeletes;
 
-    protected $fillable = ['name', 'school_id', 'programme_code'];
+    protected $fillable = ['name', 'department_id', 'programme_code'];
 
     /**
      * Get all course unit mappings for this programme.
@@ -75,11 +75,26 @@ class Programme extends Model
     }
 
     /**
-     * Get the school that owns the programme.
+     * Get the department that owns the programme.
      */
-    public function school(): BelongsTo
+    public function department(): BelongsTo
     {
-        return $this->belongsTo(School::class);
+        return $this->belongsTo(Department::class);
+    }
+
+    /**
+     * Get the school that owns the programme via department.
+     */
+    public function school()
+    {
+        return $this->hasOneThrough(
+            School::class,
+            Department::class,
+            'id', // Foreign key on departments table...
+            'id', // Foreign key on schools table...
+            'department_id', // Local key on programmes table...
+            'school_id' // Local key on departments table...
+        );
     }
 
     /**

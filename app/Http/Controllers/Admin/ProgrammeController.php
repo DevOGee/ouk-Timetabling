@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Programme;
 use App\Models\School;
+use App\Models\Department;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
@@ -41,8 +42,8 @@ class ProgrammeController extends Controller
     public function create()
     {
         $programme = new Programme();
-        $schools = School::orderBy('name')->get();
-        return view('admin.programmes.form', compact('schools', 'programme'));
+        $departments = Department::with('school')->get()->sortBy(['school.name', 'name']);
+        return view('admin.programmes.form', compact('departments', 'programme'));
     }
     
     /**
@@ -50,8 +51,8 @@ class ProgrammeController extends Controller
      */
     public function edit(Programme $programme)
     {
-        $schools = School::orderBy('name')->get();
-        return view('admin.programmes.form', compact('programme', 'schools'));
+        $departments = Department::with('school')->get()->sortBy(['school.name', 'name']);
+        return view('admin.programmes.form', compact('programme', 'departments'));
     }
 
     /**
@@ -62,7 +63,7 @@ class ProgrammeController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'programme_code' => 'required|string|max:50|unique:programmes,programme_code',
-            'school_id' => 'required|exists:schools,id',
+            'department_id' => 'required|exists:departments,id',
         ]);
 
         Programme::create($validated);
@@ -84,7 +85,8 @@ class ProgrammeController extends Controller
                 'max:50',
                 Rule::unique('programmes', 'programme_code')->ignore($programme->id)
             ],
-            'school_id' => 'required|exists:schools,id',
+            'school_id' => 'sometimes|exists:schools,id', // Legacy support or if needed
+            'department_id' => 'required|exists:departments,id',
         ]);
 
         $programme->update($validated);

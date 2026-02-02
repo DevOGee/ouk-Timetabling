@@ -295,6 +295,19 @@ Route::prefix('admin')->middleware(['auth'])->group(function () {
     Route::post('programmes/process-bulk-upload', [ProgrammeController::class, 'processBulkUpload'])->name('admin.programmes.process-bulk-upload');
     Route::get('programmes/download-template', [ProgrammeController::class, 'downloadTemplate'])->name('admin.programmes.download-template');
 
+    // Departments
+    Route::resource('departments', \App\Http\Controllers\Admin\DepartmentController::class, [
+        'names' => [
+            'index' => 'admin.departments.index',
+            'create' => 'admin.departments.create',
+            'store' => 'admin.departments.store',
+            'show' => 'admin.departments.show',
+            'edit' => 'admin.departments.edit',
+            'update' => 'admin.departments.update',
+            'destroy' => 'admin.departments.destroy',
+        ]
+    ]);
+
     // Academic Sessions
     // Academic Sessions resource with show method included
     Route::resource('academic-sessions', AcademicSessionController::class, [

@@ -41,17 +41,21 @@
                         </div>
 
                         <div class="mb-4">
-                            <label for="school_id" class="form-label">School</label>
-                            <select name="school_id" id="school_id" class="form-select @error('school_id') is-invalid @enderror" required>
-                                <option value="">-- Select School --</option>
-                                @foreach($schools as $school)
-                                    <option value="{{ $school->id }}" 
-                                        {{ (old('school_id', $programme->school_id ?? '') == $school->id) ? 'selected' : '' }}>
-                                        {{ $school->name }}
-                                    </option>
+                            <label for="department_id" class="form-label">Department</label>
+                            <select name="department_id" id="department_id" class="form-select @error('department_id') is-invalid @enderror" required>
+                                <option value="">-- Select Department --</option>
+                                @foreach($departments->groupBy('school.name') as $schoolName => $schoolDepartments)
+                                    <optgroup label="{{ $schoolName }}">
+                                        @foreach($schoolDepartments as $department)
+                                            <option value="{{ $department->id }}" 
+                                                {{ (old('department_id', $programme->department_id ?? '') == $department->id) ? 'selected' : '' }}>
+                                                {{ $department->name }}
+                                            </option>
+                                        @endforeach
+                                    </optgroup>
                                 @endforeach
                             </select>
-                            @error('school_id')
+                            @error('department_id')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
                         </div>

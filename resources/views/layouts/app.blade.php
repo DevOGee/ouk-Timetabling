@@ -911,6 +911,11 @@
                             <i class="bi bi-building me-2"></i>Schools
                         </a>
                     </li>
+                    <li class="submenu-item {{ request()->routeIs('admin.departments.*') ? 'active' : '' }}">
+                        <a href="{{ route('admin.departments.index') }}" class="submenu-link">
+                            <i class="bi bi-diagram-3 me-2"></i>Departments
+                        </a>
+                    </li>
                     
                     {{-- Programmes - Using admin prefix --}}
                     <li class="submenu-item {{ request()->routeIs('admin.programmes.*') ? 'active' : '' }}">

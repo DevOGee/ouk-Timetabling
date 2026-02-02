@@ -8,29 +8,31 @@ use App\Models\Day;
 use App\Models\User;
 use App\Models\Programme;
 use App\Models\School;
+use App\Models\Department;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class ProgrammeController extends Controller
 {
     public function index()
     {
-        $schools = School::with('programmes')->get();
-        $programmes = Programme::with('school')->get();
+        $schools = School::with('departments.programmes')->get();
+        $programmes = Programme::with('department.school')->get();
 
         return view('programmes.index', compact('programmes', 'schools'));
     }
 
     public function create()
     {
-        $schools = School::all();
+        $departments = Department::with('school')->get()->sortBy(['school.name', 'name']);
 
-        return view('programmes.create', compact('schools'));
+        return view('programmes.create', compact('departments'));
     }
 
     public function store(Request $request)
     {
         $request->validate([
-            'school_id' => 'required|exists:schools,id',
+            'department_id' => 'required|exists:departments,id',
             'name' => 'required|unique:programmes,name',
             'programme_code' => 'required|unique:programmes,programme_code|max:10',
         ]);
@@ -42,15 +44,15 @@ class ProgrammeController extends Controller
 
     public function edit(Programme $programme)
     {
-        $schools = School::all();
+        $departments = Department::with('school')->get()->sortBy(['school.name', 'name']);
 
-        return view('programmes.edit', compact('programme', 'schools'));
+        return view('programmes.edit', compact('programme', 'departments'));
     }
 
     public function update(Request $request, Programme $programme)
     {
         $request->validate([
-            'school_id' => 'required|exists:schools,id',
+            'department_id' => 'required|exists:departments,id',
             'name' => 'required|unique:programmes,name,'.$programme->id,
             'programme_code' => 'required|unique:programmes,programme_code,'.$programme->id.'|max:10',
         ]);

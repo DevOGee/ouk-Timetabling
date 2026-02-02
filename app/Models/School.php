@@ -50,10 +50,18 @@ class School extends Model
     }
 
     /**
-     * Get all programmes associated with this school.
+     * Get all departments associated with this school.
+     */
+    public function departments()
+    {
+        return $this->hasMany(Department::class);
+    }
+
+    /**
+     * Get all programmes associated with this school via departments.
      */
     public function programmes()
     {
-        return $this->hasMany(Programme::class);
+        return $this->hasManyThrough(Programme::class, Department::class);
     }
 }

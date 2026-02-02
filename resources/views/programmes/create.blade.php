@@ -19,11 +19,15 @@
         <form action="{{ route('admin.programmes.store') }}" method="POST">
             @csrf
             <div class="mb-3">
-                <label for="school_id" class="form-label">School</label>
-                <select class="form-control" id="school_id" name="school_id" required>
-                    <option value="">Select School</option>
-                    @foreach ($schools as $school)
-                        <option value="{{ $school->id }}">{{ $school->name }}</option>
+                <label for="department_id" class="form-label">Department</label>
+                <select class="form-control" id="department_id" name="department_id" required>
+                    <option value="">Select Department</option>
+                    @foreach ($departments->groupBy('school.name') as $schoolName => $schoolDepartments)
+                        <optgroup label="{{ $schoolName }}">
+                            @foreach ($schoolDepartments as $department)
+                                <option value="{{ $department->id }}">{{ $department->name }}</option>
+                            @endforeach
+                        </optgroup>
                     @endforeach
                 </select>
             </div>

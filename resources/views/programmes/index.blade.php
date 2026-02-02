@@ -15,35 +15,43 @@
 
         @foreach ($schools as $school)
             <div class="mb-5">
-                <h5 class="mb-3">{{ $school->name }}</h5>
+                <h4 class="mb-3 text-primary border-bottom pb-2">{{ $school->name }}</h4>
 
-                @if ($school->programmes->isEmpty())
-                    <p class="text-muted">No programmes available in this school.</p>
+                @if ($school->departments->isEmpty())
+                    <p class="text-muted ms-3">No departments available in this school.</p>
                 @else
-                    <ul class="list-group">
-                        @foreach ($school->programmes->sortBy('programme_code') as $programme)
-                            <li class="list-group-item d-flex justify-content-between align-items-center">
-                                <div>
-                                    <strong>{{ $programme->programme_code }}</strong> – {{ $programme->name }}
-                                </div>
-                                <div>
-                                    <a href="{{ route('admin.programmes.show', $programme) }}"
-                                        class="btn btn-info btn-sm me-1">View Scheduling</a>
-                                    {{-- <a href="{{ route('admin.programmes.edit', $programme) }}"
-                                        class="btn btn-warning btn-sm me-1">Edit</a>
-                                    <form action="{{ route('admin.programmes.destroy', $programme) }}" method="POST"
-                                        class="d-inline">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit" class="btn btn-danger btn-sm"
-                                            onclick="return confirm('Are you sure you want to delete this programme?')">
-                                            Delete
-                                        </button>
-                                    </form> --}}
-                                </div>
-                            </li>
-                        @endforeach
-                    </ul>
+                    @foreach ($school->departments as $department)
+                        <div class="ms-3 mb-4">
+                            <h5 class="mb-2 text-secondary">{{ $department->name }}</h5>
+                            
+                            @if ($department->programmes->isEmpty())
+                                <p class="text-muted ms-3">No programmes available in this department.</p>
+                            @else
+                                <ul class="list-group ms-3">
+                                    @foreach ($department->programmes->sortBy('programme_code') as $programme)
+                                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                                            <div>
+                                                <strong>{{ $programme->programme_code }}</strong> – {{ $programme->name }}
+                                            </div>
+                                            <div>
+                                                <a href="{{ route('admin.programmes.edit', $programme) }}"
+                                                    class="btn btn-warning btn-sm me-1">Edit</a>
+                                                <form action="{{ route('admin.programmes.destroy', $programme) }}" method="POST"
+                                                    class="d-inline">
+                                                    @csrf
+                                                    @method('DELETE')
+                                                    <button type="submit" class="btn btn-danger btn-sm"
+                                                        onclick="return confirm('Are you sure you want to delete this programme?')">
+                                                        Delete
+                                                    </button>
+                                                </form>
+                                            </div>
+                                        </li>
+                                    @endforeach
+                                </ul>
+                            @endif
+                        </div>
+                    @endforeach
                 @endif
             </div>
         @endforeach

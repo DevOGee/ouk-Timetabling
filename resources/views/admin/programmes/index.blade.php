@@ -37,7 +37,11 @@
                             <tr>
                                 <td>{{ $programme->programme_code }}</td>
                                 <td>{{ $programme->name }}</td>
-                                <td>{{ $programme->school->name ?? 'N/A' }}</td>
+                                <td>
+                                    {{ $programme->department->name ?? 'N/A' }}
+                                    <br>
+                                    <small class="text-muted">{{ $programme->school->name ?? 'N/A' }}</small>
+                                </td>
                                 <td>
                                     <a href="{{ route('admin.programmes.edit', $programme) }}" 
                                        class="btn btn-sm btn-outline-secondary">
