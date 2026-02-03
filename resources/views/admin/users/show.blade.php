@@ -144,6 +144,69 @@
                 </div>
             </div>
         </div>
+            </div>
+
+            <!-- Assigned Courses Section (migrated from Instructors) -->
+            @if($user->courseUnitProgrammeMappings->isNotEmpty())
+            <div class="card shadow-sm mt-4">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-journal-text text-primary me-2"></i>Assigned Courses
+                    </h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Course Code</th>
+                                    <th>Course Name</th>
+                                    <th>Programme</th>
+                                    <th>Year & Semester</th>
+                                    <th>Schedule</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach ($user->courseUnitProgrammeMappings as $mapping)
+                                    <tr>
+                                        <td class="fw-bold">{{ $mapping->courseUnit?->code ?? '-' }}</td>
+                                        <td>{{ $mapping->courseUnit?->name ?? '-' }}</td>
+                                        <td>
+                                            <span class="badge bg-info bg-opacity-10 text-info">
+                                                {{ $mapping->programme?->name ?? 'N/A' }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-secondary bg-opacity-10 text-secondary">
+                                                {{ $mapping->yearOfStudy?->name ?? 'N/A' }} • {{ $mapping->semester?->name ?? 'N/A' }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            @if($mapping->day)
+                                                <span class="badge bg-success bg-opacity-10 text-success">
+                                                    {{ $mapping->day->name ?? 'Not Scheduled' }}
+                                                </span>
+                                            @else
+                                                <span class="badge bg-warning bg-opacity-10 text-warning">
+                                                    Not Scheduled
+                                                </span>
+                                            @endif
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-{{ $mapping->is_active ? 'success' : 'secondary' }}">
+                                                {{ $mapping->is_active ? 'Active' : 'Inactive' }}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            @endif
+        </div>
     </div>
     
     <!-- Activity Log -->

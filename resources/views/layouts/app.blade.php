@@ -849,7 +849,7 @@
 
             {{-- Courses - All roles except maybe basic instructor --}}
             @auth
-            @if(auth()->user()->hasRole(['admin', 'dean', 'timetabler', 'instructor']))
+            @if(auth()->user()->hasRole(['timetabler', 'instructor']))
             <li class="menu-item {{ request()->routeIs('course_units.*') ? 'active' : '' }}">
                 <a href="{{ route('course_units.index') }}" class="menu-link">
                     <i class="bi bi-book"></i>
@@ -859,31 +859,8 @@
             @endif
             @endauth
 
-            {{-- Instructors - Admin, Dean, and Timetabler --}}
-            @auth
-            @if(auth()->user()->hasRole(['admin', 'dean', 'timetabler']))
-            <li class="menu-item {{ request()->routeIs('instructors.*') ? 'active' : '' }}">
-                <a href="{{ route('instructors.index') }}" class="menu-link">
-                    <i class="bi bi-people"></i>
-                    <span>Instructors</span>
-                </a>
-            </li>
-            @endif
-            
-
-            @endauth
-
             {{-- Programmes - Admin and Dean only --}}
-            @auth
-            @if(auth()->user()->hasRole(['admin', 'dean']))
-            <li class="menu-item {{ request()->routeIs('programmes.*') ? 'active' : '' }}">
-                <a href="{{ route('programmes.index') }}" class="menu-link">
-                    <i class="bi bi-building"></i>
-                    <span>Programmes</span>
-                </a>
-            </li>
-            @endif
-            @endauth
+
 
             {{-- Users - Admin only --}}
             @auth
@@ -953,12 +930,7 @@
                         </a>
                     </li>
                     
-                    {{-- Instructors - Using non-admin route since it's defined at root --}}
-                    <li class="submenu-item {{ request()->routeIs('instructors.*') ? 'active' : '' }}">
-                        <a href="{{ route('instructors.index') }}" class="submenu-link">
-                            <i class="bi bi-person-video3 me-2"></i>Instructors
-                        </a>
-                    </li>
+
                     
                     {{-- Semesters - Using non-admin route since it's defined at root --}}
                     <li class="submenu-item {{ request()->routeIs('semesters.*') ? 'active' : '' }}">

@@ -27,16 +27,18 @@ class RoleController extends Controller
     {
         $this->authorize('viewAny', User::class);
         
-        $users = User::with(['roles', 'school', 'title'])
+        $users = User::with(['roles', 'school', 'title', 'department'])
             ->latest()
-            ->filter(request(['search', 'status', 'role']))
+            ->filter(request(['search', 'status', 'role', 'department_id']))
             ->paginate(15)
             ->withQueryString();
             
         $roles = Role::all();
         $schools = School::all();
+        // Eager load school for grouping key in filter
+        $departments = \App\Models\Department::with('school')->orderBy('school_id')->orderBy('name')->get();
         
-        return view('admin.users.index', compact('users', 'roles', 'schools'));
+        return view('admin.users.index', compact('users', 'roles', 'schools', 'departments'));
     }
 
     /**
@@ -47,10 +49,19 @@ class RoleController extends Controller
         $this->authorize('create', User::class);
         
         $titles = Title::orderBy('name')->get();
+        // School list might not be needed directly if we are driving everything from Department
+        // but keeping it for now just in case, though view will remove school select
         $schools = School::orderBy('name')->get();
+        
+        // Eager load school for grouping in the view
+        $departments = \App\Models\Department::with('school')
+            ->orderBy('school_id')
+            ->orderBy('name')
+            ->get();
+            
         $roles = Role::all();
         
-        return view('admin.users.create', compact('titles', 'schools', 'roles'));
+        return view('admin.users.create', compact('titles', 'schools', 'roles', 'departments'));
     }
 
     /**
@@ -65,13 +76,18 @@ class RoleController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
             'phone' => ['nullable', 'string', 'max:20'],
-            'school_id' => ['nullable', 'exists:schools,id'],
+            // Remove school_id validation or make it optional as we infer it
+            'department_id' => ['required', 'exists:departments,id'],
             'roles' => ['required', 'array', 'min:1'],
             'roles.*' => ['exists:roles,id'],
             'status' => ['required', 'in:active,inactive'],
             'password' => ['required', 'confirmed', Password::defaults()],
             'image' => ['nullable', 'image', 'mimes:jpeg,png,jpg,gif', 'max:2048'],
         ]);
+
+        // Infer school_id from department_id
+        $department = \App\Models\Department::find($validated['department_id']);
+        $schoolId = $department ? $department->school_id : null;
 
         // Handle image upload
         $imagePath = null;
@@ -84,7 +100,8 @@ class RoleController extends Controller
             'name' => $validated['name'],
             'email' => $validated['email'],
             'phone' => $validated['phone'],
-            'school_id' => $validated['school_id'],
+            'school_id' => $schoolId,
+            'department_id' => $validated['department_id'],
             'status' => $validated['status'],
             'password' => Hash::make($validated['password']),
             'image_path' => $imagePath,
@@ -107,10 +124,16 @@ class RoleController extends Controller
         
         $titles = Title::orderBy('name')->get();
         $schools = School::orderBy('name')->get();
+        // Eager load school for grouping in the view
+        $departments = \App\Models\Department::with('school')
+            ->orderBy('school_id')
+            ->orderBy('name')
+            ->get();
+
         $roles = Role::all();
         $userRoles = $user->roles->pluck('id')->toArray();
         
-        return view('admin.users.edit', compact('user', 'titles', 'schools', 'roles', 'userRoles'));
+        return view('admin.users.edit', compact('user', 'titles', 'schools', 'roles', 'userRoles', 'departments'));
     }
 
     /**
@@ -131,7 +154,8 @@ class RoleController extends Controller
                 Rule::unique('users')->ignore($user->id)
             ],
             'phone' => ['nullable', 'string', 'max:20'],
-            'school_id' => ['nullable', 'exists:schools,id'],
+            // 'school_id' => ['nullable', 'exists:schools,id'], // Inferring from Department
+            'department_id' => ['required', 'exists:departments,id'],
             'roles' => ['required', 'array', 'min:1'],
             'roles.*' => ['exists:roles,id'],
             'status' => ['required', 'in:active,inactive'],
@@ -139,12 +163,17 @@ class RoleController extends Controller
             'image' => ['nullable', 'image', 'mimes:jpeg,png,jpg,gif', 'max:2048'],
         ]);
 
+        // Infer school_id
+        $department = \App\Models\Department::find($validated['department_id']);
+        $schoolId = $department ? $department->school_id : null;
+
         $updateData = [
             'title_id' => $validated['title_id'],
             'name' => $validated['name'],
             'email' => $validated['email'],
             'phone' => $validated['phone'],
-            'school_id' => $validated['school_id'],
+            'school_id' => $schoolId,
+            'department_id' => $validated['department_id'],
             'status' => $validated['status'],
         ];
 
@@ -403,7 +432,17 @@ class RoleController extends Controller
     {
         $this->authorize('view', $user);
         
-        $user->load(['roles', 'school', 'title']);
+        $user->load(['roles', 'school', 'title', 'department', 
+            'courseUnitProgrammeMappings' => function($query) {
+                $query->with([
+                    'courseUnit', 
+                    'programme', 
+                    'yearOfStudy', 
+                    'semester', 
+                    'day'
+                ]);
+            }
+        ]);
         
         return view('admin.users.show', compact('user'));
     }

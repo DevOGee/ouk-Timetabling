@@ -70,20 +70,24 @@
                                         @enderror
                                     </div>
                                     
-                                    <div class="col-md-6">
-                                        <label for="school_id" class="form-label">School/Department</label>
-                                        <select class="form-select @error('school_id') is-invalid @enderror" id="school_id" name="school_id">
-                                            <option value="">Select School/Department (Optional)</option>
-                                            @foreach($schools as $school)
-                                                <option value="{{ $school->id }}" {{ old('school_id', $user->school_id) == $school->id ? 'selected' : '' }}>
-                                                    {{ $school->name }}
+                                    <div class="mb-3">
+                                <label for="department_id" class="form-label">Department <span class="text-danger">*</span></label>
+                                <select class="form-select @error('department_id') is-invalid @enderror" id="department_id" name="department_id">
+                                    <option value="">Select Department</option>
+                                    @foreach($departments->groupBy('school.name') as $schoolName => $deptGroup)
+                                        <optgroup label="{{ $schoolName }}">
+                                            @foreach($deptGroup as $department)
+                                                <option value="{{ $department->id }}" {{ (old('department_id') ?? $user->department_id) == $department->id ? 'selected' : '' }}>
+                                                    {{ $department->name }}
                                                 </option>
                                             @endforeach
-                                        </select>
-                                        @error('school_id')
-                                            <div class="invalid-feedback">{{ $message }}</div>
-                                        @enderror
-                                    </div>
+                                        </optgroup>
+                                    @endforeach
+                                </select>
+                                @error('department_id')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
                                     
                                     <div class="col-md-6">
                                         <label for="status" class="form-label">Status <span class="text-danger">*</span></label>

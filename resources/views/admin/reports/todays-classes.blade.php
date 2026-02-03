@@ -7,14 +7,7 @@
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h1 class="h3 mb-0 text-gray-800">Today's Classes</h1>
-            <p class="mb-0 text-muted">
-                {{ $date->format('l, F j, Y') }}
-                @if($todaysClasses->isEmpty())
-                    <span class="badge bg-warning text-dark ms-2">No classes scheduled</span>
-                @else
-                    <span class="badge bg-success ms-2">{{ $todaysClasses->flatten()->count() }} Sessions</span>
-                @endif
-            </p>
+            <p class="mb-0 text-muted">{{ $date->format('l, F j, Y') }}</p>
         </div>
         <div>
             <a href="{{ route('admin.reports.index') }}" class="btn btn-outline-secondary btn-sm">
@@ -23,6 +16,42 @@
             <button onclick="window.print()" class="btn btn-primary btn-sm ms-2">
                 <i class="bi bi-printer me-1"></i> Print Report
             </button>
+        </div>
+    </div>
+
+    <!-- Stats Card -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                Lecturers Teaching Today</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ $stats['lecturers_count'] }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="bi bi-person-video3 fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                Total Sessions</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ $stats['total_sessions'] }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="bi bi-calendar-event fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -43,72 +72,90 @@
                         @endforeach
                     </select>
                 </div>
+                <div class="col-md-6">
+                    <label for="search" class="form-label">Search</label>
+                    <input type="text" name="search" id="search" class="form-control" 
+                           placeholder="Search by Course Code, Name, Instructor..." 
+                           value="{{ $search }}">
+                </div>
                 <div class="col-md-2">
                     <button type="submit" class="btn btn-primary w-100">
-                        <i class="bi bi-filter me-1"></i> Apply
+                        <i class="bi bi-search me-1"></i> Search
                     </button>
                 </div>
             </form>
         </div>
     </div>
 
-    @if($todaysClasses->isNotEmpty())
-        @foreach($todaysClasses as $programmeName => $classes)
+    @if($groupedClasses->isNotEmpty())
+        @foreach($groupedClasses as $schoolName => $departments)
             <div class="card shadow mb-4">
-                <div class="card-header py-3 bg-light">
-                    <h6 class="m-0 font-weight-bold text-dark">
-                        <i class="bi bi-journal-bookmark me-2"></i>{{ $programmeName }}
-                    </h6>
+                <div class="card-header py-3 bg-primary text-white">
+                    <h5 class="m-0 font-weight-bold">
+                        <i class="bi bi-building me-2"></i>{{ $schoolName }}
+                    </h5>
                 </div>
                 <div class="card-body p-0">
-                    <div class="table-responsive">
-                        <table class="table table-striped table-hover mb-0">
-                            <thead class="table-primary">
-                                <tr>
-                                    <th style="width: 15%">Time</th>
-                                    <th style="width: 15%">Course Code</th>
-                                    <th style="width: 35%">Course Unit</th>
-                                    <th style="width: 25%">Instructor</th>
-                                    <th style="width: 10%">Type</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach($classes as $class)
+                    @foreach($departments as $deptName => $classes)
+                        <div class="border-bottom p-3 bg-light">
+                            <h6 class="m-0 font-weight-bold text-dark">
+                                <i class="bi bi-diagram-3 me-2"></i>{{ $deptName }}
+                            </h6>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="table-light">
                                     <tr>
-                                        <td class="align-middle" style="white-space: nowrap;">
-                                            {{ \Carbon\Carbon::parse($class->start_time)->format('H:i') }} - 
-                                            {{ \Carbon\Carbon::parse($class->end_time)->format('H:i') }}
-                                        </td>
-                                        <td class="align-middle fw-bold">
-                                            {{ $class->courseUnit->code ?? 'N/A' }}
-                                        </td>
-                                        <td class="align-middle">
-                                            {{ $class->courseUnit->name ?? 'N/A' }}
-                                        </td>
-                                        <td class="align-middle">
-                                            @if($class->instructor)
-                                                <div class="d-flex align-items-center">
-                                                    <div class="rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center me-2" style="width: 24px; height: 24px; font-size: 10px;">
-                                                        {{ substr($class->instructor->name, 0, 1) }}
-                                                    </div>
-                                                    {{ $class->instructor->name }}
-                                                </div>
-                                            @else
-                                                <span class="text-muted fst-italic">Unassigned</span>
-                                            @endif
-                                        </td>
-                                        <td class="align-middle">
-                                            @if($class->type === 'Morning')
-                                                <span class="badge bg-warning text-dark"><i class="bi bi-brightness-high me-1"></i> Morning</span>
-                                            @else
-                                                <span class="badge bg-primary"><i class="bi bi-moon me-1"></i> Evening</span>
-                                            @endif
-                                        </td>
+                                        <th style="width: 15%">Time</th>
+                                        <th style="width: 15%">Course Code</th>
+                                        <th style="width: 35%">Course Unit</th>
+                                        <th style="width: 25%">Instructor</th>
+                                        <th style="width: 10%">Type</th>
                                     </tr>
-                                @endforeach
-                            </tbody>
-                        </table>
-                    </div>
+                                </thead>
+                                <tbody>
+                                    @foreach($classes as $class)
+                                        <tr>
+                                            <td class="align-middle" style="white-space: nowrap;">
+                                                <i class="bi bi-clock me-1 text-muted"></i>
+                                                {{ \Carbon\Carbon::parse($class->start_time)->format('H:i') }} - 
+                                                {{ \Carbon\Carbon::parse($class->end_time)->format('H:i') }}
+                                            </td>
+                                            <td class="align-middle fw-bold">
+                                                {{ $class->courseUnit->code ?? 'N/A' }}
+                                            </td>
+                                            <td class="align-middle">
+                                                {{ $class->courseUnit->name ?? 'N/A' }}
+                                                <div class="small text-muted">{{ $class->programme->name ?? '' }}</div>
+                                            </td>
+                                            <td class="align-middle">
+                                                @if($class->instructor)
+                                                    <div class="d-flex align-items-center">
+                                                        <div class="rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center me-2" style="width: 24px; height: 24px; font-size: 10px;">
+                                                            {{ substr($class->instructor->name, 0, 1) }}
+                                                        </div>
+                                                        <div>
+                                                            <div>{{ $class->instructor->name }}</div>
+                                                            <div class="small text-muted">{{ $class->instructor->email }}</div>
+                                                        </div>
+                                                    </div>
+                                                @else
+                                                    <span class="text-muted fst-italic">Unassigned</span>
+                                                @endif
+                                            </td>
+                                            <td class="align-middle">
+                                                @if($class->type === 'Morning')
+                                                    <span class="badge bg-warning text-dark"><i class="bi bi-brightness-high me-1"></i> Morning</span>
+                                                @else
+                                                    <span class="badge bg-primary"><i class="bi bi-moon me-1"></i> Evening</span>
+                                                @endif
+                                            </td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    @endforeach
                 </div>
             </div>
         @endforeach

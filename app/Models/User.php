@@ -66,8 +66,17 @@ class User extends Authenticatable
         'status',
         'phone',
         'last_login_at',
-        'google_id'
+        'google_id',
+        'department_id'
     ];
+
+    /**
+     * Get the department that owns the user.
+     */
+    public function department()
+    {
+        return $this->belongsTo(\App\Models\Department::class);
+    }
 
     /**
      * The attributes that should be hidden for serialization.
@@ -141,6 +150,8 @@ class User extends Authenticatable
             $query->whereHas('roles', function ($query) use ($role) {
                 $query->where('name', $role);
             });
+        })->when($filters['department_id'] ?? null, function ($query, $departmentId) {
+            $query->where('department_id', $departmentId);
         });
     }
 

@@ -730,24 +730,55 @@ class ReportsController extends Controller
             'academic_session_id',
             AcademicSession::where('is_current', true)->first()?->id
         );
+        $search = $request->input('search');
         
         $academicSessions = AcademicSession::orderBy('start_date', 'desc')->get();
-        $todaysClasses = collect();
+        $groupedClasses = collect();
+        $stats = [
+            'total_sessions' => 0,
+            'lecturers_count' => 0
+        ];
 
         if ($day && $academicSessionId) {
             // Fetch mappings for today
-            $mappings = CourseUnitProgrammeMapping::with(['courseUnit', 'programme', 'instructor'])
+            $query = CourseUnitProgrammeMapping::with([
+                    'courseUnit', 
+                    'programme.department.school', 
+                    'instructor'
+                ])
                 ->where('day_id', $day->id)
                 ->where('academic_session_id', $academicSessionId)
                 ->where(function ($q) {
                     $q->whereNotNull('morning_start_time')
                       ->orWhereNotNull('evening_start_time');
-                })
-                ->get();
+                });
+
+            // Apply Search Filter
+            if ($search) {
+                $query->where(function($q) use ($search) {
+                    $q->whereHas('courseUnit', function($sq) use ($search) {
+                        $sq->where('code', 'like', "%{$search}%")
+                           ->orWhere('name', 'like', "%{$search}%");
+                    })
+                    ->orWhereHas('instructor', function($sq) use ($search) {
+                        $sq->where('name', 'like', "%{$search}%")
+                           ->orWhere('email', 'like', "%{$search}%");
+                    });
+                });
+            }
+            
+            $mappings = $query->get();
             
             // Process mappings into a flat list of events
             $events = collect();
+            $uniqueInstructors = collect();
+
             foreach ($mappings as $mapping) {
+                // Collect unique instructors
+                if ($mapping->instructor) {
+                    $uniqueInstructors->push($mapping->instructor->id);
+                }
+
                 // Morning Slot
                 if ($mapping->morning_start_time) {
                     $events->push((object)[
@@ -778,17 +809,26 @@ class ReportsController extends Controller
                 }
             }
 
-            // Group by Programme Name
-            $todaysClasses = $events->sortBy('start_time')->groupBy(function($event) {
-                return $event->programme->name ?? 'Unknown Programme';
+            $stats['total_sessions'] = $events->count();
+            $stats['lecturers_count'] = $uniqueInstructors->unique()->count();
+
+            // Group by School -> Department
+            $groupedClasses = $events->sortBy('start_time')->groupBy(function($event) {
+                return $event->programme->department->school->name ?? 'Unknown School';
+            })->map(function($schoolEvents) {
+                return $schoolEvents->groupBy(function($event) {
+                    return $event->programme->department->name ?? 'Unknown Department';
+                });
             });
         }
 
         return view('admin.reports.todays-classes', [
-            'todaysClasses' => $todaysClasses,
+            'groupedClasses' => $groupedClasses,
             'academicSessions' => $academicSessions,
             'selectedAcademicSessionId' => $academicSessionId,
-            'date' => $today
+            'date' => $today,
+            'search' => $search,
+            'stats' => $stats
         ]);
     }
 
@@ -1066,76 +1106,89 @@ class ReportsController extends Controller
     {
         // Get all academic sessions for the dropdown
         $academicSessions = AcademicSession::orderBy('start_date', 'desc')->get();
-        $schools = School::orderBy('name')->get();
+        // Get departments grouped by school for the filter
+        $departments = \App\Models\Department::with('school')->orderBy('school_id')->orderBy('name')->get();
 
         // Get filter parameters
         $selectedAcademicSessionId = $request->input(
             'academic_session_id',
             AcademicSession::where('is_current', true)->first()?->id
         );
-        $selectedSchoolId = $request->input('school_id', 'all');
+        $selectedDepartmentId = $request->input('department_id', 'all');
+        $assignmentStatus = $request->input('assignment_status', 'all');
+        $sortBy = $request->input('sort_by', 'total_units');
+        $sortOrder = $request->input('sort_order', 'desc');
+        $perPage = $request->input('per_page', '10');
 
         $workloadData = collect();
+        $instructors = new \Illuminate\Pagination\LengthAwarePaginator([], 0, 10);
 
         if ($selectedAcademicSessionId) {
             // Base query for instructors
             $query = User::role('instructor')
-                ->with('school')
+                ->with(['title', 'school', 'department']) // Eager load department
                 ->withCount(['courseUnitMappings as total_units' => function ($q) use ($selectedAcademicSessionId) {
-                    $q->where('academic_session_id', $selectedAcademicSessionId);
-                }])
-                ->with(['courseUnitMappings' => function ($q) use ($selectedAcademicSessionId) {
+                    // Count UNIQUE course units for this session
                     $q->where('academic_session_id', $selectedAcademicSessionId)
-                        ->with(['courseUnit', 'programme']);
-                }])
-                ->orderBy('name');
+                      ->select(\DB::raw('count(distinct course_unit_id)'));
+                }]);
 
-            // Apply school filter if specified
-            if ($selectedSchoolId !== 'all') {
-                $query->where('school_id', $selectedSchoolId);
+            // Apply Department filter
+            if ($selectedDepartmentId !== 'all') {
+                $query->where('department_id', $selectedDepartmentId);
             }
 
-            $workloadData = $query->get()->map(function ($instructor) {
-                // Skip if instructor has no school assigned
-                if (!$instructor->school) {
-                    return null;
-                }
+            // Apply Assignment Status filter
+            if ($assignmentStatus === 'assigned') {
+                $query->having('total_units', '>', 0);
+            } elseif ($assignmentStatus === 'not_assigned') {
+                $query->having('total_units', '=', 0);
+            }
 
-                // Get unique course units
-                $uniqueUnits = $instructor->courseUnitMappings
-                    ->filter(function ($mapping) {
-                        return $mapping->courseUnit !== null;
-                    })
-                    ->unique('course_unit_id')
-                    ->map(function ($mapping) {
-                        return $mapping->courseUnit;
-                    });
+            // Apply Sorting
+            if ($sortBy === 'total_units') {
+                $query->orderBy('total_units', $sortOrder);
+            } else {
+                $query->orderBy('name', $sortOrder);
+            }
 
-                // Format name as "Title Firstname LASTNAME"
-                $name = $instructor->name;
-                $nameParts = explode(' ', $name);
-                $lastName = array_pop($nameParts);
-                $firstName = implode(' ', $nameParts);
-                $title = $instructor->title ? ($instructor->title->abbreviation ?? $instructor->title->name) : '';
-                $formattedName = trim(($title ? $title . ' ' : '') . $firstName . ' ' . strtoupper($lastName));
+            // Get Paginated Results
+            // Note: We need to load courses for display, but paginate the main query
+            if ($perPage === 'all') {
+                $instructors = $query->paginate(1000)->appends($request->query());
+            } else {
+                $instructors = $query->paginate((int)$perPage)->appends($request->query());
+            }
 
-                return (object)[
-                    'name' => $formattedName,
-                    'course_units' => $uniqueUnits->pluck('code')->implode(', '),
-                    'total_units' => $uniqueUnits->count()
-                ];
-            })->filter(); // Remove any null entries from the main collection
+            // Transform the data for display (fetching specific course codes)
+            // We transform the paging collection's items but keep the paginator wrapper
+            $instructors->getCollection()->transform(function ($instructor) use ($selectedAcademicSessionId) {
+                // Fetch course units for this instructor in this session
+                $uniqueUnits = CourseUnitProgrammeMapping::with('courseUnit')
+                    ->where('user_id', $instructor->id)
+                    ->where('academic_session_id', $selectedAcademicSessionId)
+                    ->whereNotNull('course_unit_id')
+                    ->get()
+                    ->pluck('courseUnit')
+                    ->unique('id')
+                    ->filter();
+
+                $instructor->course_units_display = $uniqueUnits->pluck('code')->implode(', ');
+                
+                return $instructor;
+            });
         }
-
-        // Debug the data being passed to the view
-        \Log::info('Workload Data:', ['data' => $workloadData]);
 
         return view('admin.reports.workload-distribution', [
             'academicSessions' => $academicSessions,
-            'schools' => $schools,
+            'departments' => $departments,
             'selectedAcademicSessionId' => $selectedAcademicSessionId,
-            'selectedSchoolId' => $selectedSchoolId,
-            'workloadData' => $workloadData
+            'selectedDepartmentId' => $selectedDepartmentId,
+            'assignmentStatus' => $assignmentStatus,
+            'sortBy' => $sortBy,
+            'sortOrder' => $sortOrder,
+            'perPage' => $perPage,
+            'instructors' => $instructors
         ]);
     }
 

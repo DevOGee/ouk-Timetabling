@@ -10,7 +10,7 @@ use App\Http\Controllers\CourseMappingController;
 use App\Http\Controllers\CourseUnitController;
 use App\Http\Controllers\CurriculumSetupController;
 use App\Http\Controllers\HomeController;
-use App\Http\Controllers\InstructorController;
+
 use App\Http\Controllers\LessonSlotController;
 use App\Http\Controllers\ProgrammeController;
 use App\Http\Controllers\ProfileController;
@@ -126,12 +126,6 @@ Route::middleware('auth')->group(function () {
 });
 
 Route::get('timetable', [TimetableController::class, 'index'])->name('timetable.index');
-
-// Instructor routes
-// Instructor Management
-Route::resource('instructors', InstructorController::class);
-Route::get('instructors/upload', [InstructorController::class, 'showUploadForm'])->name('instructors.upload');
-Route::post('instructors/import', [InstructorController::class, 'importInstructors'])->name('instructors.import');
 
 // Instructor Dashboard Routes
 Route::prefix('instructor')->middleware(['auth'])->group(function () {

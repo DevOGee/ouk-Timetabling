@@ -469,7 +469,7 @@
                         </div>
                         @endif
                         <div class="col-lg-3 col-md-6">
-                            <a href="{{ route('instructors.index') }}" class="btn btn-light w-100 p-3 text-start d-flex align-items-center quick-actions">
+                            <a href="{{ route('admin.users.index', ['role' => 'instructor']) }}" class="btn btn-light w-100 p-3 text-start d-flex align-items-center quick-actions">
                                 <div class="bg-info bg-opacity-10 p-2 rounded me-3">
                                     <i class="bi bi-people text-info"></i>
                                 </div>

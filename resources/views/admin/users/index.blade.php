@@ -22,12 +22,27 @@
     <div class="card shadow-sm mb-4">
         <div class="card-body">
             <form action="{{ route('admin.users.index') }}" method="GET" class="row g-3">
-                <div class="col-md-4">
+                <div class="col-md-3">
                     <label for="search" class="form-label">Search</label>
                     <input type="text" class="form-control" id="search" name="search" 
                            value="{{ request('search') }}" placeholder="Search by name or email...">
                 </div>
                 <div class="col-md-3">
+                    <label for="department_id" class="form-label">Department</label>
+                    <select name="department_id" id="department_id" class="form-select">
+                        <option value="">All Departments</option>
+                        @foreach($departments->groupBy('school.name') as $schoolName => $deptGroup)
+                            <optgroup label="{{ $schoolName }}">
+                                @foreach($deptGroup as $department)
+                                    <option value="{{ $department->id }}" {{ request('department_id') == $department->id ? 'selected' : '' }}>
+                                        {{ $department->name }}
+                                    </option>
+                                @endforeach
+                            </optgroup>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="col-md-2">
                     <label for="status" class="form-label">Status</label>
                     <select class="form-select" id="status" name="status">
                         <option value="">All Statuses</option>
@@ -82,7 +97,7 @@
                                 <th>Name</th>
                                 <th>Email</th>
                                 <th>Roles</th>
-                                <th>School</th>
+                                <th>Department</th>
                                 <th>Status</th>
                                 <th>Last Login</th>
                                 <th>Actions</th>
@@ -120,7 +135,7 @@
                                             </span>
                                         @endforeach
                                     </td>
-                                    <td>{{ $user->school->name ?? 'N/A' }}</td>
+                                    <td>{{ $user->department->name ?? 'N/A' }}</td>
                                     <td>
                                         <span class="badge bg-{{ $user->status === 'active' ? 'success' : 'secondary' }}">
                                             {{ ucfirst($user->status) }}
