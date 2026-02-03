@@ -33,10 +33,11 @@ class CourseUnitController extends Controller
             $query->where('department_id', $departmentId);
         }
 
-        $courseUnits = $query->orderBy('code')->paginate(10)->appends(['search' => $search, 'department_id' => $departmentId]);
+        $perPage = $request->input('per_page', 10);
+        $courseUnits = $query->orderBy('code')->paginate($perPage)->appends(['search' => $search, 'department_id' => $departmentId, 'per_page' => $perPage]);
         $departments = Department::orderBy('name')->get();
 
-        return view('course_units.index', compact('courseUnits', 'search', 'departments', 'departmentId'));
+        return view('course_units.index', compact('courseUnits', 'search', 'departments', 'departmentId', 'perPage'));
     }
 
     public function show($id)
@@ -163,5 +164,32 @@ class CourseUnitController extends Controller
         };
 
         return new StreamedResponse($callback, 200, $headers);
+    }
+
+    public function bulkAction(Request $request)
+    {
+        $action = $request->input('action');
+        $selectedIds = $request->input('selected_ids', []);
+        $targetDepartmentId = $request->input('target_department_id');
+
+        if (empty($selectedIds)) {
+            return redirect()->back()->with('error', 'No items selected.');
+        }
+
+        switch ($action) {
+            case 'delete':
+                CourseUnit::whereIn('id', $selectedIds)->delete();
+                return redirect()->back()->with('success', count($selectedIds) . ' course units deleted successfully.');
+
+            case 'move':
+                if (!$targetDepartmentId) {
+                    return redirect()->back()->with('error', 'Please select a target department to move course units.');
+                }
+                CourseUnit::whereIn('id', $selectedIds)->update(['department_id' => $targetDepartmentId]);
+                return redirect()->back()->with('success', count($selectedIds) . ' course units moved successfully.');
+
+            default:
+                return redirect()->back()->with('error', 'Invalid action selected.');
+        }
     }
 }

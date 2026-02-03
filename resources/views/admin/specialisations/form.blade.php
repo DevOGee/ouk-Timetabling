@@ -57,9 +57,9 @@
                         </div>
 
                         <div class="d-flex justify-content-between">
-                            <a href="{{ route('admin.specialisations.index', ['programme_id' => $specialisation->programme_id ?? $selectedProgrammeId ?? '']) }}" class="btn btn-outline-secondary">
+                            <button type="button" class="btn btn-outline-secondary" onclick="history.back()">
                                 <i class="bi bi-arrow-left"></i> Cancel
-                            </a>
+                            </button>
                             <button type="submit" class="btn btn-primary">
                                 <i class="bi bi-save"></i> {{ isset($specialisation) ? 'Update' : 'Create' }} Specialisation
                             </button>

@@ -182,6 +182,7 @@ Route::controller(CourseUnitController::class)->group(function () {
     Route::get('course_units/upload', 'showUploadForm')->name('course_units.upload');
     Route::post('course_units/import', 'importCourseUnits')->name('course_units.import');
     Route::get('course_units/sample-csv', 'downloadSampleCsv')->name('course_units.sample');
+    Route::post('course_units/bulk-action', 'bulkAction')->name('course_units.bulk_action');
 });
 Route::resource('course_units', CourseUnitController::class);
 
