@@ -35,13 +35,7 @@
                             Course Units
                         </a>
                     </li>
-                    <li class="nav-item">
-                        <a class="nav-link text-white" 
-                           href="{{ route('instructors.index') }}">
-                            <i class="bi bi-people me-2"></i>
-                            Lecturers
-                        </a>
-                    </li>
+
                     <li class="nav-item">
                         <a class="nav-link text-white {{ request()->routeIs('admin.timetables.*') ? 'active' : '' }}" 
                            href="{{ route('admin.timetables.manage') }}">

@@ -15,8 +15,8 @@
                 <!-- Action Buttons -->
                 <div class="d-flex justify-content-between align-items-center flex-wrap border-top pt-3">
                     <div class="d-flex flex-wrap gap-2 mb-2 mb-md-0">
-                        <a href="{{ route('admin.academic-sessions.show', $academicSession) }}" class="btn btn-outline-secondary btn-sm">
-                            <i class="bi bi-arrow-left me-1"></i> Back to Session
+                        <a href="{{ route('admin.academic-sessions.allocation', $academicSession) }}" class="btn btn-outline-secondary btn-sm">
+                            <i class="bi bi-arrow-left me-1"></i> Back to Teaching Allocation
                         </a>
                         <a href="{{ url("/admin/academic-sessions/{$academicSession->id}/programmes/{$programme->id}/map-course-units") }}" class="btn btn-outline-primary btn-sm">
                             <i class="bi bi-pencil-square me-1"></i> Edit Curriculum

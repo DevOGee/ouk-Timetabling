@@ -346,6 +346,8 @@ Route::prefix('admin')->middleware(['auth'])->group(function () {
         ->name('admin.teaching-allocation');
     Route::get("academic-sessions/{academicSession}/curriculum", [AcademicSessionController::class, "showCurriculum"])
         ->name("admin.academic-sessions.curriculum");
+    Route::get("academic-sessions/{academicSession}/allocation", [AcademicSessionController::class, "showAllocation"])
+        ->name("admin.academic-sessions.allocation");
 
     
     Route::prefix('academic-sessions/{academicSession}')->name('admin.academic-sessions.')->group(function () {

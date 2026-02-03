@@ -62,6 +62,11 @@ class AcademicSessionController extends Controller
         return $this->show($session, 'allocation');
     }
 
+    public function showAllocation(AcademicSession $academicSession)
+    {
+        return $this->show($academicSession, 'allocation');
+    }
+
     public function store(Request $request)
     {
         $validated = $request->validate([
