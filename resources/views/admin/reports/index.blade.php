@@ -149,24 +149,26 @@
             </div>
         </div>
 
-        <!-- Room Utilization Card -->
+        
+
+        <!-- Misplaced Sessions Card -->
         <div class="col-xl-4 col-md-6 mb-4">
             <div class="card border-left-danger shadow h-100 py-2">
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
                             <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">
-                                Room Utilization</div>
-                            <p class="mb-0 text-muted">Analyze classroom and facility usage</p>
+                                Misplaced Sessions</div>
+                            <p class="mb-0 text-muted">Identify course units with inconsistent schedules</p>
                         </div>
                         <div class="col-auto">
-                            <i class="bi bi-building fa-3x text-gray-300"></i>
+                            <i class="bi bi-calendar-x fa-3x text-gray-300"></i>
                         </div>
                     </div>
                     <div class="mt-3">
-                        <span class="btn btn-sm btn-secondary" disabled>
-                            <i class="bi bi-clock me-1"></i> Coming Soon
-                        </span>
+                        <a href="{{ route('admin.reports.misplaced-sessions') }}" class="btn btn-sm btn-danger">
+                            <i class="bi bi-search me-1"></i> View Report
+                        </a>
                     </div>
                 </div>
             </div>

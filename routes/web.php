@@ -228,6 +228,9 @@ Route::prefix('admin')->middleware(['auth'])->group(function () {
 
         // Today's Classes Report
         Route::get('todays-classes', [\App\Http\Controllers\Admin\ReportsController::class, 'todaysClasses'])->name('todays-classes');
+
+        // Misplaced Sessions Report
+        Route::get('misplaced-sessions', [\App\Http\Controllers\Admin\ReportsController::class, 'misplacedSessions'])->name('misplaced-sessions');
     });
     
     // User Management

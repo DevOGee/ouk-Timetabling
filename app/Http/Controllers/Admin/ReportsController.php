@@ -832,6 +832,119 @@ class ReportsController extends Controller
         ]);
     }
 
+    /**
+     * Display Misplaced Sessions Report
+     * Shows course units taught by the same instructor that are NOT scheduled at the same time across different programmes
+     */
+    public function misplacedSessions(Request $request)
+    {
+        // Get filter parameters
+        $academicSessionId = $request->input(
+            'academic_session_id',
+            AcademicSession::where('is_current', true)->first()?->id
+        );
+        $schoolId = $request->input('school_id', 'all');
+
+        // Get filter options
+        $academicSessions = AcademicSession::orderBy('start_date', 'desc')->get();
+        $schools = School::orderBy('name')->get();
+
+        $misplacedGroups = collect();
+
+        if ($academicSessionId) {
+            // 1. Fetch all mappings with an instructor
+            $query = CourseUnitProgrammeMapping::with([
+                'courseUnit',
+                'programme',
+                'day',
+                'instructor',
+                'yearOfStudy',
+                'semester'
+            ])
+            ->where('academic_session_id', $academicSessionId)
+            ->whereNotNull('user_id') // Mappings with an instructor
+            ->whereNotNull('day_id')  // Mappings that are scheduled
+             ->where(function ($q) {
+                $q->whereNotNull('morning_start_time')
+                  ->orWhereNotNull('evening_start_time');
+            });
+
+             // Apply school filter if specified
+            if ($schoolId !== 'all') {
+                $query->whereHas('programme', function($q) use ($schoolId) {
+                    $q->where('school_id', $schoolId);
+                });
+            }
+
+            $mappings = $query->get();
+
+            // 2. Group by Instructor AND Course Unit Code (assuming same code means same unit effectively)
+            // We use code because sometimes different CourseUnit IDs might represent the same subject
+            $grouped = $mappings->groupBy(function ($mapping) {
+                return $mapping->user_id . '_' . $mapping->courseUnit->code;
+            });
+
+            // 3. Filter groups > 1 and check for inconsistencies
+            foreach ($grouped as $key => $group) {
+                if ($group->count() <= 1) {
+                    continue;
+                }
+
+                $first = $group->first();
+                $isInconsistent = false;
+
+                // Check if all mappings in this group have the same schedule
+                foreach ($group as $mapping) {
+                    // Compare against the first one
+                    // Check Day
+                    if ($mapping->day_id != $first->day_id) {
+                        $isInconsistent = true;
+                        break;
+                    }
+
+                    // Check Start Time (Morning)
+                    $firstMorning = $first->morning_start_time ? $first->morning_start_time->format('H:i') : null;
+                    $currentMorning = $mapping->morning_start_time ? $mapping->morning_start_time->format('H:i') : null;
+                    
+                    if ($firstMorning !== $currentMorning) {
+                         $isInconsistent = true;
+                        break;
+                    }
+                    
+                    // Check Start Time (Evening)
+                    $firstEvening = $first->evening_start_time ? $first->evening_start_time->format('H:i') : null;
+                    $currentEvening = $mapping->evening_start_time ? $mapping->evening_start_time->format('H:i') : null;
+                    
+                     if ($firstEvening !== $currentEvening) {
+                         $isInconsistent = true;
+                        break;
+                    }
+                }
+
+                if ($isInconsistent) {
+                    $misplacedGroups->push([
+                        'instructor' => $first->instructor,
+                        'course_unit' => $first->courseUnit, // Taking the first as representative
+                        'mappings' => $group
+                    ]);
+                }
+            }
+        }
+
+        // Sort by Instructor Name
+        $misplacedGroups = $misplacedGroups->sortBy(function ($group) {
+            return $group['instructor']->name;
+        });
+
+        return view('admin.reports.misplaced-sessions', [
+            'academicSessions' => $academicSessions,
+            'selectedAcademicSessionId' => $academicSessionId,
+            'schools' => $schools,
+            'selectedSchoolId' => $schoolId,
+            'misplacedGroups' => $misplacedGroups
+        ]);
+    }
+
     public function instructorSchedules(Request $request, $instructorId = null)
     {
         $instructors = User::role('instructor')

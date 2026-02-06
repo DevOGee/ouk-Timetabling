@@ -87,8 +87,7 @@
                                         <thead>
                                             <tr>
                                                 <th style="width: 5%"><input type="checkbox" class="select-all-checkbox"></th>
-                                                <th style="width: 10%">Code</th>
-                                                <th style="width: 35%">Title</th>
+                                                <th style="width: 45%">Course</th>
                                                 <th style="width: 15%">Type</th>
                                                 <th style="width: 15%">Actions</th>
                                             </tr>
@@ -97,8 +96,7 @@
                                             @foreach($tab['mappings'] as $mapping)
                                                 <tr data-course-id="{{ $mapping->course_unit_id }}">
                                                     <td><input type="checkbox" name="course_unit_ids[]" value="{{ $mapping->course_unit_id }}" class="course-checkbox"></td>
-                                                    <td>{{ $mapping->courseUnit->code }}</td>
-                                                    <td>{{ $mapping->courseUnit->name }}</td>
+                                                    <td><strong>{{ $mapping->courseUnit->code }}</strong> - {{ $mapping->courseUnit->name }}</td>
                                                     <td>
                                                         @if($mapping->is_core)
                                                             <span class="badge bg-success">Core</span>

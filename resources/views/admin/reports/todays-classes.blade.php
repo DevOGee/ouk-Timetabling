@@ -107,8 +107,7 @@
                                 <thead class="table-light">
                                     <tr>
                                         <th style="width: 15%">Time</th>
-                                        <th style="width: 15%">Course Code</th>
-                                        <th style="width: 35%">Course Unit</th>
+                                        <th style="width: 50%">Course</th>
                                         <th style="width: 25%">Instructor</th>
                                         <th style="width: 10%">Type</th>
                                     </tr>
@@ -121,12 +120,8 @@
                                                 {{ \Carbon\Carbon::parse($class->start_time)->format('H:i') }} - 
                                                 {{ \Carbon\Carbon::parse($class->end_time)->format('H:i') }}
                                             </td>
-                                            <td class="align-middle fw-bold">
-                                                {{ $class->courseUnit->code ?? 'N/A' }}
-                                            </td>
                                             <td class="align-middle">
-                                                {{ $class->courseUnit->name ?? 'N/A' }}
-                                                <div class="small text-muted">{{ $class->programme->name ?? '' }}</div>
+                                                <strong>{{ $class->courseUnit->code ?? 'N/A' }}</strong> - {{ $class->courseUnit->name ?? 'N/A' }}
                                             </td>
                                             <td class="align-middle">
                                                 @if($class->instructor)

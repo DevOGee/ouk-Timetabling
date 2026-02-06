@@ -1,5 +1,15 @@
 @extends('layouts.app')
 
+@php
+    $pageTitle = 'Academic Session: ' . $academicSession->name;
+    if(isset($viewMode)) {
+        if($viewMode == 'curriculum') $pageTitle = 'Curriculum Mapping: ' . $academicSession->name;
+        elseif($viewMode == 'allocation') $pageTitle = 'Teaching Allocation: ' . $academicSession->name;
+    }
+@endphp
+
+@section('title', $pageTitle)
+
 @section('content')
 <div class="container">
     <div class="row justify-content-between align-items-center mb-4">
