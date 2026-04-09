@@ -37,8 +37,41 @@ class ExamController extends Controller
 
         $schedule = ExamSchedule::create($request->all());
 
+        if ($request->has('is_active')) {
+            ExamSchedule::where('id', '!=', $schedule->id)->update(['is_active' => false]);
+        }
+
         return redirect()->route('admin.exams.show', $schedule)
             ->with('success', 'Exam schedule created successfully.');
+    }
+
+    public function edit(ExamSchedule $examSchedule)
+    {
+        $sessions = AcademicSession::latest()->get();
+        return view('admin.exams.edit', compact('examSchedule', 'sessions'));
+    }
+
+    public function update(Request $request, ExamSchedule $examSchedule)
+    {
+        $request->validate([
+            'academic_session_id' => 'required|exists:academic_sessions,id',
+            'name' => 'required|string|max:255',
+            'start_date' => 'required|date',
+            'end_date' => 'required|date|after_or_equal:start_date',
+        ]);
+
+        $data = $request->except(['_token', '_method']);
+        $data['is_active'] = $request->has('is_active');
+        
+        $examSchedule->update($data);
+
+        if ($request->has('is_active')) {
+            // Check if active changed true, disable others
+            ExamSchedule::where('id', '!=', $examSchedule->id)->update(['is_active' => false]);
+        }
+
+        return redirect()->route('admin.exams.index')
+            ->with('success', 'Exam schedule updated successfully.');
     }
 
     public function show(Request $request, ExamSchedule $examSchedule)
@@ -188,6 +221,13 @@ class ExamController extends Controller
     {
         $examSchedule->delete();
         return redirect()->route('admin.exams.index')->with('success', 'Exam schedule deleted.');
+    }
+
+    public function toggleStatus(ExamSchedule $examSchedule)
+    {
+        $examSchedule->update(['is_active' => !$examSchedule->is_active]);
+        $status = $examSchedule->is_active ? 'activated' : 'deactivated';
+        return back()->with('success', "Exam schedule {$status} successfully.");
     }
 
     public function publish(ExamSchedule $examSchedule)

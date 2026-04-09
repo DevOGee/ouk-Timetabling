@@ -74,6 +74,12 @@
                                                     </button>
                                                 </form>
                                             @endif
+                                            <form action="{{ route('admin.exams.toggle-status', $schedule) }}" method="POST" onsubmit="return confirm('Are you sure you want to toggle the status of this schedule?');">
+                                                @csrf
+                                                <button type="submit" class="btn btn-sm btn-outline-info" title="{{ $schedule->is_active ? 'Deactivate' : 'Activate' }}">
+                                                    <i class="bi bi-power"></i>
+                                                </button>
+                                            </form>
                                             
                                             <a href="{{ route('admin.exams.show', $schedule) }}" class="btn btn-sm btn-primary" title="Manage">
                                                 <i class="bi bi-gear-fill"></i>

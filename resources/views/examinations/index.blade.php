@@ -8,16 +8,90 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Bootstrap Icons -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --uni-teal: #037b90;
+            --uni-teal-hover: #025f70;
+            --uni-gold: #ff7f50;
+            --uni-bg: #f5f7f9;
+        }
         body {
-            background-color: #f8f9fa;
+            background-color: var(--uni-bg);
+            font-family: 'Outfit', sans-serif;
         }
         .header-section {
-            background-color: #fff;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-            padding: 2rem 0;
-            margin-bottom: 2rem;
-            border-bottom: 3px solid #0d6efd;
+            background-color: var(--uni-teal);
+            color: #ffffff;
+            background: linear-gradient(135deg, var(--uni-teal) 0%, #025f70 100%);
+            box-shadow: 0 4px 12px rgba(3, 123, 144, 0.15);
+            padding: 3rem 0;
+            margin-bottom: 2.5rem;
+            border-bottom: 5px solid var(--uni-gold);
+        }
+        .header-section .text-muted {
+            color: rgba(255, 255, 255, 0.8) !important;
+        }
+        .text-primary {
+            color: var(--uni-teal) !important;
+        }
+        .btn-uni-primary {
+            background-color: var(--uni-teal);
+            color: #ffffff;
+            transition: all 0.2s ease;
+        }
+        .btn-uni-primary:hover {
+            background-color: var(--uni-teal-hover);
+            color: #ffffff;
+            transform: translateY(-1px);
+        }
+        .card {
+            border-radius: 12px;
+            border: 1px solid rgba(0,0,0,0.08) !important;
+        }
+        .card-header {
+            background-color: #ffffff;
+            color: var(--uni-teal);
+            border-bottom: 1px solid rgba(0,0,0,0.05);
+            border-radius: 12px 12px 0 0 !important;
+        }
+        #examsTable th {
+            background-color: var(--uni-teal);
+            color: #ffffff;
+            font-weight: 500;
+            border-bottom: none;
+            padding: 1rem;
+        }
+        .table-secondary.boundary-row td {
+            background-color: rgba(255, 127, 80, 0.1) !important;
+            color: var(--uni-teal);
+            border-bottom: 2px solid rgba(255, 127, 80, 0.2);
+        }
+        .badge-uni {
+            background-color: rgba(3, 123, 144, 0.1);
+            color: var(--uni-teal);
+            border: 1px solid rgba(3, 123, 144, 0.2);
+            font-weight: 500;
+        }
+        .badge.bg-secondary {
+            background-color: var(--uni-gold) !important;
+            color: #fff;
+        }
+        .table-responsive::-webkit-scrollbar {
+            height: 8px;
+        }
+        .table-responsive::-webkit-scrollbar-thumb {
+            background: rgba(3, 123, 144, 0.3);
+            border-radius: 4px;
+        }
+        .btn-outline-secondary {
+            color: var(--uni-teal);
+            border-color: rgba(3, 123, 144, 0.3);
+        }
+        .btn-outline-secondary:hover {
+            background-color: rgba(3, 123, 144, 0.1);
+            color: var(--uni-teal);
+            border-color: var(--uni-teal);
         }
     </style>
 </head>
@@ -188,7 +262,7 @@
                     </div>
                     <div class="card-footer bg-white p-2">
                          <div class="d-grid">
-                            <button type="button" class="btn btn-primary btn-sm" onclick="showAll()">
+                            <button type="button" class="btn btn-uni-primary btn-sm" onclick="showAll()">
                                 <i class="bi bi-collection me-1"></i> Show All Timetables
                             </button>
                          </div>
@@ -210,7 +284,7 @@
                     <div class="card-body p-0">
                         <div class="table-responsive">
                             <table class="table table-hover align-middle mb-0" id="examsTable">
-                                <thead class="table-light">
+                                <thead>
                                     <tr>
                                         <th style="width: 20%">Time</th>
                                         <th style="width: 25%">Course</th>
@@ -259,7 +333,7 @@
                                                     @endphp
                                                     @if($programmeNames->count() > 0)
                                                         @foreach($programmeNames as $name)
-                                                            <span class="badge bg-info bg-opacity-10 text-info-emphasis border border-info-subtle mb-1">
+                                                            <span class="badge badge-uni mb-1">
                                                                 {{ $name }}
                                                             </span>
                                                         @endforeach
