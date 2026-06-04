@@ -1,0 +1,32 @@
+LOAD DATABASE
+     FROM      mysql://bentito:Spoiler%402050%23@127.0.0.1:3307/planner_prod
+     INTO      postgresql://mwarabu@127.0.0.1:5432/ouk_timetabling
+
+WITH
+     include drop,
+     create tables,
+     create indexes,
+     reset sequences,
+     foreign keys,
+     truncate,
+     batch rows = 500,
+     batch size = 20MB,
+     prefetch rows = 1000
+
+SET work_mem to '256MB',
+    maintenance_work_mem to '512MB'
+
+CAST
+     type bigint     when (= precision 20) to bigint   drop typemod,
+     type int        when (= precision 10) to integer  drop typemod,
+     type int        when (= precision 11) to integer  drop typemod,
+     type tinyint    to boolean using tinyint-to-boolean,
+     type datetime   to timestamp,
+     type date       to date,
+     type year       to integer,
+     type enum       to text,
+     type text       to text,
+     type longtext   to text,
+     type mediumtext to text,
+     type blob       to bytea,
+     type json       to jsonb;
