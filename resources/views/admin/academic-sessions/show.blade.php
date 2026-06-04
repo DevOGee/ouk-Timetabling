@@ -26,6 +26,7 @@
 .stagger-2    { animation:fadeIn .4s cubic-bezier(.34,1.56,.64,1) .12s both; }
 .stagger-3    { animation:fadeIn .4s cubic-bezier(.34,1.56,.64,1) .20s both; }
 @keyframes fadeIn { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
+@keyframes slideProgress { from { width: 0%; } }
 
 /* Breadcrumb */
 .breadcrumb-nav{display:flex;align-items:center;gap:.4rem;font-size:.78rem;color:var(--slate-500);margin-bottom:1.25rem}

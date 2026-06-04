@@ -85,7 +85,7 @@
                             ];
                         }
                     @endphp
-                    <tr style="border-bottom:1px solid var(--slate-100);transition:background .2s;background:#fff;" onmouseover="this.style.background='var(--slate-50)'" onmouseout="this.style.background='#fff'">
+                    <tr style="border-bottom:1px solid var(--slate-100);transition:all .25s ease;background:#fff;animation:fadeIn 0.4s cubic-bezier(0.34,1.56,0.64,1) {{ $loop->index * 0.06 }}s both;" onmouseover="this.style.background='var(--slate-50)';this.style.transform='translateY(-2px)';" onmouseout="this.style.background='#fff';this.style.transform='none';">
                         <td style="padding:1rem 1.5rem;vertical-align:middle;border:none;">
                             <div style="font-weight:600;color:var(--slate-900);font-size:.9rem;">
                                 {{ $programme->name }}
@@ -103,8 +103,8 @@
                             </span>
                         </td>
                         <td style="padding:1rem 1.5rem;vertical-align:middle;border:none;">
-                            <div style="width:100%;height:8px;background:var(--slate-100);border-radius:100px;overflow:hidden;">
-                                <div style="height:100%;background:{{ $status['color'] }};width:{{ $status['progress'] }}%;border-radius:100px;transition:width .5s ease;"></div>
+                            <div style="width:100%;height:6px;background:var(--slate-100);border-radius:100px;overflow:hidden;">
+                                <div style="height:100%;background:{{ $status['color'] }};width:{{ $status['progress'] }}%;border-radius:100px;transition:width 1s cubic-bezier(0.34,1.56,0.64,1) {{ ($loop->index * 0.06) + 0.2 }}s;animation:slideProgress 1s cubic-bezier(0.34,1.56,0.64,1) {{ ($loop->index * 0.06) + 0.2 }}s both;"></div>
                             </div>
                             <div style="font-size:.7rem;font-weight:600;color:var(--slate-500);margin-top:.3rem;text-align:right;">
                                 {{ $status['progress'] }}%
@@ -112,11 +112,11 @@
                         </td>
                         <td style="padding:1rem 1.5rem;vertical-align:middle;border:none;text-align:right;">
                             @if($status['is_complete'] || $status['label'] === 'In Progress')
-                                <a href="{{ route('admin.academic-sessions.programmes.scheduling.show', ['academicSession' => $academicSession->id, 'programme' => $programme->id]) }}" class="btn-outline-soft" style="padding:.4rem .6rem;" title="Edit Schedule">
+                                <a href="{{ route('admin.academic-sessions.programmes.scheduling.show', ['academicSession' => $academicSession->id, 'programme' => $programme->id]) }}" class="btn-outline-soft" style="padding:.4rem .6rem;font-size:.8rem;" title="Edit Schedule">
                                     <i class="bi bi-pencil" style="color:var(--teal);"></i> Edit
                                 </a>
                             @else
-                                <a href="{{ route('admin.academic-sessions.programmes.scheduling.show', ['academicSession' => $academicSession->id, 'programme' => $programme->id]) }}" class="btn-premium" style="padding:.4rem .6rem;" title="Create Schedule">
+                                <a href="{{ route('admin.academic-sessions.programmes.scheduling.show', ['academicSession' => $academicSession->id, 'programme' => $programme->id]) }}" class="btn-premium" style="padding:.4rem .6rem;font-size:.8rem;" title="Create Schedule">
                                     <i class="bi bi-calendar-plus"></i> Schedule
                                 </a>
                             @endif
@@ -169,11 +169,13 @@
         </div>
     @endif
 @else
-    <div style="padding:4rem 2rem;text-align:center;">
-        <div style="font-size:3rem;color:var(--slate-200);margin-bottom:1rem;"><i class="bi bi-calendar3"></i></div>
-        <h4 style="font-size:1.1rem;font-weight:700;color:var(--slate-700);margin-bottom:.5rem;">No Timetables Found</h4>
-        <p style="font-size:.9rem;color:var(--slate-500);margin-bottom:0;max-width:400px;margin-left:auto;margin-right:auto;">
-            There are no programmes available for scheduling timetables in this session.
+    <div style="padding:5rem 2rem;text-align:center;background:var(--slate-50);border-radius:var(--radius-md);border:1px dashed var(--slate-200);animation:fadeIn 0.5s cubic-bezier(0.34,1.56,0.64,1) both;">
+        <div style="display:inline-flex;align-items:center;justify-content:center;width:80px;height:80px;border-radius:50%;background:#fff;box-shadow:0 10px 25px rgba(15,23,42,.05);margin-bottom:1.5rem;">
+            <i class="bi bi-calendar-x" style="font-size:2rem;color:var(--slate-400);"></i>
+        </div>
+        <h4 style="font-size:1.15rem;font-weight:700;color:var(--slate-800);margin-bottom:.5rem;">No Timetables Found</h4>
+        <p style="font-size:.9rem;color:var(--slate-500);margin-bottom:1.5rem;max-width:400px;margin-left:auto;margin-right:auto;line-height:1.6;">
+            There are no programmes available for scheduling timetables in this session. Once course units are mapped, they will appear here.
         </p>
     </div>
 @endif
