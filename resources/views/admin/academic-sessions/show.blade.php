@@ -106,6 +106,25 @@ select.field-input:focus {
 .custom-tab.active { color:var(--teal); }
 .custom-tab.active::after { content:''; position:absolute; bottom:-1.5px; left:0; width:100%; height:3px; background:var(--teal); border-radius:3px 3px 0 0; }
 
+/* Tab Card (wraps tables) */
+.tab-card { background:#fff; border-radius:16px; border:1px solid rgba(226,232,240,.7); box-shadow:0 4px 24px rgba(15,23,42,.04), 0 1px 3px rgba(15,23,42,.02); overflow:hidden; margin-bottom:1.5rem; }
+.tab-card-header { display:flex; align-items:center; justify-content:space-between; padding:1.25rem 1.5rem; border-bottom:1px solid var(--slate-100); background:var(--slate-50); flex-wrap:wrap; gap:1rem; }
+.tab-card-title { display:flex; align-items:center; gap:.75rem; font-size:1rem; }
+.tab-card-controls { display:flex; align-items:center; gap:.75rem; flex-wrap:wrap; }
+
+/* Filter Inputs */
+.filter-input-wrap { position:relative; }
+.filter-input-icon { position:absolute; left:10px; top:50%; transform:translateY(-50%); color:var(--slate-400); font-size:.85rem; pointer-events:none; }
+.filter-input { appearance:none; background-color:#fff; border:1.5px solid var(--slate-200); border-radius:8px; padding:.45rem .75rem .45rem 2.2rem; font-size:.85rem; color:var(--slate-800); outline:none; transition:all .2s; height:36px; background-image:none; }
+select.filter-input { background-image:url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e"); background-repeat:no-repeat; background-position:right .6rem center; background-size:1em; padding-right:2rem; }
+.filter-input:focus { border-color:var(--teal); box-shadow:0 0 0 3px var(--teal-bg); }
+
+/* Spin animation for custom loader */
+@keyframes spin { to { transform:rotate(360deg); } }
+
+/* Responsive tabs */
+@media(max-width:768px) { .tab-card-header { flex-direction:column; align-items:flex-start; } .tab-card-controls { width:100%; } .filter-input { width:100%; } }
+
 @media(max-width:768px) { .info-card { grid-template-columns:1fr; gap:1.5rem; } }
 </style>
 @endpush
@@ -241,96 +260,111 @@ select.field-input:focus {
     <div class="tab-content stagger-3" id="sessionTabsContent">
         <!-- Programmes Tab -->
         <div class="tab-pane fade {{ request('tab', 'programmes') === 'programmes' ? 'show active' : '' }}" id="programmes" role="tabpanel" aria-labelledby="programmes-tab">
-            <div class="d-flex justify-content-between align-items-center mb-3">
-                <h2 style="font-size:1.1rem;font-weight:700;color:var(--slate-900);margin:0;">Programmes</h2>
-                @if(!auth()->user()->hasRole('timetabler'))
-                <div class="d-flex align-items-center gap-3">
-                    @if(isset($schools) && $schools->count() > 0)
-                        <div class="d-flex align-items-center gap-2">
-                            <label for="schoolFilter" style="font-size:.85rem;color:var(--slate-500);font-weight:500;margin:0;">School:</label>
-                            <select id="schoolFilter" class="field-input" style="padding:.4rem 2rem .4rem .75rem;font-size:.85rem;border-radius:6px;border:1.5px solid var(--slate-200);width:auto;">
-                                <option value="all" {{ !request()->has('school_id') ? 'selected' : '' }}>All Schools</option>
-                                @foreach($schools as $school)
-                                    <option value="{{ $school->id }}" {{ request('school_id') == $school->id ? 'selected' : '' }}>
-                                        {{ $school->name }}
-                                    </option>
-                                @endforeach
-                            </select>
-                        </div>
-                    @endif
-                    
-                    <div class="d-flex align-items-center gap-2">
-                        <div style="position:relative;">
-                            <i class="bi bi-search" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--slate-400);font-size:.85rem;"></i>
-                            <input type="text" id="programmeSearch" class="field-input" placeholder="Search programmes..." value="{{ request('search') }}" style="padding:.4rem .75rem .4rem 2rem;font-size:.85rem;border-radius:6px;border:1.5px solid var(--slate-200);width:220px;">
+            <div class="tab-card">
+                <!-- Tab Card Header with Filters -->
+                <div class="tab-card-header">
+                    <div class="tab-card-title">
+                        <i class="bi bi-diagram-3" style="color:var(--teal);"></i>
+                        <div>
+                            <div style="font-weight:700;color:var(--slate-900);font-size:.95rem;">Programmes</div>
+                            <div style="font-size:.78rem;color:var(--slate-500);margin-top:.1rem;">Manage programmes enrolled in this session</div>
                         </div>
                     </div>
-                    
-                    <div class="d-flex gap-2">
-                        <a href="{{ route('admin.academic-sessions.select-programmes', $academicSession) }}" class="btn-premium">
-                            <i class="bi bi-plus-lg"></i> Add Programmes
-                        </a>
-                        <a href="{{ route('admin.programmes.create') }}" class="btn-outline-soft">
-                            <i class="bi bi-plus-circle"></i> New
-                        </a>
+                    <div class="tab-card-controls">
+                        @if(!auth()->user()->hasRole('timetabler'))
+                            <!-- Search -->
+                            <div class="filter-input-wrap">
+                                <i class="bi bi-search filter-input-icon"></i>
+                                <input type="text" id="programmeSearch" class="filter-input" placeholder="Search programmes..." value="{{ request('search') }}">
+                            </div>
+
+                            <!-- School filter -->
+                            @if(isset($schools) && $schools->count() > 0)
+                            <div style="position:relative;">
+                                <i class="bi bi-building filter-input-icon" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);pointer-events:none;"></i>
+                                <select id="schoolFilter" class="filter-input" style="padding-left:2rem;">
+                                    <option value="all" {{ !request()->has('school_id') ? 'selected' : '' }}>All Schools</option>
+                                    @foreach($schools as $school)
+                                        <option value="{{ $school->id }}" {{ request('school_id') == $school->id ? 'selected' : '' }}>{{ $school->name }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            @endif
+
+                            <!-- Action buttons -->
+                            <div style="display:flex;gap:.5rem;align-items:center;">
+                                <a href="{{ route('admin.academic-sessions.select-programmes', $academicSession) }}" class="btn-premium" style="white-space:nowrap;">
+                                    <i class="bi bi-plus-lg"></i> Add
+                                </a>
+                                <a href="{{ route('admin.programmes.create') }}" class="btn-outline-soft" title="Create New Programme">
+                                    <i class="bi bi-plus-circle"></i>
+                                </a>
+                            </div>
+                        @endif
                     </div>
                 </div>
-                @endif
-            </div>
-            <div class="info-card" style="padding:0;display:block;">
+
                 <!-- Programs Table Container (will be updated via AJAX) -->
                 <div id="programmes-container">
                     @include('admin.academic-sessions.partials.programmes-table', ['programmes' => $programmes, 'academicSession' => $academicSession])
                 </div>
-                
+
                 <!-- Loading Indicator -->
-                <div id="loadingIndicator" class="text-center d-none" style="padding:3rem 0;">
-                    <div class="spinner-border text-primary" role="status">
-                        <span class="visually-hidden">Loading...</span>
+                <div id="loadingIndicator" class="d-none" style="padding:4rem 2rem;text-align:center;">
+                    <div style="display:inline-flex;flex-direction:column;align-items:center;gap:1rem;">
+                        <div style="width:44px;height:44px;border-radius:50%;border:3px solid var(--slate-100);border-top-color:var(--teal);animation:spin .7s linear infinite;"></div>
+                        <span style="font-size:.85rem;color:var(--slate-500);">Loading programmes...</span>
                     </div>
-                    <p class="mt-2" style="color:var(--slate-500);font-size:.875rem;">Loading programmes...</p>
                 </div>
             </div>
         </div>
 
         <!-- Timetables Tab -->
         <div class="tab-pane fade {{ request('tab') === 'timetables' ? 'show active' : '' }}" id="timetables" role="tabpanel" aria-labelledby="timetables-tab">
-            <div class="d-flex justify-content-between align-items-center mb-3">
-                <h2 style="font-size:1.1rem;font-weight:700;color:var(--slate-900);margin:0;">Programme Timetables</h2>
-                <div class="d-flex align-items-center gap-3">
-                    @if(!auth()->user()->hasRole('timetabler'))
-                        @if(isset($schools) && $schools->count() > 0)
-                            <div class="d-flex align-items-center gap-2">
-                                <label for="timetableSchoolFilter" style="font-size:.85rem;color:var(--slate-500);font-weight:500;margin:0;">School:</label>
-                                <select id="timetableSchoolFilter" class="field-input" style="padding:.4rem 2rem .4rem .75rem;font-size:.85rem;border-radius:6px;border:1.5px solid var(--slate-200);width:auto;">
+            <div class="tab-card">
+                <!-- Tab Card Header -->
+                <div class="tab-card-header">
+                    <div class="tab-card-title">
+                        <i class="bi bi-calendar3" style="color:var(--teal);"></i>
+                        <div>
+                            <div style="font-weight:700;color:var(--slate-900);font-size:.95rem;">Programme Timetables</div>
+                            <div style="font-size:.78rem;color:var(--slate-500);margin-top:.1rem;">Track scheduling progress across all programmes</div>
+                        </div>
+                    </div>
+                    <div class="tab-card-controls">
+                        @if(!auth()->user()->hasRole('timetabler'))
+                            @if(isset($schools) && $schools->count() > 0)
+                            <div style="position:relative;">
+                                <i class="bi bi-building filter-input-icon" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);pointer-events:none;"></i>
+                                <select id="timetableSchoolFilter" class="filter-input" style="padding-left:2rem;">
                                     <option value="all">All Schools</option>
                                     @foreach($schools as $school)
                                         <option value="{{ $school->id }}">{{ $school->name }}</option>
                                     @endforeach
                                 </select>
                             </div>
-                        @endif
-                        
-                        @if($programmesForTimetable->isNotEmpty())
+                            @endif
+
+                            @if($programmesForTimetable->isNotEmpty())
                             <div class="dropdown">
-                                <button class="btn-premium dropdown-toggle" type="button" id="addTimetableDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                <button class="btn-premium dropdown-toggle" type="button" id="addTimetableDropdown" data-bs-toggle="dropdown" aria-expanded="false" style="white-space:nowrap;">
                                     <i class="bi bi-plus"></i> Add Timetable
                                 </button>
-                                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="addTimetableDropdown" style="border:none;box-shadow:var(--card-shadow);border-radius:8px;font-size:.85rem;">
+                                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="addTimetableDropdown" style="border:none;box-shadow:0 8px 30px rgba(15,23,42,.08);border-radius:10px;font-size:.85rem;padding:.5rem;">
                                     @foreach($programmesForTimetable as $programme)
                                         <li>
-                                            <a class="dropdown-item" href="#" data-programme-id="{{ $programme->id }}">
+                                            <a class="dropdown-item" href="#" data-programme-id="{{ $programme->id }}" style="border-radius:6px;padding:.5rem .75rem;">
                                                 {{ $programme->name }} ({{ $programme->programme_code }})
                                             </a>
                                         </li>
                                     @endforeach
                                 </ul>
                             </div>
+                            @endif
                         @endif
-                    @endif
+                    </div>
                 </div>
-            </div>
-            <div class="info-card" style="padding:0;display:block;">
+
                 <!-- Timetables Table Container (will be updated via AJAX) -->
                 <div id="timetables-container">
                     @include('admin.academic-sessions.partials.timetables-table', [
@@ -338,13 +372,13 @@ select.field-input:focus {
                         'academicSession' => $academicSession
                     ])
                 </div>
-                
+
                 <!-- Loading Indicator -->
-                <div id="timetableLoadingIndicator" class="text-center d-none" style="padding:3rem 0;">
-                    <div class="spinner-border text-primary" role="status">
-                        <span class="visually-hidden">Loading...</span>
+                <div id="timetableLoadingIndicator" class="d-none" style="padding:4rem 2rem;text-align:center;">
+                    <div style="display:inline-flex;flex-direction:column;align-items:center;gap:1rem;">
+                        <div style="width:44px;height:44px;border-radius:50%;border:3px solid var(--slate-100);border-top-color:var(--teal);animation:spin .7s linear infinite;"></div>
+                        <span style="font-size:.85rem;color:var(--slate-500);">Loading timetables...</span>
                     </div>
-                    <p class="mt-2" style="color:var(--slate-500);font-size:.875rem;">Loading timetables...</p>
                 </div>
             </div>
         </div>
