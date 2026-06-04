@@ -125,7 +125,7 @@ select.filter-input { background-image:url("data:image/svg+xml;charset=UTF-8,%3c
 /* Responsive tabs */
 @media(max-width:768px) { .tab-card-header { flex-direction:column; align-items:flex-start; } .tab-card-controls { width:100%; } .filter-input { width:100%; } }
 
-@media(max-width:768px) { .info-card { grid-template-columns:1fr; gap:1.5rem; } }
+@media(max-width:768px) { .premium-info-card { grid-template-columns:1fr; gap:1.5rem; } }
 </style>
 @endpush
 
