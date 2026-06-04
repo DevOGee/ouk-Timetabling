@@ -42,19 +42,27 @@
 .header-subtitle{font-size:.9rem;color:var(--slate-500);margin:.2rem 0 0}
 .session-pill{font-size:.65rem;font-weight:700;padding:.3rem .6rem;border-radius:100px;background:var(--teal-bg);color:var(--teal);display:inline-flex;align-items:center;gap:.3rem;text-transform:uppercase;letter-spacing:.5px}
 
-/* Info Card */
-.info-card { background:#fff; border-radius:var(--radius-md); box-shadow:var(--card-shadow); padding:1.5rem; margin-bottom:1.5rem; display:grid; grid-template-columns:1fr 1fr; gap:2rem; }
-.info-section h3 { font-size:1.05rem; font-weight:700; color:var(--slate-900); margin-bottom:1rem; border-bottom:1px solid var(--slate-100); padding-bottom:.5rem; }
-.info-row { display:flex; justify-content:space-between; margin-bottom:.75rem; font-size:.875rem; border-bottom:1px dashed var(--slate-100); padding-bottom:.5rem; }
-.info-label { color:var(--slate-500); font-weight:500; }
-.info-value { color:var(--slate-900); font-weight:600; text-align:right; }
+/* Premium Info Card */
+.premium-info-card { background:#fff; border-radius:16px; box-shadow:0 4px 20px rgba(15,23,42,.04), 0 1px 3px rgba(15,23,42,.02); border:1px solid rgba(226,232,240,.6); padding:2rem; margin-bottom:2rem; display:grid; grid-template-columns:1fr 1fr; gap:3rem; }
+.info-section h3 { font-size:1.1rem; font-weight:800; color:var(--slate-900); margin-bottom:1.5rem; display:flex; align-items:center; gap:.5rem; }
+.info-section h3 i { color:var(--teal); font-size:1.2rem; }
+.details-grid { display:grid; grid-template-columns:repeat(2, 1fr); gap:1rem; }
+.detail-item { background:var(--slate-50); padding:1.2rem; border-radius:12px; border:1px solid rgba(226,232,240,.6); transition:all .2s ease; }
+.detail-item:hover { background:#fff; box-shadow:0 4px 12px rgba(15,23,42,.03); border-color:var(--teal-bg); transform:translateY(-2px); }
+.detail-label { font-size:.7rem; font-weight:700; color:var(--slate-500); text-transform:uppercase; letter-spacing:.5px; margin-bottom:.4rem; display:flex; align-items:center; gap:.4rem; }
+.detail-label i { font-size:.85rem; }
+.detail-value { font-size:.95rem; font-weight:700; color:var(--slate-900); }
+
+.description-box { font-size:.9rem; color:var(--slate-600); line-height:1.6; background:#fff; border-left:4px solid var(--teal); padding:1rem 1.25rem; border-radius:0 12px 12px 0; box-shadow:0 2px 8px rgba(15,23,42,.02); margin-bottom:1.5rem; }
+.action-box { background:var(--slate-50); padding:1.25rem; border-radius:12px; border:1px solid rgba(226,232,240,.6); }
+.action-box-title { font-size:.75rem; font-weight:700; color:var(--slate-500); text-transform:uppercase; letter-spacing:1px; margin-bottom:1rem; display:flex; align-items:center; gap:.4rem; }
 
 /* Status Badges */
-.status-badge { font-size:.7rem; font-weight:700; padding:.2rem .6rem; border-radius:100px; text-transform:uppercase; }
-.status-active { background:var(--green); color:#fff; }
-.status-upcoming { background:#3b82f6; color:#fff; }
-.status-completed { background:var(--slate-500); color:#fff; }
-.status-archived { background:var(--slate-700); color:#fff; }
+.status-badge { font-size:.7rem; font-weight:700; padding:.25rem .75rem; border-radius:100px; text-transform:uppercase; display:inline-flex; align-items:center; justify-content:center; }
+.status-active { background:rgba(16,185,129,.1); color:var(--green); }
+.status-upcoming { background:rgba(59,130,246,.1); color:#3b82f6; }
+.status-completed { background:var(--slate-100); color:var(--slate-600); }
+.status-archived { background:var(--slate-200); color:var(--slate-700); }
 
 /* Action Buttons */
 .action-grid { display:flex; gap:.5rem; flex-wrap:wrap; margin-top:.5rem; }
@@ -135,84 +143,85 @@ select.field-input:focus {
         @endif
     </div>
 
-    <div class="info-card stagger-2">
+    <div class="premium-info-card stagger-2">
         <div class="info-section">
-            <h3>Session Details</h3>
-            <div class="info-row">
-                <span class="info-label">Code</span>
-                <span class="info-value">{{ $academicSession->code }}</span>
-            </div>
-            <div class="info-row">
-                <span class="info-label">Duration</span>
-                <span class="info-value">{{ $academicSession->duration }}</span>
-            </div>
-            <div class="info-row">
-                <span class="info-label">Status</span>
-                <span class="info-value">
-                    <span class="status-badge status-{{ $academicSession->status }}">
-                        {{ ucfirst($academicSession->status) }}
+            <h3><i class="bi bi-info-circle"></i> Session Details</h3>
+            <div class="details-grid">
+                <div class="detail-item">
+                    <span class="detail-label"><i class="bi bi-upc-scan"></i> Code</span>
+                    <span class="detail-value">{{ $academicSession->code }}</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label"><i class="bi bi-clock-history"></i> Duration</span>
+                    <span class="detail-value">{{ $academicSession->duration }}</span>
+                </div>
+                <div class="detail-item" style="grid-column: span 2;">
+                    <span class="detail-label"><i class="bi bi-calendar-range"></i> Timeline</span>
+                    <span class="detail-value">{{ $academicSession->start_date->format('M d, Y') }} — {{ $academicSession->end_date->format('M d, Y') }}</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label"><i class="bi bi-activity"></i> Status</span>
+                    <span class="detail-value">
+                        <span class="status-badge status-{{ $academicSession->status }}">
+                            {{ ucfirst($academicSession->status) }}
+                        </span>
                     </span>
-                </span>
-            </div>
-            <div class="info-row">
-                <span class="info-label">Start Date</span>
-                <span class="info-value">{{ $academicSession->start_date->format('F d, Y') }}</span>
-            </div>
-            <div class="info-row" style="border:none;">
-                <span class="info-label">End Date</span>
-                <span class="info-value">{{ $academicSession->end_date->format('F d, Y') }}</span>
+                </div>
             </div>
         </div>
 
         <div class="info-section">
-            <h3>Description & Actions</h3>
-            <p style="font-size:.875rem;color:var(--slate-700);margin-bottom:1.5rem;">
-                {{ $academicSession->description ?? 'No description provided.' }}
-            </p>
+            <h3><i class="bi bi-card-text"></i> Description & Actions</h3>
+            
+            <div class="description-box">
+                {{ $academicSession->description ?? 'No description provided for this session.' }}
+            </div>
 
             @if(!auth()->user()->hasRole('timetabler'))
-                <h4 style="font-size:.85rem;font-weight:700;color:var(--slate-500);text-transform:uppercase;letter-spacing:1px;margin-bottom:.5rem;">Quick Actions</h4>
-                <div class="action-grid">
-                    @if(!$hasProgrammes && $otherSessions->isNotEmpty())
-                        <button type="button" class="btn-outline-soft" data-bs-toggle="modal" data-bs-target="#copyFromPreviousSessionModal">
-                            <i class="bi bi-files"></i> Use Previous Session
-                        </button>
-                    @endif
-                    
-                    @if(!$academicSession->is_current)
-                        <form action="{{ route('admin.academic-sessions.set-current', $academicSession) }}" method="POST">
-                            @csrf @method('PATCH')
-                            <button type="submit" class="btn-outline-soft" style="color:var(--teal);">
-                                <i class="bi bi-check-circle"></i> Set as Current
+                <div class="action-box">
+                    <h4 class="action-box-title"><i class="bi bi-lightning-charge"></i> Quick Actions</h4>
+                    <div class="action-grid">
+                        @if(!$hasProgrammes && $otherSessions->isNotEmpty())
+                            <button type="button" class="btn-outline-soft" data-bs-toggle="modal" data-bs-target="#copyFromPreviousSessionModal">
+                                <i class="bi bi-files"></i> Use Previous Session
                             </button>
-                        </form>
-                    @endif
+                        @endif
+                        
+                        @if(!$academicSession->is_current)
+                            <form action="{{ route('admin.academic-sessions.set-current', $academicSession) }}" method="POST">
+                                @csrf @method('PATCH')
+                                <button type="submit" class="btn-outline-soft" style="color:var(--teal);">
+                                    <i class="bi bi-check-circle"></i> Set as Current
+                                </button>
+                            </form>
+                        @endif
 
-                    @if($academicSession->status !== 'archived')
-                        <form action="{{ route('admin.academic-sessions.archive', $academicSession) }}" method="POST">
-                            @csrf @method('PATCH')
-                            <button type="button" class="btn-outline-soft btn-confirm-trigger" 
-                                    data-confirm-title="Archive Session"
-                                    data-confirm-text="Are you sure you want to archive this session?"
-                                    data-confirm-color="#f59e0b"
-                                    data-confirm-icon="bi-archive">
-                                <i class="bi bi-archive"></i> Archive
-                            </button>
-                        </form>
-                    @endif
+                        @if($academicSession->status !== 'archived')
+                            <form action="{{ route('admin.academic-sessions.archive', $academicSession) }}" method="POST">
+                                @csrf @method('PATCH')
+                                <button type="button" class="btn-outline-soft btn-confirm-trigger" 
+                                        data-confirm-title="Archive Session"
+                                        data-confirm-text="Are you sure you want to archive this session?"
+                                        data-confirm-color="#f59e0b"
+                                        data-confirm-icon="bi-archive">
+                                    <i class="bi bi-archive"></i> Archive
+                                </button>
+                            </form>
+                        @endif
 
-                    @if(!$academicSession->timetables()->exists())
-                        <form action="{{ route('admin.academic-sessions.destroy', $academicSession) }}" method="POST" class="d-inline">
-                            @csrf @method('DELETE')
-                            <button type="button" class="btn-outline-soft btn-confirm-trigger" style="color:var(--coral);border-color:rgba(255,127,80,.4);"
-                                    data-confirm-title="Delete Session"
-                                    data-confirm-text="Are you sure you want to delete this session? This action cannot be undone."
-                                    data-confirm-color="#ff7f50"
-                                    data-confirm-icon="bi-trash">
-                                <i class="bi bi-trash"></i> Delete
-                            </button>
-                        </form>
-                    @endif
+                        @if(!$academicSession->timetables()->exists())
+                            <form action="{{ route('admin.academic-sessions.destroy', $academicSession) }}" method="POST" class="d-inline">
+                                @csrf @method('DELETE')
+                                <button type="button" class="btn-outline-soft btn-confirm-trigger" style="color:var(--coral);border-color:rgba(255,127,80,.4);"
+                                        data-confirm-title="Delete Session"
+                                        data-confirm-text="Are you sure you want to delete this session? This action cannot be undone."
+                                        data-confirm-color="#ff7f50"
+                                        data-confirm-icon="bi-trash">
+                                    <i class="bi bi-trash"></i> Delete
+                                </button>
+                            </form>
+                        @endif
+                    </div>
                 </div>
             @endif
         </div>
