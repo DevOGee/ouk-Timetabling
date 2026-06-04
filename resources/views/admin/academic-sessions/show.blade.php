@@ -62,6 +62,34 @@
 .btn-premium { background:var(--teal); color:#fff; border:none; padding:.5rem .9rem; font-size:.85rem; font-weight:600; border-radius:var(--radius-sm); cursor:pointer; transition:all .2s; display:inline-flex; align-items:center; gap:.4rem; text-decoration:none; }
 .btn-premium:hover { background:var(--teal-dark); color:#fff; }
 
+/* Form Fields */
+.field-input {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    font-size: 0.95rem;
+    color: var(--slate-900);
+    background-color: #fff;
+    border: 1.5px solid var(--slate-200);
+    border-radius: var(--radius-sm);
+    transition: all 0.2s;
+}
+.field-input:focus {
+    outline: none;
+    border-color: var(--teal);
+    box-shadow: 0 0 0 3px var(--teal-bg);
+}
+select.field-input {
+    appearance: none;
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right .75rem center;
+    background-size: 1.2em;
+    padding-right: 2.2rem !important;
+}
+select.field-input:focus {
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23037b90' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+}
+
 /* Custom Tabs */
 .custom-tabs { display:flex; gap:1.5rem; border-bottom:1.5px solid var(--slate-200); margin-bottom:1.5rem; }
 .custom-tab { background:none; border:none; padding:.75rem 0; font-size:.9rem; font-weight:600; color:var(--slate-500); cursor:pointer; position:relative; transition:color .2s; }
@@ -190,11 +218,11 @@
     </div>
 
     <!-- Navigation Tabs -->
-    <div class="custom-tabs stagger-3">
-        <button class="custom-tab active" id="programmes-tab" data-bs-toggle="tab" data-bs-target="#programmes" type="button" role="tab" aria-controls="programmes" aria-selected="true">
+    <div class="nav custom-tabs stagger-3" role="tablist">
+        <button class="nav-link custom-tab {{ request('tab', 'programmes') === 'programmes' ? 'active' : '' }}" id="programmes-tab" data-bs-toggle="tab" data-bs-target="#programmes" type="button" role="tab" aria-controls="programmes" aria-selected="{{ request('tab', 'programmes') === 'programmes' ? 'true' : 'false' }}" style="padding-left:0;padding-right:0;">
             <i class="bi bi-diagram-3"></i> Programmes
         </button>
-        <button class="custom-tab" id="timetables-tab" data-bs-toggle="tab" data-bs-target="#timetables" type="button" role="tab" aria-controls="timetables" aria-selected="false">
+        <button class="nav-link custom-tab {{ request('tab') === 'timetables' ? 'active' : '' }}" id="timetables-tab" data-bs-toggle="tab" data-bs-target="#timetables" type="button" role="tab" aria-controls="timetables" aria-selected="{{ request('tab') === 'timetables' ? 'true' : 'false' }}" style="padding-left:0;padding-right:0;">
             <i class="bi bi-calendar3"></i> Timetables
         </button>
     </div>
@@ -202,7 +230,7 @@
     <!-- Tab Content -->
     <div class="tab-content stagger-3" id="sessionTabsContent">
         <!-- Programmes Tab -->
-        <div class="tab-pane fade show active" id="programmes" role="tabpanel" aria-labelledby="programmes-tab">
+        <div class="tab-pane fade {{ request('tab', 'programmes') === 'programmes' ? 'show active' : '' }}" id="programmes" role="tabpanel" aria-labelledby="programmes-tab">
             <div class="d-flex justify-content-between align-items-center mb-3">
                 <h2 style="font-size:1.1rem;font-weight:700;color:var(--slate-900);margin:0;">Programmes</h2>
                 @if(!auth()->user()->hasRole('timetabler'))
@@ -249,7 +277,7 @@
         </div>
 
         <!-- Timetables Tab -->
-        <div class="tab-pane fade" id="timetables" role="tabpanel" aria-labelledby="timetables-tab">
+        <div class="tab-pane fade {{ request('tab') === 'timetables' ? 'show active' : '' }}" id="timetables" role="tabpanel" aria-labelledby="timetables-tab">
             <div class="d-flex justify-content-between align-items-center mb-3">
                 <h2 style="font-size:1.1rem;font-weight:700;color:var(--slate-900);margin:0;">Programme Timetables</h2>
                 <div class="d-flex align-items-center gap-3">
