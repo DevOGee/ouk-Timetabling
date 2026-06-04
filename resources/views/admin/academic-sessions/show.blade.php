@@ -259,6 +259,13 @@ select.field-input:focus {
                         </div>
                     @endif
                     
+                    <div class="d-flex align-items-center gap-2">
+                        <div style="position:relative;">
+                            <i class="bi bi-search" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--slate-400);font-size:.85rem;"></i>
+                            <input type="text" id="programmeSearch" class="field-input" placeholder="Search programmes..." value="{{ request('search') }}" style="padding:.4rem .75rem .4rem 2rem;font-size:.85rem;border-radius:6px;border:1.5px solid var(--slate-200);width:220px;">
+                        </div>
+                    </div>
+                    
                     <div class="d-flex gap-2">
                         <a href="{{ route('admin.academic-sessions.select-programmes', $academicSession) }}" class="btn-premium">
                             <i class="bi bi-plus-lg"></i> Add Programmes
@@ -381,6 +388,7 @@ select.field-input:focus {
 document.addEventListener('DOMContentLoaded', function() {
     // Programmes tab elements
     const schoolFilter = document.getElementById('schoolFilter');
+    const programmeSearch = document.getElementById('programmeSearch');
     const programmesContainer = document.getElementById('programmes-container');
     const loadingIndicator = document.getElementById('loadingIndicator');
     
@@ -415,6 +423,13 @@ document.addEventListener('DOMContentLoaded', function() {
             url.searchParams.set('school_id', effectiveSchoolId);
         } else {
             url.searchParams.delete('school_id');
+        }
+
+        const searchTerm = programmeSearch ? programmeSearch.value : null;
+        if (searchTerm) {
+            url.searchParams.set('search', searchTerm);
+        } else {
+            url.searchParams.delete('search');
         }
         
         // Update browser URL without reloading the page
@@ -617,6 +632,12 @@ document.addEventListener('DOMContentLoaded', function() {
             } else {
                 newUrl.searchParams.delete('school_id');
             }
+            
+            if (containerType === 'programmes' && programmeSearch && programmeSearch.value) {
+                newUrl.searchParams.set('search', programmeSearch.value);
+            } else {
+                newUrl.searchParams.delete('search');
+            }
             newUrl.searchParams.set('tab', containerType);
             
             // Update the link's href
@@ -701,6 +722,17 @@ document.addEventListener('DOMContentLoaded', function() {
     if (schoolFilter) {
         schoolFilter.addEventListener('change', function() {
             loadProgrammes(1, this.value);
+        });
+    }
+    
+    // Initialize search filter for programmes
+    if (programmeSearch) {
+        let searchTimeout;
+        programmeSearch.addEventListener('input', function() {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                loadProgrammes(1, schoolFilter ? schoolFilter.value : null);
+            }, 300);
         });
     }
     

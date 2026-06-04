@@ -29,7 +29,7 @@
             </thead>
             <tbody>
                 @foreach($programmes as $programme)
-                    <tr style="border-bottom:1px solid var(--slate-100);transition:background .2s;background:#fff;" onmouseover="this.style.background='var(--slate-50)'" onmouseout="this.style.background='#fff'">
+                    <tr style="border-bottom:1px solid var(--slate-100);transition:all .25s ease;background:#fff;animation:fadeIn 0.4s cubic-bezier(0.34,1.56,0.64,1) {{ $loop->index * 0.06 }}s both;" onmouseover="this.style.background='var(--slate-50)';this.style.transform='translateY(-2px)';" onmouseout="this.style.background='#fff';this.style.transform='none';">
                         <td style="padding:1rem 1.5rem;vertical-align:middle;border:none;">
                             <div style="font-weight:600;color:var(--slate-900);font-size:.9rem;">
                                 {{ $programme->name }}
@@ -42,8 +42,13 @@
                             {{ $programme->school->name ?? 'N/A' }}
                         </td>
                         <td style="padding:1rem 1.5rem;vertical-align:middle;border:none;text-align:center;">
-                            <span style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;background:var(--slate-100);color:var(--slate-700);border-radius:50%;font-weight:600;font-size:.8rem;">
-                                {{ $programme->mapped_course_units_count ?? 0 }}
+                            @php
+                                $mappingCount = $programme->mapped_course_units_count ?? 0;
+                                $mappingBg = $mappingCount > 0 ? 'rgba(3,123,144,.1)' : 'var(--slate-100)';
+                                $mappingColor = $mappingCount > 0 ? 'var(--teal)' : 'var(--slate-500)';
+                            @endphp
+                            <span style="display:inline-flex;align-items:center;justify-content:center;min-width:32px;height:32px;padding:0 .6rem;background:{{ $mappingBg }};color:{{ $mappingColor }};border-radius:100px;font-weight:700;font-size:.85rem;">
+                                {{ $mappingCount }}
                             </span>
                         </td>
                         <td style="padding:1rem 1.5rem;vertical-align:middle;border:none;text-align:right;">
@@ -123,11 +128,13 @@
         </div>
     @endif
 @else
-    <div style="padding:4rem 2rem;text-align:center;">
-        <div style="font-size:3rem;color:var(--slate-200);margin-bottom:1rem;"><i class="bi bi-diagram-3"></i></div>
-        <h4 style="font-size:1.1rem;font-weight:700;color:var(--slate-700);margin-bottom:.5rem;">No Programmes Attached</h4>
-        <p style="font-size:.9rem;color:var(--slate-500);margin-bottom:1.5rem;max-width:400px;margin-left:auto;margin-right:auto;">
-            There are currently no programmes attached to this academic session. Use the Add Programmes button above to attach them.
+    <div style="padding:5rem 2rem;text-align:center;background:var(--slate-50);border-radius:var(--radius-md);border:1px dashed var(--slate-200);animation:fadeIn 0.5s cubic-bezier(0.34,1.56,0.64,1) both;">
+        <div style="display:inline-flex;align-items:center;justify-content:center;width:80px;height:80px;border-radius:50%;background:#fff;box-shadow:0 10px 25px rgba(15,23,42,.05);margin-bottom:1.5rem;">
+            <i class="bi bi-diagram-3" style="font-size:2rem;color:var(--slate-400);"></i>
+        </div>
+        <h4 style="font-size:1.15rem;font-weight:700;color:var(--slate-800);margin-bottom:.5rem;">No Programmes Attached</h4>
+        <p style="font-size:.9rem;color:var(--slate-500);margin-bottom:1.5rem;max-width:400px;margin-left:auto;margin-right:auto;line-height:1.6;">
+            There are currently no programmes attached to this academic session. Use the Add Programmes button to attach them.
         </p>
     </div>
 @endif

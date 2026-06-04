@@ -102,6 +102,15 @@ class AcademicSessionController extends Controller
             // Apply school filter for admin users if provided in request
             $programmesQuery->where('school_id', request('school_id'));
         }
+
+        if (request()->has('search') && !empty(request('search'))) {
+            $searchTerm = '%' . request('search') . '%';
+            $programmesQuery->where(function($q) use ($searchTerm) {
+                $q->where('name', 'like', $searchTerm)
+                  ->orWhere('programme_code', 'like', $searchTerm)
+                  ->orWhere('code', 'like', $searchTerm);
+            });
+        }
         
         $perPage = 10;
         $programmes = $programmesQuery->paginate($perPage);
