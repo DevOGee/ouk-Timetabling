@@ -99,140 +99,55 @@
             <div class="info-card">
                 <!-- Enhanced Tabs Navigation -->
                 <div class="custom-tabs" role="tablist">
-                    <button class="custom-tab active" id="all-tab" data-bs-toggle="tab" data-bs-target="#all" type="button" role="tab">
+                    <a href="{{ request()->fullUrlWithQuery(['tab' => 'all', 'page' => 1]) }}" class="custom-tab text-decoration-none {{ $activeTab == 'all' ? 'active' : '' }}">
                         <i class="bi bi-grid-3x3-gap-fill"></i> All
-                        <span class="tab-badge">{{ count($programs) }}</span>
-                    </button>
-                    <button class="custom-tab" id="published-tab" data-bs-toggle="tab" data-bs-target="#published" type="button" role="tab">
+                        <span class="tab-badge">{{ $counts['all'] ?? 0 }}</span>
+                    </a>
+                    <a href="{{ request()->fullUrlWithQuery(['tab' => 'published', 'page' => 1]) }}" class="custom-tab text-decoration-none {{ $activeTab == 'published' ? 'active' : '' }}">
                         <i class="bi bi-check-circle-fill"></i> Published
-                        <span class="tab-badge">{{ $publishedPrograms->count() }}</span>
-                    </button>
-                    <button class="custom-tab" id="ready-tab" data-bs-toggle="tab" data-bs-target="#ready" type="button" role="tab">
+                        <span class="tab-badge">{{ $counts['published'] ?? 0 }}</span>
+                    </a>
+                    <a href="{{ request()->fullUrlWithQuery(['tab' => 'ready', 'page' => 1]) }}" class="custom-tab text-decoration-none {{ $activeTab == 'ready' ? 'active' : '' }}">
                         <i class="bi bi-check2-all"></i> Ready
-                        <span class="tab-badge">{{ $readyPrograms->count() }}</span>
-                    </button>
-                    <button class="custom-tab" id="pending-tab" data-bs-toggle="tab" data-bs-target="#pending" type="button" role="tab">
+                        <span class="tab-badge">{{ $counts['ready'] ?? 0 }}</span>
+                    </a>
+                    <a href="{{ request()->fullUrlWithQuery(['tab' => 'pending', 'page' => 1]) }}" class="custom-tab text-decoration-none {{ $activeTab == 'pending' ? 'active' : '' }}">
                         <i class="bi bi-hourglass-split"></i> Pending
-                        <span class="tab-badge">{{ $pendingPrograms->count() }}</span>
-                    </button>
+                        <span class="tab-badge">{{ $counts['pending'] ?? 0 }}</span>
+                    </a>
                 </div>
                 
-                <!-- Tab Content -->
-                <div class="tab-content" id="timetableTabsContent">
-                    <div class="tab-pane fade show active" id="all" role="tabpanel">
-                        <div class="table-responsive">
-                            <table class="table premium-table mb-0" style="width:100%;border-collapse:collapse;">
-                                <thead style="background:var(--slate-50);border-bottom:1px solid var(--slate-200);">
-                                    <tr>
-                                        <th style="padding:1rem 1.5rem;font-size:.75rem;font-weight:700;color:var(--slate-500);text-transform:uppercase;letter-spacing:1px;border:none;width:50px;">#</th>
-                                        <th style="padding:1rem 1.5rem;font-size:.75rem;font-weight:700;color:var(--slate-500);text-transform:uppercase;letter-spacing:1px;border:none;">Programme Details</th>
-                                        <th style="padding:1rem 1.5rem;font-size:.75rem;font-weight:700;color:var(--slate-500);text-transform:uppercase;letter-spacing:1px;border:none;text-align:center;">Status</th>
-                                        <th style="padding:1rem 1.5rem;font-size:.75rem;font-weight:700;color:var(--slate-500);text-transform:uppercase;letter-spacing:1px;border:none;text-align:right;">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @forelse($programs as $program)
-                                        @include('admin.timetables.partials.program-row', ['program' => $program])
-                                    @empty
-                                        <tr>
-                                            <td colspan="4" class="text-center py-5" style="border:none;">
-                                                <div style="font-size:2.5rem;color:var(--slate-200);margin-bottom:1rem;"><i class="bi bi-grid-3x3-gap"></i></div>
-                                                <h5 style="color:var(--slate-700);font-weight:600;font-size:1rem;margin-bottom:.5rem;">No Programs Found</h5>
-                                                <p style="color:var(--slate-500);font-size:.85rem;margin:0;">There are no programs to display.</p>
-                                            </td>
-                                        </tr>
-                                    @endforelse
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                    
-                    <!-- Published Tab -->
-                    <div class="tab-pane fade" id="published" role="tabpanel">
-                        <div class="table-responsive">
-                            <table class="table premium-table mb-0" style="width:100%;border-collapse:collapse;">
-                                <thead style="background:var(--slate-50);border-bottom:1px solid var(--slate-200);">
-                                    <tr>
-                                        <th style="padding:1rem 1.5rem;font-size:.75rem;font-weight:700;color:var(--slate-500);text-transform:uppercase;letter-spacing:1px;border:none;width:50px;">#</th>
-                                        <th style="padding:1rem 1.5rem;font-size:.75rem;font-weight:700;color:var(--slate-500);text-transform:uppercase;letter-spacing:1px;border:none;">Programme Details</th>
-                                        <th style="padding:1rem 1.5rem;font-size:.75rem;font-weight:700;color:var(--slate-500);text-transform:uppercase;letter-spacing:1px;border:none;text-align:center;">Status</th>
-                                        <th style="padding:1rem 1.5rem;font-size:.75rem;font-weight:700;color:var(--slate-500);text-transform:uppercase;letter-spacing:1px;border:none;text-align:right;">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @forelse($publishedPrograms as $program)
-                                        @include('admin.timetables.partials.program-row', ['program' => $program])
-                                    @empty
-                                        <tr>
-                                            <td colspan="4" class="text-center py-5" style="border:none;">
-                                                <div style="font-size:2.5rem;color:var(--slate-200);margin-bottom:1rem;"><i class="bi bi-check-circle"></i></div>
-                                                <h5 style="color:var(--slate-700);font-weight:600;font-size:1rem;margin-bottom:.5rem;">No Published Programs</h5>
-                                                <p style="color:var(--slate-500);font-size:.85rem;margin:0;">No timetables have been published yet.</p>
-                                            </td>
-                                        </tr>
-                                    @endforelse
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                    
-                    <!-- Ready Tab -->
-                    <div class="tab-pane fade" id="ready" role="tabpanel">
-                        <div class="table-responsive">
-                            <table class="table premium-table mb-0" style="width:100%;border-collapse:collapse;">
-                                <thead style="background:var(--slate-50);border-bottom:1px solid var(--slate-200);">
-                                    <tr>
-                                        <th style="padding:1rem 1.5rem;font-size:.75rem;font-weight:700;color:var(--slate-500);text-transform:uppercase;letter-spacing:1px;border:none;width:50px;">#</th>
-                                        <th style="padding:1rem 1.5rem;font-size:.75rem;font-weight:700;color:var(--slate-500);text-transform:uppercase;letter-spacing:1px;border:none;">Programme Details</th>
-                                        <th style="padding:1rem 1.5rem;font-size:.75rem;font-weight:700;color:var(--slate-500);text-transform:uppercase;letter-spacing:1px;border:none;text-align:center;">Status</th>
-                                        <th style="padding:1rem 1.5rem;font-size:.75rem;font-weight:700;color:var(--slate-500);text-transform:uppercase;letter-spacing:1px;border:none;text-align:right;">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @forelse($readyPrograms as $program)
-                                        @include('admin.timetables.partials.program-row', ['program' => $program])
-                                    @empty
-                                        <tr>
-                                            <td colspan="4" class="text-center py-5" style="border:none;">
-                                                <div style="font-size:2.5rem;color:var(--slate-200);margin-bottom:1rem;"><i class="bi bi-check2-all"></i></div>
-                                                <h5 style="color:var(--slate-700);font-weight:600;font-size:1rem;margin-bottom:.5rem;">No Ready Programs</h5>
-                                                <p style="color:var(--slate-500);font-size:.85rem;margin:0;">No timetables are fully completed and ready for publishing.</p>
-                                            </td>
-                                        </tr>
-                                    @endforelse
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                    
-                    <!-- Pending Tab -->
-                    <div class="tab-pane fade" id="pending" role="tabpanel">
-                        <div class="table-responsive">
-                            <table class="table premium-table mb-0" style="width:100%;border-collapse:collapse;">
-                                <thead style="background:var(--slate-50);border-bottom:1px solid var(--slate-200);">
-                                    <tr>
-                                        <th style="padding:1rem 1.5rem;font-size:.75rem;font-weight:700;color:var(--slate-500);text-transform:uppercase;letter-spacing:1px;border:none;width:50px;">#</th>
-                                        <th style="padding:1rem 1.5rem;font-size:.75rem;font-weight:700;color:var(--slate-500);text-transform:uppercase;letter-spacing:1px;border:none;">Programme Details</th>
-                                        <th style="padding:1rem 1.5rem;font-size:.75rem;font-weight:700;color:var(--slate-500);text-transform:uppercase;letter-spacing:1px;border:none;text-align:center;">Status</th>
-                                        <th style="padding:1rem 1.5rem;font-size:.75rem;font-weight:700;color:var(--slate-500);text-transform:uppercase;letter-spacing:1px;border:none;text-align:right;">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @forelse($pendingPrograms as $program)
-                                        @include('admin.timetables.partials.program-row', ['program' => $program])
-                                    @empty
-                                        <tr>
-                                            <td colspan="4" class="text-center py-5" style="border:none;">
-                                                <div style="font-size:2.5rem;color:var(--slate-200);margin-bottom:1rem;"><i class="bi bi-hourglass-split"></i></div>
-                                                <h5 style="color:var(--slate-700);font-weight:600;font-size:1rem;margin-bottom:.5rem;">No Pending Programs</h5>
-                                                <p style="color:var(--slate-500);font-size:.85rem;margin:0;">All programs are either ready, published, or not started.</p>
-                                            </td>
-                                        </tr>
-                                    @endforelse
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
+                <div class="table-responsive">
+                    <table class="table premium-table mb-0" style="width:100%;border-collapse:collapse;">
+                        <thead style="background:var(--slate-50);border-bottom:1px solid var(--slate-200);">
+                            <tr>
+                                <th style="padding:1rem 1.5rem;font-size:.75rem;font-weight:700;color:var(--slate-500);text-transform:uppercase;letter-spacing:1px;border:none;width:50px;">#</th>
+                                <th style="padding:1rem 1.5rem;font-size:.75rem;font-weight:700;color:var(--slate-500);text-transform:uppercase;letter-spacing:1px;border:none;">Programme Details</th>
+                                <th style="padding:1rem 1.5rem;font-size:.75rem;font-weight:700;color:var(--slate-500);text-transform:uppercase;letter-spacing:1px;border:none;text-align:center;">Status</th>
+                                <th style="padding:1rem 1.5rem;font-size:.75rem;font-weight:700;color:var(--slate-500);text-transform:uppercase;letter-spacing:1px;border:none;text-align:right;">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse($paginatedPrograms as $program)
+                                @include('admin.timetables.partials.program-row', [
+                                    'program' => $program,
+                                    'index' => ($paginatedPrograms->currentPage() - 1) * $paginatedPrograms->perPage() + $loop->iteration
+                                ])
+                            @empty
+                                <tr>
+                                    <td colspan="4" class="text-center py-5" style="border:none;">
+                                        <div style="font-size:2.5rem;color:var(--slate-200);margin-bottom:1rem;"><i class="bi bi-grid-3x3-gap"></i></div>
+                                        <h5 style="color:var(--slate-700);font-weight:600;font-size:1rem;margin-bottom:.5rem;">No Programs Found</h5>
+                                        <p style="color:var(--slate-500);font-size:.85rem;margin:0;">There are no programs to display in this category.</p>
+                                    </td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="d-flex justify-content-center p-4" style="border-top:1px solid var(--slate-100);">
+                    {{ $paginatedPrograms->links('pagination::bootstrap-5') }}
                 </div>
             </div>
         </div>

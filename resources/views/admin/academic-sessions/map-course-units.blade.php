@@ -2,120 +2,234 @@
 
 @push('styles')
 <style>
+    /* Premium Page Header */
+    .page-fade-in { animation:fadeIn .4s cubic-bezier(.34,1.56,.64,1) both; }
+    .stagger-1    { animation:fadeIn .4s cubic-bezier(.34,1.56,.64,1) .05s both; }
+    @keyframes fadeIn { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
+    
+    .page-header-premium {
+        background: #fff;
+        border-radius: 16px;
+        padding: 2rem;
+        box-shadow: 0 4px 20px rgba(15, 23, 42, .04), 0 1px 3px rgba(15, 23, 42, .02);
+        border: 1px solid rgba(226, 232, 240, .6);
+        margin-bottom: 2rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        flex-wrap: wrap;
+        gap: 1.5rem;
+    }
+    .page-header-title {
+        font-size: 1.5rem;
+        font-weight: 800;
+        color: var(--slate-900);
+        margin-bottom: 0.5rem;
+        letter-spacing: -0.02em;
+    }
+    .page-header-subtitle {
+        font-size: 0.95rem;
+        color: var(--slate-500);
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    /* Course Unit Items */
     .course-unit-item {
         cursor: pointer;
-        padding: 8px 12px;
-        margin: 2px 0;
-        border-radius: 4px;
-        transition: background-color 0.2s;
+        padding: 0.75rem 1rem;
+        margin: 0.25rem 0;
+        border-radius: 8px;
+        transition: all 0.2s;
+        border: 1.5px solid transparent;
+        background: var(--slate-50);
+        display: flex;
+        align-items: center;
     }
     .course-unit-item:hover {
-        background-color: #f8f9fa;
+        background-color: var(--slate-100);
+        border-color: var(--slate-200);
     }
     .course-unit-item.selected {
-        background-color: #e9ecef;
-        font-weight: 500;
+        background-color: rgba(3, 123, 144, 0.05);
+        border-color: rgba(3, 123, 144, 0.3);
+        color: var(--teal);
     }
     .course-unit-item input[type="checkbox"] {
-        margin-right: 8px;
+        margin-right: 12px;
+        width: 18px;
+        height: 18px;
+        accent-color: var(--teal);
+        cursor: pointer;
     }
-    .modal-lg {
-        max-width: 900px;
+    .course-unit-item label {
+        cursor: pointer;
+        margin: 0;
+        width: 100%;
+        font-size: 0.9rem;
+    }
+
+    /* Modal Styling */
+    .modal-content-premium {
+        border: none;
+        border-radius: 16px;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+    }
+    .modal-header-premium {
+        background: var(--slate-50);
+        border-bottom: 1px solid var(--slate-100);
+        padding: 1.5rem;
+    }
+    .modal-title-premium {
+        font-weight: 800;
+        color: var(--slate-800);
+        font-size: 1.15rem;
     }
     .course-units-container {
         max-height: 400px;
         overflow-y: auto;
-        border: 1px solid #dee2e6;
-        border-radius: 4px;
-        padding: 10px;
+        border: 1.5px solid var(--slate-200);
+        border-radius: 12px;
+        padding: 0.75rem;
+        background: #fff;
     }
+
+    /* Group Cards */
+    .mapping-group-card {
+        background: #fff;
+        border-radius: 14px;
+        border: 1px solid rgba(226, 232, 240, 0.8);
+        box-shadow: 0 2px 8px rgba(15, 23, 42, 0.03);
+        margin-bottom: 1.5rem;
+        overflow: hidden;
+        animation: fadeIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+    }
+    .mapping-group-header {
+        background: var(--slate-50);
+        padding: 1rem 1.5rem;
+        border-bottom: 1px solid var(--slate-100);
+        font-weight: 700;
+        color: var(--slate-800);
+        font-size: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    /* Modern Form Inputs */
+    .form-control-premium, .form-select-premium {
+        border-radius: 8px;
+        border: 1.5px solid var(--slate-200);
+        padding: 0.6rem 1rem;
+        font-size: 0.9rem;
+        transition: all 0.2s;
+        background: #fff;
+    }
+    .form-control-premium:focus, .form-select-premium:focus {
+        border-color: var(--teal);
+        box-shadow: 0 0 0 3px rgba(3, 123, 144, 0.1);
+        outline: none;
+    }
+    .content-wrapper { background:transparent!important; box-shadow:none!important; padding:1.8rem 2rem!important; }
 </style>
 @endpush
 
 @section('title', 'Map Course Units - ' . $programme->name . ' - ' . $academicSession->name)
 
 @section('content')
-<div class="container">
-    <div class="row justify-content-between align-items-center mb-4">
-        <div class="col-md-8">
-            <h2>Map Course Units</h2>
-            <h4>{{ $programme->name }} ({{ $programme->programme_code }}) - {{ $academicSession->name }}</h4>
+<div class="content-wrapper page-fade-in">
+    <nav class="breadcrumb-nav stagger-1" style="display:flex;align-items:center;gap:.4rem;font-size:.78rem;color:var(--slate-500);margin-bottom:1.25rem;">
+        <a href="{{ route('admin.academic-sessions.index') }}" style="color:var(--slate-500);text-decoration:none;"><i class="bi bi-calendar2-week"></i> Academic Sessions</a>
+        <span class="sep" style="color:var(--slate-300);">/</span>
+        <a href="{{ route('admin.academic-sessions.show', $academicSession) }}" style="color:var(--slate-500);text-decoration:none;">{{ Str::limit($academicSession->name, 30) }}</a>
+        <span class="sep" style="color:var(--slate-300);">/</span>
+        <span class="current" style="color:var(--slate-700);font-weight:600;">Map Course Units: {{ $programme->programme_code }}</span>
+    </nav>
+
+    <!-- Premium Header -->
+    <div class="page-header-premium stagger-1">
+        <div>
+            <h2 class="page-header-title">Map Course Units</h2>
+            <div class="page-header-subtitle">
+                <span class="badge bg-light text-dark border"><i class="bi bi-upc-scan me-1 text-muted"></i> {{ $programme->programme_code }}</span>
+                <span style="color: var(--slate-300);">•</span>
+                <span class="fw-bold" style="color: var(--slate-700);">{{ $programme->name }}</span>
+                <span style="color: var(--slate-300);">•</span>
+                <span>{{ $academicSession->name }}</span>
+            </div>
         </div>
-        <div class="col-md-4 text-end">
-            <a href="{{ route('admin.academic-sessions.show', $academicSession) }}" class="btn btn-outline-secondary">
-                <i class="bi bi-arrow-left"></i> Back to Academic Session
+        <div class="d-flex gap-2">
+            <button type="button" class="btn-premium" data-bs-toggle="modal" data-bs-target="#addCourseUnitsModal">
+                <i class="bi bi-plus-lg"></i> Add Course Units
+            </button>
+            <a href="{{ route('admin.academic-sessions.show', $academicSession) }}" class="btn-outline-soft">
+                <i class="bi bi-arrow-left"></i> Back to Session
             </a>
         </div>
     </div>
 
-    <div class="card">
-        <div class="card-body">
-            <div id="mappings-container">
-                @forelse($groupedMappings as $groupName => $mappingsGroup)
-                    @php
-                        list($year, $semester) = explode('.', $groupName);
-                        $groupLabel = "Level {$year}.{$semester}";
-                    @endphp
-                    <div class="card mb-4">
-                        <div class="card-header bg-light">
-                            <h5 class="mb-0">{{ $groupLabel }}</h5>
-                        </div>
-                        <div class="card-body p-0">
-                            <div class="table-responsive">
-                                <table class="table table-hover align-middle mb-0">
-                                    <thead class="table-light">
-                                        <tr>
-                                            <th>Code</th>
-                                            <th>Course Unit</th>
-                                            <th class="text-center">Actions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="mapping-group-{{ $year }}-{{ $semester }}">
-                                        @foreach($mappingsGroup as $mapping)
-                                            @include('admin.academic-sessions.partials.course-unit-mapping-row', [
-                                                'mapping' => $mapping,
-                                                'showYearSemester' => false
-                                            ])
-                                        @endforeach
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-                @empty
-                    <div class="alert alert-info">
-                        No course unit mappings found. Add some using the button below.
-                    </div>
-                @endforelse
-            </div>
-
-            <div class="d-flex justify-content-between mt-3">
-                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addCourseUnitsModal">
-                    <i class="bi bi-plus-circle"></i> Add Course Units
-                </button>
-                <div>
-                    <a href="{{ route('admin.academic-sessions.show', $academicSession) }}" class="btn btn-outline-secondary">
-                        <i class="bi bi-arrow-left"></i> Back to Session
-                    </a>
+    <!-- Mappings Container -->
+    <div id="mappings-container">
+        @forelse($groupedMappings as $groupName => $mappingsGroup)
+            @php
+                list($year, $semester) = explode('.', $groupName);
+                $groupLabel = "Level {$year}.{$semester}";
+            @endphp
+            <div class="mapping-group-card" id="group-{{ $year }}-{{ $semester }}" style="animation-delay: {{ $loop->index * 0.05 }}s;">
+                <div class="mapping-group-header">
+                    <i class="bi bi-layers text-teal" style="color: var(--teal);"></i>
+                    {{ $groupLabel }}
+                </div>
+                <div class="table-responsive" style="margin: 0; padding: 0;">
+                    <table class="table premium-table mb-0 w-100" style="border: none;">
+                        <thead style="background: #fff; border-bottom: 1px solid var(--slate-100);">
+                            <tr>
+                                <th style="padding: 0.8rem 1.5rem; font-size: 0.75rem; font-weight: 700; color: var(--slate-500); text-transform: uppercase; letter-spacing: 1px; border: none; width: 120px;">Code</th>
+                                <th style="padding: 0.8rem 1.5rem; font-size: 0.75rem; font-weight: 700; color: var(--slate-500); text-transform: uppercase; letter-spacing: 1px; border: none;">Course Unit Name</th>
+                                <th style="padding: 0.8rem 1.5rem; font-size: 0.75rem; font-weight: 700; color: var(--slate-500); text-transform: uppercase; letter-spacing: 1px; border: none; text-align: center; width: 100px;">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="mapping-group-{{ $year }}-{{ $semester }}">
+                            @foreach($mappingsGroup as $mapping)
+                                @include('admin.academic-sessions.partials.course-unit-mapping-row', [
+                                    'mapping' => $mapping,
+                                    'showYearSemester' => false
+                                ])
+                            @endforeach
+                        </tbody>
+                    </table>
                 </div>
             </div>
-        </div>
+        @empty
+            <div class="alert alert-info d-flex align-items-center p-4" style="background: rgba(59,130,246,.05); border: 1px dashed rgba(59,130,246,.3); border-radius: 12px; color: #1e40af;">
+                <i class="bi bi-info-circle-fill fs-4 me-3 text-primary"></i>
+                <div>
+                    <strong>No course unit mappings found.</strong><br>
+                    <span class="text-primary opacity-75">Click 'Add Course Units' to begin building the curriculum for this programme.</span>
+                </div>
+            </div>
+        @endforelse
     </div>
 </div>
 
 <!-- Add Course Units Modal -->
 <div class="modal fade" id="addCourseUnitsModal" tabindex="-1" aria-labelledby="addCourseUnitsModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="addCourseUnitsModalLabel">Add Course Units</h5>
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content modal-content-premium">
+            <div class="modal-header modal-header-premium">
+                <h5 class="modal-title modal-title-premium" id="addCourseUnitsModalLabel">
+                    <i class="bi bi-journal-plus me-2" style="color: var(--teal);"></i> Add Course Units
+                </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body">
-                <div class="row mb-3">
+            <div class="modal-body p-4">
+                <div class="row mb-4 g-3">
                     <div class="col-md-6">
-                        <label for="year_select" class="form-label">Year of Study</label>
-                        <select id="year_select" class="form-select" required>
+                        <label for="year_select" class="form-label fw-bold text-slate-700" style="font-size: 0.85rem;">Year of Study</label>
+                        <select id="year_select" class="form-select form-select-premium" required>
                             <option value="">Select Year</option>
                             @foreach($yearsOfStudy as $year)
                                 <option value="{{ $year->id }}">{{ $year->name }}</option>
@@ -123,8 +237,8 @@
                         </select>
                     </div>
                     <div class="col-md-6">
-                        <label for="semester_select" class="form-label">Semester</label>
-                        <select id="semester_select" class="form-select" required>
+                        <label for="semester_select" class="form-label fw-bold text-slate-700" style="font-size: 0.85rem;">Semester</label>
+                        <select id="semester_select" class="form-select form-select-premium" required>
                             <option value="">Select Semester</option>
                             @foreach($semesters as $semester)
                                 <option value="{{ $semester->id }}">{{ $semester->name }}</option>
@@ -133,28 +247,27 @@
                     </div>
                 </div>
 
-                <div class="mb-3">
-                    <div class="input-group">
-                        <span class="input-group-text"><i class="bi bi-search"></i></span>
-                        <input type="text" id="courseSearch" class="form-control" placeholder="Search course units...">
-                    </div>
+                <div class="mb-3 position-relative">
+                    <i class="bi bi-search position-absolute" style="left: 14px; top: 50%; transform: translateY(-50%); color: var(--slate-400);"></i>
+                    <input type="text" id="courseSearch" class="form-control form-control-premium" placeholder="Search course units by name or code..." style="padding-left: 2.5rem;">
                 </div>
 
-                <div class="course-units-container mb-3">
+                <div class="course-units-container">
                     @foreach($courseUnits as $courseUnit)
                         <div class="course-unit-item" data-id="{{ $courseUnit->id }}">
-                            <input type="checkbox" class="form-check-input" id="course_{{ $courseUnit->id }}">
-                            <label class="form-check-label" for="course_{{ $courseUnit->id }}">
-                                <strong>{{ $courseUnit->code }}</strong> - {{ $courseUnit->name }}
+                            <input type="checkbox" id="course_{{ $courseUnit->id }}">
+                            <label for="course_{{ $courseUnit->id }}">
+                                <span class="badge bg-light text-dark border me-2">{{ $courseUnit->code }}</span>
+                                <span class="fw-semibold text-slate-800">{{ $courseUnit->name }}</span>
                             </label>
                         </div>
                     @endforeach
                 </div>
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-primary" id="addSelectedCourses">
-                    <i class="bi bi-plus-circle"></i> Add Selected
+            <div class="modal-footer" style="border-top: 1px solid var(--slate-100); padding: 1.25rem 1.5rem; background: var(--slate-50);">
+                <button type="button" class="btn-outline-soft" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn-premium" id="addSelectedCourses">
+                    <i class="bi bi-plus-lg"></i> Add Selected
                 </button>
             </div>
         </div>
@@ -163,11 +276,11 @@
 
 <!-- Template for new row -->
 <template id="mapping-row-template">
-    <tr id="mapping-new-INDEX" data-course-id="">
-        <td class="course-unit-code fw-bold"></td>
-        <td class="course-unit-name"></td>
-        <td class="text-center">
-            <button type="button" class="btn btn-sm btn-outline-danger remove-mapping" data-bs-toggle="tooltip" title="Remove">
+    <tr id="mapping-new-INDEX" data-course-id="" style="transition: all 0.3s;">
+        <td class="course-unit-code fw-bold text-slate-800" style="padding: 1rem 1.5rem;"></td>
+        <td class="course-unit-name text-slate-600" style="padding: 1rem 1.5rem;"></td>
+        <td class="text-center" style="padding: 1rem 1.5rem;">
+            <button type="button" class="btn btn-sm btn-outline-danger remove-mapping" data-bs-toggle="tooltip" title="Remove Mapping" style="border-radius: 6px;">
                 <i class="bi bi-trash"></i>
             </button>
             <input type="hidden" name="mappings[INDEX][course_unit_id]" class="course-unit-id">
@@ -179,13 +292,8 @@
 
 @push('scripts')
 <script>
-// Debug: Check if script is loaded
-console.log('=== COURSE MAPPING SCRIPT LOADED ===');
-
 // Wait for the DOM to be fully loaded
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('DOM fully loaded');
-    
     // Initialize tooltips
     const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
     tooltipTriggerList.map(function (tooltipTriggerEl) {
@@ -196,7 +304,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
     
     // Base URLs for API endpoints
-    const baseUrl = '{{ route("admin.academic-sessions.programmes.map-course-units", [$academicSession, $programme]) }}';
     const addCourseUnitUrl = '{{ route("admin.academic-sessions.programmes.course-units.add", [$academicSession, $programme]) }}';
     const removeCourseUnitUrl = (courseUnitId) => 
         `{{ route('admin.academic-sessions.programmes.course-units.remove', [$academicSession, $programme, '']) }}/${courseUnitId}`;
@@ -219,26 +326,25 @@ document.addEventListener('DOMContentLoaded', function() {
             const groupLabel = `Level ${year}.${semester}`;
             groupContainer = document.createElement('div');
             groupContainer.id = groupId;
-            groupContainer.className = 'card mb-4';
+            groupContainer.className = 'mapping-group-card';
             groupContainer.innerHTML = `
-                <div class="card-header bg-light">
-                    <h5 class="mb-0">${groupLabel}</h5>
+                <div class="mapping-group-header">
+                    <i class="bi bi-layers text-teal" style="color: var(--teal);"></i>
+                    ${groupLabel}
                 </div>
-                <div class="card-body p-0">
-                    <div class="table-responsive">
-                        <table class="table table-hover align-middle mb-0">
-                            <thead class="table-light">
-                                <tr>
-                                    <th>Course Unit</th>
-                                    <th>Code</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody class="mapping-group" data-year="${year}" data-semester="${semester}">
-                                <!-- Mappings will be added here -->
-                            </tbody>
-                        </table>
-                    </div>
+                <div class="table-responsive" style="margin: 0; padding: 0;">
+                    <table class="table premium-table mb-0 w-100" style="border: none;">
+                        <thead style="background: #fff; border-bottom: 1px solid var(--slate-100);">
+                            <tr>
+                                <th style="padding: 0.8rem 1.5rem; font-size: 0.75rem; font-weight: 700; color: var(--slate-500); text-transform: uppercase; letter-spacing: 1px; border: none; width: 120px;">Code</th>
+                                <th style="padding: 0.8rem 1.5rem; font-size: 0.75rem; font-weight: 700; color: var(--slate-500); text-transform: uppercase; letter-spacing: 1px; border: none;">Course Unit Name</th>
+                                <th style="padding: 0.8rem 1.5rem; font-size: 0.75rem; font-weight: 700; color: var(--slate-500); text-transform: uppercase; letter-spacing: 1px; border: none; text-align: center; width: 100px;">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody class="mapping-group" data-year="${year}" data-semester="${semester}">
+                            <!-- Mappings will be added here -->
+                        </tbody>
+                    </table>
                 </div>
             `;
             
@@ -250,24 +356,22 @@ document.addEventListener('DOMContentLoaded', function() {
                 noMappingsAlert.remove();
             }
             
-            mappingsContainer.insertBefore(groupContainer, mappingsContainer.firstChild);
+            mappingsContainer.appendChild(groupContainer); // Or insert before if you want specific sorting via JS
         }
         
-        return groupContainer.querySelector('.mapping-group');
+        return groupContainer.querySelector('tbody');
     }
     
-    // Handle course unit selection
+    // Handle course unit selection visually
     document.querySelectorAll('.course-unit-item').forEach(item => {
         item.addEventListener('click', function(e) {
-            // Only toggle if not clicking directly on the checkbox
-            if (e.target.type !== 'checkbox') {
+            if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'LABEL') {
                 const checkbox = this.querySelector('input[type="checkbox"]');
                 if (checkbox) {
                     checkbox.checked = !checkbox.checked;
                     this.classList.toggle('selected', checkbox.checked);
                 }
-            } else {
-                // If clicking the checkbox directly
+            } else if (e.target.tagName === 'INPUT') {
                 this.classList.toggle('selected', e.target.checked);
             }
         });
@@ -279,7 +383,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const searchTerm = e.target.value.toLowerCase();
             document.querySelectorAll('.course-unit-item').forEach(item => {
                 const text = item.textContent.toLowerCase();
-                item.style.display = text.includes(searchTerm) ? 'block' : 'none';
+                item.style.display = text.includes(searchTerm) ? 'flex' : 'none';
             });
         });
     }
@@ -287,8 +391,6 @@ document.addEventListener('DOMContentLoaded', function() {
     // Handle Add Selected button click
     if (addSelectedBtn) {
         addSelectedBtn.addEventListener('click', async function(e) {
-            console.log('Add Selected button clicked');
-            
             const yearId = yearSelect?.value;
             const semesterId = semesterSelect?.selectedOptions[0]?.value;
             const yearName = yearSelect?.selectedOptions[0]?.text;
@@ -299,7 +401,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
             
-            // Get selected course units
             const selectedCourses = Array.from(document.querySelectorAll('.course-unit-item input[type="checkbox"]:checked'));
             
             if (selectedCourses.length === 0) {
@@ -307,33 +408,27 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
             
-            // Disable the button to prevent multiple clicks
             const originalButtonText = addSelectedBtn.innerHTML;
             addSelectedBtn.disabled = true;
-            addSelectedBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Adding...';
+            addSelectedBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span> Adding...';
             
             try {
-                // Process each selected course unit
                 for (const checkbox of selectedCourses) {
                     const courseItem = checkbox.closest('.course-unit-item');
                     const courseId = courseItem.dataset.id;
-                    const courseLabel = courseItem.querySelector('label');
-                    const courseCode = courseLabel.querySelector('strong').textContent;
-                    const courseName = courseLabel.textContent.replace(courseCode, '').replace(' - ', '').trim();
+                    const courseCode = courseItem.querySelector('.badge').textContent;
+                    const courseName = courseItem.querySelector('.fw-semibold').textContent;
                     
-                    // Check if this course is already mapped to this year and semester
                     const existingMapping = document.querySelector(`tr[data-course-id="${courseId}"]`);
                     if (existingMapping) {
                         const existingYear = existingMapping.closest('tbody')?.dataset.year;
                         const existingSemester = existingMapping.closest('tbody')?.dataset.semester;
                         
                         if (existingYear === yearName && existingSemester === semesterName) {
-                            console.log(`Course ${courseCode} is already mapped to ${yearName} ${semesterName}`);
-                            continue; // Skip this course as it's already mapped
+                            continue;
                         }
                     }
                     
-                    // Add the course unit via AJAX
                     try {
                         const response = await fetch(addCourseUnitUrl, {
                             method: 'POST',
@@ -352,25 +447,23 @@ document.addEventListener('DOMContentLoaded', function() {
                         const result = await response.json();
                         
                         if (result.success) {
-                            // Get or create the group container for this year and semester
                             const groupTbody = getOrCreateGroupContainer(yearName, semesterName);
-                            
-                            // Create a new row
                             const rowTemplate = document.getElementById('mapping-row-template').content.cloneNode(true);
                             const row = rowTemplate.querySelector('tr');
                             
-                            // Update row data and content
                             row.dataset.courseId = courseId;
                             row.id = `mapping-${courseId}`;
-                            
-                            // Set code and name in the correct order
                             row.querySelector('.course-unit-code').textContent = courseCode;
                             row.querySelector('.course-unit-name').textContent = courseName;
                             
-                            // Add to the group container
+                            // Highlight new row briefly
+                            row.style.backgroundColor = 'rgba(16, 185, 129, 0.1)';
+                            setTimeout(() => {
+                                row.style.backgroundColor = 'transparent';
+                            }, 1500);
+
                             groupTbody.appendChild(row);
                             
-                            // Initialize tooltip for the new row
                             const tooltipTriggerList = [].slice.call(row.querySelectorAll('[data-bs-toggle="tooltip"]'));
                             tooltipTriggerList.map(function (tooltipTriggerEl) {
                                 return new bootstrap.Tooltip(tooltipTriggerEl);
@@ -381,31 +474,25 @@ document.addEventListener('DOMContentLoaded', function() {
                             throw new Error(result.message || 'Failed to add course unit');
                         }
                     } catch (error) {
-                        console.error(`Error adding course ${courseCode}:`, error);
                         showToast('error', `Failed to add ${courseCode}: ${error.message}`);
                     }
                     
-                    // Uncheck the checkbox
                     checkbox.checked = false;
                     courseItem.classList.remove('selected');
                 }
                 
-                // Reset the form
                 if (yearSelect) yearSelect.value = '';
                 if (semesterSelect) semesterSelect.value = '';
-                if (courseSearch) courseSearch.value = '';
-                
-                // Hide the modal
-                if (modal) {
-                    modal.hide();
-                    console.log('Modal hidden');
+                if (courseSearch) {
+                    courseSearch.value = '';
+                    courseSearch.dispatchEvent(new Event('input'));
                 }
                 
+                if (modal) modal.hide();
+                
             } catch (error) {
-                console.error('Error in add selected:', error);
                 showToast('error', 'An error occurred while adding course units');
             } finally {
-                // Re-enable the button
                 addSelectedBtn.disabled = false;
                 addSelectedBtn.innerHTML = originalButtonText;
             }
@@ -416,13 +503,18 @@ document.addEventListener('DOMContentLoaded', function() {
     document.addEventListener('click', async function(e) {
         if (e.target.closest('.remove-mapping')) {
             e.preventDefault();
-            const row = e.target.closest('tr');
+            const btn = e.target.closest('.remove-mapping');
+            const row = btn.closest('tr');
             const courseUnitId = row?.dataset?.courseId;
             
             if (!courseUnitId || !confirm('Are you sure you want to remove this course unit?')) {
                 return;
             }
             
+            const originalIcon = btn.innerHTML;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>';
+            btn.disabled = true;
+
             try {
                 const response = await fetch(removeCourseUnitUrl(courseUnitId), {
                     method: 'DELETE',
@@ -436,48 +528,55 @@ document.addEventListener('DOMContentLoaded', function() {
                 const result = await response.json();
                 
                 if (result.success) {
-                    // Remove the row from the UI
                     const groupTbody = row.closest('tbody');
-                    row.remove();
-                    
-                    // If no more rows in this group, remove the entire group
-                    if (groupTbody && groupTbody.querySelectorAll('tr').length === 0) {
-                        const groupCard = groupTbody.closest('.card');
-                        if (groupCard) {
-                            groupCard.remove();
+                    row.style.opacity = '0';
+                    setTimeout(() => {
+                        row.remove();
+                        if (groupTbody && groupTbody.querySelectorAll('tr').length === 0) {
+                            const groupCard = groupTbody.closest('.mapping-group-card');
+                            if (groupCard) {
+                                groupCard.style.opacity = '0';
+                                setTimeout(() => groupCard.remove(), 300);
+                            }
                         }
-                    }
-                    
-                    // If no more groups, show the "no mappings" message
-                    if (document.querySelectorAll('.card.mb-4').length === 0) {
-                        const noMappingsHtml = `
-                            <div class="alert alert-info">
-                                No course unit mappings found. Add some using the button below.
-                            </div>
-                        `;
-                        document.getElementById('mappings-container').innerHTML = noMappingsHtml;
-                    }
+                        
+                        if (document.querySelectorAll('.mapping-group-card').length === 0) {
+                            const noMappingsHtml = `
+                                <div class="alert alert-info d-flex align-items-center p-4" style="background: rgba(59,130,246,.05); border: 1px dashed rgba(59,130,246,.3); border-radius: 12px; color: #1e40af;">
+                                    <i class="bi bi-info-circle-fill fs-4 me-3 text-primary"></i>
+                                    <div>
+                                        <strong>No course unit mappings found.</strong><br>
+                                        <span class="text-primary opacity-75">Click 'Add Course Units' to begin building the curriculum for this programme.</span>
+                                    </div>
+                                </div>
+                            `;
+                            document.getElementById('mappings-container').innerHTML = noMappingsHtml;
+                        }
+                    }, 300);
                     
                     showToast('success', result.message);
                 } else {
                     throw new Error(result.message || 'Failed to remove course unit');
                 }
             } catch (error) {
-                console.error('Error removing course unit:', error);
+                btn.innerHTML = originalIcon;
+                btn.disabled = false;
                 showToast('error', error.message || 'An error occurred while removing the course unit');
             }
         }
     });
-    // Function to show toast notifications
+
     function showToast(type, message) {
         const toastContainer = document.getElementById('toast-container');
         if (!toastContainer) return;
         
         const toastId = 'toast-' + Date.now();
+        const bgColor = type === 'success' ? 'bg-success' : 'bg-danger';
+        
         const toastHtml = `
-            <div id="${toastId}" class="toast align-items-center text-white bg-${type} border-0" role="alert" aria-live="assertive" aria-atomic="true">
+            <div id="${toastId}" class="toast align-items-center text-white ${bgColor} border-0" role="alert" aria-live="assertive" aria-atomic="true">
                 <div class="d-flex">
-                    <div class="toast-body">
+                    <div class="toast-body fw-medium">
                         ${message}
                     </div>
                     <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
@@ -491,12 +590,11 @@ document.addEventListener('DOMContentLoaded', function() {
         
         const toast = new bootstrap.Toast(toastElement.firstElementChild, {
             autohide: true,
-            delay: 3000
+            delay: 4000
         });
         
         toast.show();
         
-        // Remove the toast from DOM after it's hidden
         toastElement.firstElementChild.addEventListener('hidden.bs.toast', function () {
             toastElement.remove();
         });
@@ -505,9 +603,7 @@ document.addEventListener('DOMContentLoaded', function() {
 </script>
 @endpush
 
-<!-- Add toast container to the page -->
-<div id="toast-container" class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 11">
-    <!-- Toasts will be added here dynamically -->
-</div>
+<!-- Toast container -->
+<div id="toast-container" class="toast-container position-fixed bottom-0 end-0 p-4" style="z-index: 1060"></div>
 
 @endsection

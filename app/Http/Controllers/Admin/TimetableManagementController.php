@@ -9,6 +9,8 @@ use App\Models\ProgrammeTimetable;
 use App\Models\Semester;
 use App\Models\YearOfStudy;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Pagination\Paginator;
 
 class TimetableManagementController extends Controller
 {
@@ -139,11 +141,34 @@ class TimetableManagementController extends Controller
             'colors' => ['#28a745', '#ffc107', '#dc3545']
         ];
         
+        $activeTab = request('tab', 'all');
+        $perPage = 10;
+        $page = Paginator::resolveCurrentPage('page');
+        
+        $targetCollection = match($activeTab) {
+            'published' => $publishedPrograms,
+            'ready' => $readyPrograms,
+            'pending' => $pendingPrograms,
+            default => $programs
+        };
+        
+        $paginatedPrograms = new LengthAwarePaginator(
+            $targetCollection->forPage($page, $perPage),
+            $targetCollection->count(),
+            $perPage,
+            $page,
+            ['path' => Paginator::resolveCurrentPath(), 'query' => request()->query()]
+        );
+        
         return view('admin.timetables.index', [
-            'programs' => $programs, // All
-            'publishedPrograms' => $publishedPrograms,
-            'readyPrograms' => $readyPrograms,
-            'pendingPrograms' => $pendingPrograms,
+            'paginatedPrograms' => $paginatedPrograms,
+            'activeTab' => $activeTab,
+            'counts' => [
+                'all' => $programs->count(),
+                'published' => $publishedPrograms->count(),
+                'ready' => $readyPrograms->count(),
+                'pending' => $pendingPrograms->count(),
+            ],
             'academicSession' => $academicSession,
             'chartData' => $chartData
         ]);

@@ -31,6 +31,9 @@
 @endphp
 
 <tr class="program-row" data-status="{{ $status }}" style="border-bottom:1px solid var(--slate-100);transition:background .2s;background:#fff;" onmouseover="this.style.background='var(--slate-50)'" onmouseout="this.style.background='#fff'">
+    <td style="padding:1rem 1.5rem;vertical-align:middle;border:none;font-size:.85rem;color:var(--slate-400);font-weight:600;">
+        {{ $index ?? '' }}
+    </td>
     <td style="padding:1rem 1.5rem;vertical-align:middle;border:none;">
         <div style="font-weight:600;color:var(--slate-900);font-size:.9rem;">
             {{ $program->name }}
